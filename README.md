@@ -1,2 +1,3 @@
 # petlar
-A pet hosting app! 🐕🏠
+
+A pet hosting app!
