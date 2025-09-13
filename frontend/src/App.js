@@ -7,7 +7,7 @@ function App() {
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
         <p>
-          Nossa primeira página do app!! Petlar is running!!
+          Nossa primeira página do app!! Petlar is running!! teste frontend!
         </p>
         <a
           className="App-link"
