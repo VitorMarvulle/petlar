@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # Serviço do Backend (API Python)
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000" # Mapeia a porta 8000 do contêiner para a 8000 da sua máquina
+    volumes:
+      - ./backend:/app # Espelha o código local para dentro do contêiner 
+    
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"] #permite o hot-reload!!
+    environment:
+      # Passa as variáveis de ambiente para a sua API
+      - DATABASE_URL=postgresql://user:password@db:5432/lardocet_db
+    depends_on:
+      - db # Diz ao Docker para esperar o banco de dados iniciar primeiro
+
+  # Serviço do Frontend (React App)
+  frontend:
+    build:
+      context: ./frontend       
+      dockerfile: Dockerfile.dev 
+    ports:
+      - "3000:3000"             
+    volumes:
+      - ./frontend:/app         
+      - /app/node_modules       # Garante que a node_modules de dentro do contêiner não seja sobrescrita
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Ajuda o hot-reload a funcionar de forma mais confiável no Docker
+    stdin_open: true  
+    tty: true         
+  
+  # Serviço do Banco de Dados (PostgreSQL)
+  db:
+    image: postgres:15-alpine # Usa a imagem oficial do PostgreSQL
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=lardocet_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Garante que os dados do banco não se percam
+    ports:
+      - "5432:5432" # Expõe a porta do PostgreSQL para sua máquina (útil para debugar)
+
+# Define um volume nomeado para persistir os dados do banco
+volumes:
+  postgres_data:
