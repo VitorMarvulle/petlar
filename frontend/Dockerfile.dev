@@ -1,0 +1,21 @@
+# Usamos a imagem do Node como base, pois precisamos do npm para rodar o servidor de desenvolvimento
+FROM node:20-alpine
+
+# Define o diretório de trabalho
+WORKDIR /app
+
+# Copia o package.json PRIMEIRO para aproveitar o cache do Docker.
+# Se o package.json não mudar, o Docker não reinstala as dependências toda vez.
+COPY package*.json ./
+
+# Instala as dependências
+RUN npm install
+
+# Copia o resto do código da aplicação. Faremos um "volume" para manter atualizado.
+COPY . .
+
+# Expõe a porta 3000, que é a porta padrão do servidor de desenvolvimento do React
+EXPOSE 3000
+
+# O comando para iniciar o servidor de desenvolvimento com hot-reloading
+CMD ["npm", "start"]
