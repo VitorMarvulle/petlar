@@ -3,8 +3,8 @@ import HomePage from './pages/HomePage';
 import Login from './pages/Login';
 import SignUp from './pages/Signup';
 import Feed from './pages/Feed';
-import Header from './components/Header';
-import Footer from './components/Footer';
+import Header from './components/layout/Header';
+import Footer from './components/layout/Footer';
 import HostPage from './pages/HostPage';
 
 function App() {

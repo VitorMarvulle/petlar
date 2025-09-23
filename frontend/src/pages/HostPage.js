@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { hosts } from '../data/mockData';
-import HostSummaryCard from '../components/HostSummaryCard';
-import ReviewCard from '../components/ReviewCard';
-import AboutModal from '../components/AboutModal';
-import HireModal from '../components/HireModal';
+import HostSummaryCard from '../components/host/HostSummaryCard';
+import ReviewCard from '../components/host/ReviewCard';
+import AboutModal from '../components/host/AboutModal';
+import HireModal from '../components/host/HireModal';
 
 const HostPage = () => {
   const { hostId } = useParams();

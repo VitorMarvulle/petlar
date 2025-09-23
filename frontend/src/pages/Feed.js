@@ -1,8 +1,8 @@
 import React from 'react';
-import SearchBar from '../components/SearchBar';
-import FilterSidebar from '../components/FilterSidebar';
-import HostCard from '../components/HostCard';
-import ChatBox from '../components/ChatBox';
+import SearchBar from '../components/common/SearchBar';
+import FilterSidebar from '../components/feed/FilterSidebar';
+import HostCard from '../components/host/HostCard';
+import ChatBox from '../components/feed/ChatBox';
 import { hosts, chatMessages } from '../data/mockData';
 
 const FeedPage = () => {

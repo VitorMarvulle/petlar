@@ -1,4 +1,4 @@
-import SearchBar from '../components/SearchBar';
+import SearchBar from '../components/common/SearchBar';
 
 const HomePage = () => {
   return (
