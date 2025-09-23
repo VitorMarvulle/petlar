@@ -5,6 +5,7 @@ import SignUp from './pages/Signup';
 import Feed from './pages/Feed';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import HostPage from './pages/HostPage';
 
 function App() {
   return (
@@ -17,6 +18,8 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/feed" element={<Feed />} />
+            <Route path="/host/:hostId" element={<HostPage />} /> {/* Rota dinâmica para cada anfitrião */}
+            
           </Routes>
         </main>
         <Footer />
