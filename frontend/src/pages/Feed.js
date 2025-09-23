@@ -1,49 +1,73 @@
-import React, { useState } from 'react';
-import Input from '../components/Input';
-import Button from '../components/Button';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import SearchBar from '../components/SearchBar';
+import FilterSidebar from '../components/FilterSidebar';
+import HostCard from '../components/HostCard';
+import ChatBox from '../components/ChatBox';
+import HostModal from '../components/HostModal'; // Importar o novo modal
+import { hosts, chatMessages } from '../data/mockData';
 
-const Feed = () => {
-  const [email, setEmail] = useState('anamaria@gmail.comaaaaaaaaaaaaaaaa');
-  const [password, setPassword] = useState('********');
+const FeedPage = () => {
+  const [selectedHost, setSelectedHost] = useState(null);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Lógica de login aqui
-    console.log({ email, password });
-    alert('Login submetido! (Verifique o console)');
+  const handleOpenModal = (host) => {
+    setSelectedHost(host);
   };
 
+  const handleCloseModal = () => {
+    setSelectedHost(null);
+  };
+
+  // Efeito para bloquear o scroll do body quando o modal está aberto
+  useEffect(() => {
+    if (selectedHost) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [selectedHost]);
+
+  // Adicionar mais hosts para forçar o scroll na coluna central
+  const scrollableHosts = [...hosts, ...hosts, ...hosts, ...hosts];
+
   return (
-    <div className="flex items-center justify-center py-12">
-      <div className="w-full max-w-md bg-blue-50 border-2 border-gray-300 rounded-2xl p-8 shadow-lg">
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Login</h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Input 
-            label="Email:" 
-            type="email" 
-            id="email" 
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)} 
-          />
-          <Input 
-            label="Senha:" 
-            type="password" 
-            id="password" 
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)} 
-          />
-          <Button type="submit">Entrar</Button>
-        </form>
-         <p className="text-center text-sm text-gray-600 mt-6">
-          Não tem uma conta?{' '}
-          <Link to="/signup" className="font-medium text-red-500 hover:text-red-600">
-            Crie uma aqui
-          </Link>
-        </p>
+    <>
+      <div className="py-8">
+        <SearchBar />
+        <div className="flex justify-center mt-4 space-x-8 text-gray-600">
+          <button className="hover:text-red-500">Como funciona?</button>
+          <button className="hover:text-red-500 font-semibold">Quero ser host</button>
+        </div>
+
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 relative">
+          
+          {/* Coluna de Filtros (Fixa) */}
+          <div className="hidden lg:block lg:col-span-3">
+            <div className="sticky top-24">
+              <FilterSidebar />
+            </div>
+          </div>
+
+          {/* Coluna de Resultados (Scrollável) */}
+          <div className="lg:col-span-6 space-y-6 max-h-[100vh] overflow-y-auto pr-2">
+            {scrollableHosts.map((host, index) => (
+              <HostCard key={`${host.id}-${index}`} host={host} onClick={handleOpenModal} />
+            ))}
+          </div>
+
+          {/* Coluna de Chat (Fixa) */}
+          <div className="hidden lg:block lg:col-span-3">
+            <div className="sticky top-24">
+               <ChatBox messages={chatMessages} />
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+      
+      {/* Renderizar o Modal condicionalmente */}
+      {selectedHost && <HostModal host={selectedHost} onClose={handleCloseModal} />}
+    </>
   );
 };
 
-export default Feed;
+export default FeedPage;
+
