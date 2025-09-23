@@ -13,6 +13,7 @@ const FeedPage = () => {
       <SearchBar />
       <div className="flex justify-center mt-4 space-x-8 text-gray-600">
         <button className="hover:text-red-500">Como funciona?</button>
+        <p className="text-gray-400">|</p>
         <button className="hover:text-red-500 font-semibold">Quero ser host</button>
       </div>
 

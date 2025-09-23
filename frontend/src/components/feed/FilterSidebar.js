@@ -6,11 +6,10 @@ const FilterSidebar = () => {
     { label: '7-18kg', icon: '🐾' },
     { label: '18-25kg', icon: '🐾' },
     { label: '25-45kg', icon: '🐾' },
-    // { label: '> 45kg', icon: '🐾' },
   ];
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-lg border-2 border-gray-300 h-full">
+    <div className="bg-white p-6 rounded-xl shadow-lg border-2 border-gray-300 h-100">
       <h3 className="text-xl font-bold text-gray-800 mb-4">Filtros:</h3>
       <div>
         <h4 className="font-semibold text-gray-700 mb-3">Tamanho:</h4>
@@ -18,7 +17,6 @@ const FilterSidebar = () => {
           {sizes.map((size, index) => (
             <button key={index} className="text-center p-2 border-2 border-gray-300 rounded-lg hover:border-red-400 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400">
               <div className="text-3xl"> {/* Ícone placeholder */}
-                {/* Você pode substituir isso por SVGs mais elaborados se desejar */}
                 🐶
               </div>
               <span className="text-xs text-gray-600">{size.label}</span>

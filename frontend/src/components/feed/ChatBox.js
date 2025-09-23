@@ -2,8 +2,7 @@ import React from 'react';
 
 const ChatBox = ({ messages }) => {
   return (
-    <div className="bg-white p-4 rounded-xl shadow-lg border-2 border-gray-300 h-full flex flex-col">
-      <div className="flex items-center pb-3 border-b-2 border-gray-200">
+<div className="bg-white p-4 rounded-xl shadow-lg border-2 border-gray-300 h-100 sticky top-[380px] flex flex-col">      <div className="flex items-center pb-3 border-b-2 border-gray-200">
         <img src="https://placehold.co/40x40/A7D2CB/5C5552?text=EM" alt="Eduarda M." className="w-10 h-10 rounded-full mr-3" />
         <h3 className="font-bold text-gray-800">Eduarda M.</h3>
       </div>
