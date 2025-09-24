@@ -8,11 +8,14 @@ const Header = () => {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <div className="flex-shrink-0">
+            <Link to="/" className="flex items-center">
+            
               <img 
                 src={`${publicUrl}/assets/logo_petlar.png`} 
                 alt="Logo do Instagram" 
                 className="h-20 w-20 hover:opacity-75 transition-opacity" 
-              />             
+              />
+            </Link>             
           </div>
           
           {/* Navigation/Login Button */}
