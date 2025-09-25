@@ -3,6 +3,8 @@ import  requests
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 from utils.config import SUPABASE_URL, SUPABASE_KEY
 
+from Usuario.dto.CreateUsuario import UsuarioCreate
+
 usuario_router = APIRouter(prefix='/usuarios', tags=['usuario'])
 
 HEADERS = {
@@ -32,4 +34,14 @@ def get_usuario_by_id(id: int):
 
     data = response.json()
     return data[0]
+
+@usuario_router.post("/", status_code=HTTP_201_CREATED)
+def create_usuario(usuario: UsuarioCreate):
+    url = f"{SUPABASE_URL}/rest/v1/usuarios"
+    response = requests.post(url, json=usuario.dict(), headers=HEADERS)
+
+    if response.status_code != 201:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
+    return response.json()
 
