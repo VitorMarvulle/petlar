@@ -16,3 +16,13 @@ def get_usuarios():
     response = requests.get(url, headers=headers)
     return response.json()
 
+@usuario_router.get("/{id}")
+def get_usuario_by_id(id: int):
+    url = f"{SUPABASE_URL}/rest/v1/usuarios?id_usuario=eq.{id}"
+    headers = {
+        "apikey":SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}"
+    }
+    response = requests.get(url, headers=headers)
+    return response.json()
+
