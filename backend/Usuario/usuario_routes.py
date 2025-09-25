@@ -1,28 +1,35 @@
-from fastapi import APIRouter, Depends, HTTPException
-from starlette.status import HTTP_201_CREATED, HTTP_409_CONFLICT
+from fastapi import APIRouter, HTTPException
 import  requests
+from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 from utils.config import SUPABASE_URL, SUPABASE_KEY
-
 
 usuario_router = APIRouter(prefix='/usuarios', tags=['usuario'])
 
-@usuario_router.get("/")
+HEADERS = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Content-Type": "application/json",
+    "Prefer": "return=representation"
+}
+
+@usuario_router.get("/", status_code=HTTP_200_OK)
 def get_usuarios():
     url = f"{SUPABASE_URL}/rest/v1/usuarios"
-    headers = {
-        "apikey":SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}"
-    }
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=HEADERS)
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
     return response.json()
 
-@usuario_router.get("/{id}")
+@usuario_router.get("/{id}", status_code=HTTP_200_OK)
 def get_usuario_by_id(id: int):
     url = f"{SUPABASE_URL}/rest/v1/usuarios?id_usuario=eq.{id}"
-    headers = {
-        "apikey":SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}"
-    }
-    response = requests.get(url, headers=headers)
-    return response.json()
+    response = requests.get(url, headers=HEADERS)
+    
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
+    data = response.json()
+    return data[0]
 
