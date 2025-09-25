@@ -9,7 +9,7 @@ class UsuarioCreate(BaseModel):
     telefone: Optional[str]
     tipo: Optional[str]
     data_cadastro: Optional[str]
-    logaduro: Optional[str]
+    logradouro: Optional[str]
     numero: Optional[str]
     bairro: Optional[str]
     cidade: Optional[str]
