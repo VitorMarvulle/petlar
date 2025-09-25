@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 import  requests
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
-from utils.config import SUPABASE_URL, SUPABASE_KEY
+from utils.config import SUPABASE_URL, SUPABASE_KEY, bcrypt_context
 
 from Usuario.dto.CreateUsuario import UsuarioCreate
 
@@ -38,6 +38,9 @@ def get_usuario_by_id(id: int):
 @usuario_router.post("/", status_code=HTTP_201_CREATED)
 def create_usuario(usuario: UsuarioCreate):
     url = f"{SUPABASE_URL}/rest/v1/usuarios"
+
+    usuario.senha_hash = bcrypt_context.hash(usuario.senha_hash)
+
     response = requests.post(url, json=usuario.dict(), headers=HEADERS)
 
     if response.status_code != 201:
