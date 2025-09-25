@@ -45,3 +45,12 @@ def create_usuario(usuario: UsuarioCreate):
 
     return response.json()
 
+@usuario_router.delete("/{id}", status_code=HTTP_204_NO_CONTENT)
+def delete_usuario_by_id(id: int):
+    url = f"{SUPABASE_URL}/rest/v1/usuarios?id_usuario=eq.{id}"
+    response = requests.delete(url, headers=HEADERS)
+
+    if response.status_code not in (200, 204):
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
+    return None
