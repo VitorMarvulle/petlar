@@ -1,10 +1,13 @@
-.App {
-  text-align: center;
+.bege-claro {
+  color: #fff6e2;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.verde-escuro {
+  color: #addb8a;
+}
+
+.verde-claro {
+  color: #f4ffeb;
 }
 
 @media (prefers-reduced-motion: no-preference) {
