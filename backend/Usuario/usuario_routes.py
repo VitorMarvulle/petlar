@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 import  requests
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
+import uuid
 from utils.config import SUPABASE_URL, SUPABASE_KEY, bcrypt_context
 
 from Usuario.dto.CreateUsuario import UsuarioCreate
