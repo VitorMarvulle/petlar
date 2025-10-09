@@ -15,4 +15,4 @@ def read_root():
     return {"message": "Bem-vindo à API do Lar Doce Pet!! Teste Docker!!!"}
 
 # Você pode manter seus prints para ver quando o módulo é carregado, se quiser.
-print("Módulo main.py carregado e instância FastAPI criada.")
+print("Módulo main.py carregado e instância FastAPI criada. ALOU")
