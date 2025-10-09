@@ -31,7 +31,7 @@ const SearchBar = () => {
       <div className="relative border-l border-gray-200 pl-4 md:col-span-2">
         <label htmlFor="pets" className="block text-sm font-medium text-gray-500">Quem</label>
         <button onClick={() => setShowPetOptions(!showPetOptions)} className="w-full text-left p-0">
-          {selectedPet ? `${selectedPet.icon} ${selectedPet.name}` : 'Hóspedes?'}
+          {selectedPet ? `${selectedPet.icon} ${selectedPet.name}` : 'Selecione seu pet'}
         </button>
         {showPetOptions && (
           <div className="absolute top-full left-0 mt-2 w-full bg-white rounded-lg shadow-xl border z-10">
