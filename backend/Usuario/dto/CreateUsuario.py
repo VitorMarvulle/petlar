@@ -6,7 +6,7 @@ class UsuarioCreate(BaseModel):
     email: EmailStr
     senha_hash: str
     telefone: Optional[str]
-    tipo: Optional[str]
+    tipo: Optional[str] = "tutor"
     data_cadastro: Optional[str]
     logradouro: Optional[str]
     numero: Optional[str]
