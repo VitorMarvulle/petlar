@@ -3,6 +3,7 @@ import HomePage from './pages/HomePage';
 import Login from './pages/Login';
 import SignUp from './pages/Signup';
 import Feed from './pages/Feed';
+import BecomeHost from './pages/BecomeHost';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import HostPage from './pages/HostPage';
@@ -18,6 +19,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/feed" element={<Feed />} />
+            <Route path="/become-host" element={<BecomeHost />} />
             <Route path="/host/:hostId" element={<HostPage />} /> {/* Rota dinâmica para cada anfitrião */}
             
           </Routes>

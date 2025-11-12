@@ -15,8 +15,9 @@ HEADERS = {
 
 @anfitriao_router.get("/", status_code=HTTP_200_OK)
 def get_anfitrioes():
-    """Retorna todos os anfitriões"""
-    url = f"{SUPABASE_URL}/rest/v1/anfitrioes"
+    """Retorna todos os anfitriões com dados do usuário"""
+    # Join anfitrioes com usuarios para retornar dados completos
+    url = f"{SUPABASE_URL}/rest/v1/anfitrioes?select=*,usuarios(id_usuario,nome,email,telefone,cidade,bairro,cep,logradouro,numero,uf,complemento)"
     response = requests.get(url, headers=HEADERS)
 
     if response.status_code != 200:
@@ -26,8 +27,8 @@ def get_anfitrioes():
 
 @anfitriao_router.get("/{id}", status_code=HTTP_200_OK)
 def get_anfitriao_by_id(id: int):
-    """Retorna um anfitrião específico por ID"""
-    url = f"{SUPABASE_URL}/rest/v1/anfitrioes?id_anfitriao=eq.{id}"
+    """Retorna um anfitrião específico por ID com dados do usuário"""
+    url = f"{SUPABASE_URL}/rest/v1/anfitrioes?id_anfitriao=eq.{id}&select=*,usuarios(id_usuario,nome,email,telefone,cidade,bairro,cep,logradouro,numero,uf,complemento)"
     response = requests.get(url, headers=HEADERS)
     
     if response.status_code != 200:
@@ -41,8 +42,8 @@ def get_anfitriao_by_id(id: int):
 
 @anfitriao_router.get("/status/{status}", status_code=HTTP_200_OK)
 def get_anfitrioes_by_status(status: str):
-    """Retorna anfitriões filtrados por status (pendente, ativo, inativo, banido)"""
-    url = f"{SUPABASE_URL}/rest/v1/anfitrioes?status=eq.{status}"
+    """Retorna anfitriões filtrados por status (pendente, ativo, inativo, banido) com dados do usuário"""
+    url = f"{SUPABASE_URL}/rest/v1/anfitrioes?status=eq.{status}&select=*,usuarios(id_usuario,nome,email,telefone,cidade,bairro,cep,logradouro,numero,uf,complemento)"
     response = requests.get(url, headers=HEADERS)
     
     if response.status_code != 200:

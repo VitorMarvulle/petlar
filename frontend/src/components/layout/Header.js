@@ -20,7 +20,7 @@ const Header = () => {
           
           {/* Navigation/Login Button */}
           <div>
-            <Link to="/signup" className="bg-[#addb8a] border-2 border-gray-800 px-6 py-3 rounded-lg text-gray-800 font-semibold hover:bg-pink-200 transition-colors">
+            <Link to="/login" className="bg-[#addb8a] border-2 border-gray-800 px-6 py-3 rounded-lg text-gray-800 font-semibold hover:bg-pink-200 transition-colors">
               Criar conta/Login
             </Link>
           </div>
