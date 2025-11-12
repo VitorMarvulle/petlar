@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 import  requests
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 import uuid
+from datetime import datetime
 from utils.config import SUPABASE_URL, SUPABASE_KEY, bcrypt_context
 
 from Usuario.dto.CreateUsuario import UsuarioCreate
@@ -41,8 +42,15 @@ def create_usuario(usuario: UsuarioCreate):
     url = f"{SUPABASE_URL}/rest/v1/usuarios"
 
     usuario.senha_hash = bcrypt_context.hash(usuario.senha_hash)
+    
+    # Set default data_cadastro if not provided
+    if not usuario.data_cadastro:
+        usuario.data_cadastro = datetime.now().isoformat()
 
-    response = requests.post(url, json=usuario.dict(), headers=HEADERS)
+    # Convert to dict and remove None values
+    usuario_data = {k: v for k, v in usuario.dict().items() if v is not None}
+
+    response = requests.post(url, json=usuario_data, headers=HEADERS)
 
     if response.status_code != 201:
         raise HTTPException(status_code=response.status_code, detail=response.text)

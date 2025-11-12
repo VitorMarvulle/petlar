@@ -2,8 +2,7 @@ import React from 'react';
 import SearchBar from '../components/common/SearchBar';
 import FilterSidebar from '../components/feed/FilterSidebar';
 import HostCard from '../components/host/HostCard';
-import ChatBox from '../components/feed/ChatBox';
-import { hosts, chatMessages } from '../data/mockData';
+import { hosts } from '../data/mockData';
 
 const FeedPage = () => {
   const scrollableHosts = [...hosts, ...hosts]; // Duplicar para ter conteúdo para scroll
@@ -27,7 +26,6 @@ const FeedPage = () => {
           ))}
         </div>
         <div className="lg:col-span-3">
-          <ChatBox messages={chatMessages} />
         </div>
       </div>
     </div>
