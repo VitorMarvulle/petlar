@@ -1,17 +1,36 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import { Link } from 'react-router-dom';
+import { login } from '../services/authService';
 
 const Login = () => {
-  const [email, setEmail] = useState('anamaria@gmail.com');
-  const [password, setPassword] = useState('********');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Lógica de login aqui
-    console.log({ email, password });
-    alert('Login submetido! (Verifique o console)');
+    setError('');
+
+    if (!email || !password) {
+      setError('Email e senha são obrigatórios');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const user = await login(email, password);
+      alert(`Bem-vindo, ${user.nome}!`);
+      navigate('/feed');
+    } catch (err) {
+      setError(err.message || 'Erro ao fazer login');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -33,7 +52,8 @@ const Login = () => {
             value={password} 
             onChange={(e) => setPassword(e.target.value)} 
           />
-          <Button type="submit">Entrar</Button>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <Button type="submit" disabled={loading}>{loading ? 'Entrando...' : 'Entrar'}</Button>
         </form>
          <p className="text-center text-sm text-gray-600 mt-6">
           Não tem uma conta?{' '}

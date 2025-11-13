@@ -10,6 +10,8 @@ const petOptions = [
 const SearchBar = () => {
   const [showPetOptions, setShowPetOptions] = useState(false);
   const [selectedPet, setSelectedPet] = useState(null);
+  const [checkin, setCheckin] = useState('');
+  const [checkout, setCheckout] = useState('');
 
   return (
     <div className="bg-white p-4 rounded-xl shadow-lg border-2 border-gray-300 max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-10 gap-2 items-center">
@@ -20,12 +22,31 @@ const SearchBar = () => {
 
       <div className="border-l border-gray-200 pl-4 md:col-span-2">
         <label htmlFor="checkin" className="block text-sm font-medium text-gray-500">Check-in</label>
-        <input type="text" id="checkin" placeholder="Insira as datas" className="w-full border-none p-0 focus:ring-0" />
+        <input
+          type="date"
+          id="checkin"
+          className="w-full border-none p-0 focus:ring-0"
+          value={checkin}
+          onChange={(e) => {
+            setCheckin(e.target.value);
+            // If checkout is before new checkin, clear checkout
+            if (checkout && e.target.value && checkout < e.target.value) {
+              setCheckout('');
+            }
+          }}
+        />
       </div>
 
       <div className="border-l border-gray-200 pl-4 md:col-span-2">
         <label htmlFor="checkout" className="block text-sm font-medium text-gray-500">Checkout</label>
-        <input type="text" id="checkout" placeholder="Insira as datas" className="w-full border-none p-0 focus:ring-0" />
+        <input
+          type="date"
+          id="checkout"
+          className="w-full border-none p-0 focus:ring-0"
+          value={checkout}
+          onChange={(e) => setCheckout(e.target.value)}
+          min={checkin || undefined}
+        />
       </div>
 
       <div className="relative border-l border-gray-200 pl-4 md:col-span-2">
