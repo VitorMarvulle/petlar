@@ -3,7 +3,7 @@ import {View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Imag
 // Certifique-se de que '@react-navigation/native' está instalado e configurado
 import {useNavigation} from '@react-navigation/native';
 
-const ICON_STAR = require('../../../assets/icons/star.png'); 
+const ICON_STAR = require('../../../assets/icons/starFilled.png'); 
 const ICON_AVATAR = require('../../../assets/icons/user.png'); 
 const ICON_DELETE = require('../../../assets/icons/delete.png'); 
 const ICON_ADD = require('../../../assets/icons/add.png');
@@ -13,7 +13,6 @@ const UserAvatar = () => (
   <View style={styles.avatarContainer}>
     <View style={styles.avatarIcon}>
       <Image
-        source={ICON_AVATAR}
         style={styles.avatarImageContent}
         resizeMode="contain"
       />
@@ -123,7 +122,8 @@ export default function PerfilTutor({navigation}) {
           <View style={styles.profileSection}>
             <UserAvatar />
             <View style={styles.profileInfo}>
-              <Text style={styles.greeting}>Olá, Ellen Rodrigues!</Text> 
+              <Text>Bem vindo(a), Tutor</Text> 
+              <Text style={styles.greeting}>Ellen Rodrigues Magueta Newerkla</Text> 
               <View style={styles.divider} />
               <Text style={styles.Text}>Suas Avaliações</Text>
 
@@ -257,6 +257,7 @@ const styles = StyleSheet.create({
     marginRight: 15,
     zIndex: 10,
     left: 8,
+    marginTop: 28, 
   },
   avatarIcon: {
     width: 90,
@@ -303,6 +304,7 @@ const styles = StyleSheet.create({
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop:39,
   },
   ratingText: {
     fontSize: 13,

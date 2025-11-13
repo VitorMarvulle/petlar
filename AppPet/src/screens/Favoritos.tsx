@@ -13,449 +13,352 @@ import {
 
 const { width } = Dimensions.get('window');
 
-const SearchIcon = () => (
-  <View style={styles.searchIconContainer}>
-    <View style={styles.searchCircle} />
-    <View style={styles.searchHandle} />
-  </View>
-);
+// --- ICONS ---
+const ICON_STAR = require('../../assets/icons/star.png');
+const ICON_SEARCH = require('../../assets/icons/search.png');
+const ICON_LOGO_BRANCO = require('../../assets/icons/LogoBranco.png');
 
-const StarIcon = () => (
-  <View style={styles.starContainer}>
-    <View style={styles.star} />
-  </View>
-);
+// --- COMPONENTES AUXILIARES (Reaproveitados de Home.js) ---
 
-const PetIcon = ({ type }: { type: 'cat' | 'dog' | 'bird' | 'fish' }) => {
-  const getIconColor = () => {
-    switch (type) {
-      case 'cat':
-        return '#F4A460';
-      case 'dog':
-        return '#D2691E';
-      case 'bird':
-        return '#90EE90';
-      case 'fish':
-        return '#87CEEB';
-      default:
-        return '#FFF';
-    }
+const PetIconItem = ({ petName }: { petName: string }) => {
+  const icons: Record<string, any> = {
+    cachorro: require('../../assets/icons/animais/cachorro.png'),
+    gato: require('../../assets/icons/animais/gato.png'),
+    passaro: require('../../assets/icons/animais/passaro.png'),
+    tartaruga: require('../../assets/icons/animais/tartaruga.png'),
   };
 
-  return (
-    <View style={[styles.petIcon, { backgroundColor: getIconColor() }]} />
-  );
+  const source = icons[petName.toLowerCase()];
+  if (!source) return null;
+
+  return <Image source={source} style={styles.petIconImage} resizeMode="contain" />;
 };
 
-const PetIcons = ({ pets }: { pets: ('cat' | 'dog' | 'bird' | 'fish')[] }) => (
+const PetIcons = ({ petsAccepted }: { petsAccepted: string[] }) => (
   <View style={styles.petIconsContainer}>
-    {pets.map((pet, index) => (
-      <PetIcon key={index} type={pet} />
-    ))}
+    {petsAccepted.map((pet, i) => <PetIconItem key={i} petName={pet} />)}
   </View>
 );
 
-const FavoriteCard = ({ 
-  name, 
-  location, 
-  rating, 
-  price, 
-  imageUri,
-  pets
-}: {
+const StarIcon = () => <Image source={ICON_STAR} style={styles.starIconImage} resizeMode="contain" />;
+
+// --- HOST CARD (Reaproveitado de Home.js) ---
+interface HostCardProps {
   name: string;
   location: string;
   rating: string;
   price: string;
   imageUri: string;
-  pets: ('cat' | 'dog' | 'bird' | 'fish')[];
-}) => (
-  <TouchableOpacity style={styles.favoriteCard}>
-    <Image 
-      source={{ uri: imageUri }} 
-      style={styles.cardImage}
-      resizeMode="cover"
-    />
-    <View style={styles.cardOverlay} />
+  petsAccepted: string[];
+  onPress?: () => void;
+}
+
+const HostCard = ({ name, location, rating, price, imageUri, petsAccepted, onPress }: HostCardProps) => (
+  <TouchableOpacity style={styles.hostCard} onPress={onPress} activeOpacity={0.8}>
+    <Image source={{ uri: imageUri }} style={styles.hostImage} resizeMode="cover" />
+    <View style={styles.overlay} />
+    <View style={styles.hostInfo}>
+      <Text style={styles.hostName}>{name}</Text>
+      <PetIcons petsAccepted={petsAccepted} />
+      <Text style={styles.hostLocation}>{location}</Text>
+    </View>
     
-    <View style={styles.cardContent}>
-      <View style={styles.hostInfo}>
-        <Text style={styles.hostName}>{name}</Text>
-        <Text style={styles.hostLocation}>{location}</Text>
-      </View>
+    <View style={styles.hostDetails}>
+      <View style={styles.ratingContainer}>
+        <StarIcon />
+        <Text style={styles.rating}>{rating}</Text>
       
-      <PetIcons pets={pets} />
-      
-      <View style={styles.cardBottom}>
-        <View style={styles.ratingContainer}>
-          <StarIcon />
-          <Text style={styles.rating}>{rating}</Text>
-        </View>
-        <Text style={styles.price}>
-          <Text style={styles.priceAmount}>R$ {price}</Text>
-          <Text style={styles.priceUnit}>/dia</Text>
-        </Text>
       </View>
+      <Text style={styles.price}>
+        <Text style={styles.priceAmount}>R$ {price}</Text>
+        <Text style={styles.priceUnit}>/dia</Text>
+      </Text>
     </View>
   </TouchableOpacity>
 );
 
+// --- COMPONENTES DA TELA FAVORITOS ---
+
+const LogoLarDocePet = () => (
+  <>
+    <View style={styles.cornerImageContainer}>
+      <Image
+        source={ICON_LOGO_BRANCO} 
+        style={styles.cornerImage}
+        resizeMode="contain"
+      />
+    </View>
+    <Text style={styles.LogoText}>Lar Doce Pet</Text>
+  </>
+);
+
+const SearchIconPNG = () => (
+  <Image 
+    source={ICON_SEARCH} 
+    style={styles.searchIconImage} 
+    resizeMode="contain"
+  />
+);
+
+// --- DADOS MOCKADOS ORIGINAIS (3 Hosts) ---
+const mockFavoriteHosts: HostCardProps[] = [
+  {
+    name: 'Igor S.',
+    location: 'Praia Grande, Caiçara',
+    rating: '5,0',
+    price: '75,00',
+    imageUri: 'https://api.builder.io/api/v1/image/assets/TEMP/c8b291796d5992f0a8ca9f01c61cf18449dd892b?width=722',
+    petsAccepted: ['gato', 'passaro'],
+  },
+  {
+    name: 'Ellen R.',
+    location: 'Praia Grande, Mirim',
+    rating: '5,0',
+    price: '80,00',
+    imageUri: 'https://api.builder.io/api/v1/image/assets/TEMP/af2836f80ee9f66f26be800dc23edbde1db69238?width=680',
+    petsAccepted: ['cachorro', 'gato', 'passaro', 'tartaruga'],
+  },
+  {
+    name: 'Vitor M.',
+    location: 'Praia Grande, Tupi',
+    rating: '4,5',
+    price: '65,00',
+    imageUri: 'https://api.builder.io/api/v1/image/assets/TEMP/6072e97bcbf70e38ce569688de21b40f922a177c?width=688',
+    petsAccepted: ['gato', 'cachorro'],
+  },
+];
+
+// -------------------------------------------------------------------
+// ------------------------- TELA FAVORITOS --------------------------
+// -------------------------------------------------------------------
+
 export default function Favoritos() {
-  const favoriteHosts = [
-    {
-      name: 'Igor S.',
-      location: 'Praia Grande, Caiçara',
-      rating: '5,0',
-      price: '75,00',
-      imageUri: 'https://api.builder.io/api/v1/image/assets/TEMP/c8b291796d5992f0a8ca9f01c61cf18449dd892b',
-      pets: ['cat', 'dog'] as ('cat' | 'dog' | 'bird' | 'fish')[],
-    },
-    {
-      name: 'Ellen R.',
-      location: 'Praia Grande, Mirim',
-      rating: '5,0',
-      price: '80,00',
-      imageUri: 'https://api.builder.io/api/v1/image/assets/TEMP/af2836f80ee9f66f26be800dc23edbde1db69238',
-      pets: ['cat', 'dog', 'bird', 'fish'] as ('cat' | 'dog' | 'bird' | 'fish')[],
-    },
-  ];
 
   return (
+    // 1. O container principal usa flex: 1 para ocupar toda a tela
     <SafeAreaView style={styles.container}>
-      {/* Background decorative elements */}
-      <View style={styles.decorativeElements}>
-        <View style={[styles.pawPrint, styles.pawPrint1]} />
-        <View style={[styles.pawPrint, styles.pawPrint2]} />
-        <View style={[styles.pawPrint, styles.pawPrint3]} />
-      </View>
+      
+      {/* 2. Área do ScrollView (todo o conteúdo que deve rolar) */}
+      <ScrollView style={styles.scrollContentArea} showsVerticalScrollIndicator={false}>
+        
+        {/* Logo Lar Doce Pet (Posicionado Absoluto dentro da área de scroll/view principal) */}
+        <LogoLarDocePet />
 
-      <View style={styles.mainContainer}>
-        {/* Logo area */}
-        <View style={styles.logoContainer}>
-          <View style={styles.logoBackground} />
-          <View style={styles.petLogo} />
-        </View>
-
-        {/* Title */}
-        <Text style={styles.title}>Hosts Favoritos</Text>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput 
-            style={styles.searchInput}
-            placeholder="pesquise algo espeficíco..."
-            placeholderTextColor="rgba(85, 106, 68, 0.45)"
-          />
-          <TouchableOpacity style={styles.searchButton}>
-            <SearchIcon />
-          </TouchableOpacity>
-        </View>
-
-        {/* Favorites List */}
-        <ScrollView 
-          style={styles.favoritesContainer} 
-          showsVerticalScrollIndicator={false}
-        >
-          {favoriteHosts.map((host, index) => (
-            <FavoriteCard
-              key={index}
-              name={host.name}
-              location={host.location}
-              rating={host.rating}
-              price={host.price}
-              imageUri={host.imageUri}
-              pets={host.pets}
+        <View style={styles.innerContainer}>
+          <Text style={styles.mainTitle}>Hosts Favoritos</Text>
+          
+          {/* Barra de Pesquisa */}
+          <View style={styles.searchBarContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Pesquise por nome ou local..."
+              placeholderTextColor="#556A44"
             />
-          ))}
-        </ScrollView>
+            <TouchableOpacity style={styles.searchButton} activeOpacity={0.7}>
+              <SearchIconPNG />
+            </TouchableOpacity>
+          </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Como funciona? | Quero ser host!</Text>
+          {/* Lista de Hosts Favoritos */}
+          <View style={styles.favoritesList}>
+            {mockFavoriteHosts.map((host, i) => (
+              <HostCard
+                key={i}
+                {...host}
+              />
+            ))}
+          </View>
         </View>
-      </View>
+      </ScrollView>
 
-      {/* Bottom decorative elements */}
-      <View style={styles.bottomDecorative}>
-        <View style={[styles.pawPrint, styles.pawPrint4]} />
-        <View style={[styles.pawPrint, styles.pawPrint5]} />
-        <View style={[styles.pawPrint, styles.pawPrint6]} />
+      {/* 3. Rodapé Fixo (Fora do ScrollView, no final do SafeAreaView) */}
+      <View style={styles.footerFixed}>
+        <Text style={styles.footerTextFixed}>Como funciona? | Quero ser host!</Text>
       </View>
     </SafeAreaView>
   );
 }
 
+// -------------------------------------------------------------------
+// ----------------------------- STYLES ------------------------------
+// -------------------------------------------------------------------
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#B3D18C',
+  // --- 1. Estrutura Geral (Atualizada) ---
+  container: { 
+    flex: 1, 
+    backgroundColor: '#B3D18C' 
   },
-  decorativeElements: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 200,
-    height: 200,
+  scrollContentArea: {
+    // Permite que o ScrollView ocupe o máximo de espaço possível
+    flex: 1, 
   },
-  pawPrint: {
-    width: 40,
-    height: 40,
-    backgroundColor: 'rgba(179, 209, 140, 0.6)',
-    borderRadius: 20,
-    position: 'absolute',
+  innerContainer: { 
+    // É o card branco que tem o padding lateral e arredondamento
+    marginHorizontal: 12, 
+    marginTop: 100, // Ajuste para dar espaço ao Logo/Título
+    marginBottom: 4, 
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 40, 
+    paddingHorizontal: 20, 
+    paddingVertical: 28,
   },
-  pawPrint1: {
-    top: 20,
-    right: 40,
-    transform: [{ rotate: '30deg' }],
-  },
-  pawPrint2: {
-    top: 60,
-    right: 80,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-  },
-  pawPrint3: {
-    top: 100,
-    right: 20,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    transform: [{ rotate: '-20deg' }],
-  },
-  bottomDecorative: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: 200,
-    height: 200,
-  },
-  pawPrint4: {
-    bottom: 100,
-    left: 20,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-  },
-  pawPrint5: {
-    bottom: 60,
-    left: 60,
-    width: 35,
-    height: 35,
-    borderRadius: 17.5,
-  },
-  pawPrint6: {
-    bottom: 20,
-    left: 100,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    transform: [{ rotate: '45deg' }],
-  },
-  mainContainer: {
-    flex: 1,
-    margin: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 49,
-    paddingHorizontal: 20,
-    paddingTop: 24,
-  },
-  logoContainer: {
-    position: 'absolute',
-    top: -22,
-    right: 20,
-    width: 179,
-    height: 179,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoBackground: {
-    width: 132,
-    height: 121,
-    backgroundColor: '#B3D18C',
-    borderRadius: 60,
-    transform: [{ rotate: '-135deg' }],
-  },
-  petLogo: {
-    position: 'absolute',
-    width: 50,
-    height: 50,
-    backgroundColor: '#B3D18C',
-    borderRadius: 25,
-    transform: [{ rotate: '-0.5deg' }],
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '500',
-    color: '#556A44',
+  mainTitle: {
+    fontSize: 24, 
+    fontWeight: '700', 
+    color: '#556A44', 
+    marginBottom: 20, 
     textAlign: 'center',
-    marginTop: 80,
-    marginBottom: 30,
-    fontFamily: 'Inter',
+    marginTop: 0, 
   },
-  searchContainer: {
-    height: 30,
-    marginHorizontal: 17,
-    marginBottom: 30,
-    position: 'relative',
+
+  // --- 2. LOGO DO PET (Estilos de Reserva_Lista.js) ---
+  cornerImageContainer: {
+    position: 'absolute',
+    top: 29, 
+    right: 220, 
+    width: 60, 
+    height: 60,
+    zIndex: 10, 
+  },
+  cornerImage: {
+    width: '100%', 
+    height: '100%', 
+    resizeMode: 'contain',
+  },
+  LogoText: {
+    position: 'absolute',
+    top: 60,
+    left: 165,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#ffffff',
+    zIndex: 10,
+  },
+
+  // --- 3. Barra de Pesquisa ---
+  searchBarContainer: {
+    flexDirection: 'row', 
+    height: 54, 
+    marginBottom: 20,
+    borderWidth: 2, 
+    borderColor: '#B3D18C', 
+    backgroundColor: '#FFF6E2', 
+    borderRadius: 6, 
+    alignItems: 'center', 
+    paddingHorizontal: 15
   },
   searchInput: {
-    flex: 1,
-    height: 30,
-    borderWidth: 2,
-    borderColor: '#B3D18C',
-    borderRadius: 6,
-    backgroundColor: '#FFF6E2',
-    paddingHorizontal: 12,
-    paddingRight: 50,
-    fontSize: 13,
-    color: '#556A44',
+    flex: 1, 
+    height: '100%',
+    color: '#556A44', 
+    fontSize: 15, 
     fontFamily: 'Inter',
+    paddingRight: 10,
   },
   searchButton: {
-    position: 'absolute',
-    right: 5,
-    top: 5,
-    width: 20,
-    height: 20,
+    width: 30,
+    height: 30,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  searchIconContainer: {
-    width: 20,
-    height: 20,
-    position: 'relative',
+  searchIconImage: {
+    width: 25, 
+    height: 25, 
   },
-  searchCircle: {
-    width: 14,
-    height: 14,
-    borderWidth: 2,
-    borderColor: '#7AB24E',
-    borderRadius: 7,
-    position: 'absolute',
-    top: 1,
-    left: 1,
+  
+  // --- 4. Host Card (Estilos de Home.js) ---
+  favoritesList: {
+    marginBottom: 10,
+    // Adiciona um padding extra para garantir que o último card não seja cortado pelo footer fixo
+    paddingBottom: 20, 
   },
-  searchHandle: {
-    width: 6,
-    height: 2,
-    backgroundColor: '#7AB24E',
-    borderRadius: 1,
-    position: 'absolute',
-    bottom: 1,
-    right: 1,
-    transform: [{ rotate: '45deg' }],
+  hostCard: { 
+    width: width - 64, 
+    height: 172, 
+    borderRadius: 15, 
+    borderWidth: 2, 
+    borderColor: '#B3D18C', 
+    backgroundColor: '#FFF6E2', 
+    marginBottom: 15, 
+    overflow: 'hidden', 
+    position: 'relative' 
   },
-  favoritesContainer: {
-    flex: 1,
-    paddingHorizontal: 9,
+  hostImage: { 
+    width: '100%', 
+    height: '150%', 
+    position: 'absolute', 
+    top: -40 
   },
-  favoriteCard: {
-    width: 336,
-    height: 172,
-    borderRadius: 15,
-    borderWidth: 2,
-    borderColor: '#B3D18C',
-    backgroundColor: '#FFF6E2',
-    marginBottom: 15,
-    overflow: 'hidden',
-    position: 'relative',
+  overlay: { 
+    ...StyleSheet.absoluteFillObject, 
+    backgroundColor: 'rgba(0,0,0,0.37)', 
+    borderRadius: 14 
   },
-  cardImage: {
-    width: '106%',
-    height: 240,
-    position: 'absolute',
-    top: -68,
-    left: 0,
+  hostInfo: { 
+    position: 'absolute', 
+    top: 15, 
+    left: 16, 
+    flexDirection: 'row', 
+    alignItems: 'center' 
   },
-  cardOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.37)',
-    borderRadius: 14,
+  hostName: { 
+    color: '#FFF', 
+    fontSize: 15, 
+    fontWeight: '700', 
+    fontFamily: 'Inter', 
+    marginRight: 8 
   },
-  cardContent: {
-    flex: 1,
-    padding: 16,
-    justifyContent: 'space-between',
+  hostLocation: { 
+    color: '#FFF', 
+    fontSize: 13, 
+    fontFamily: 'Inter', 
+    position: 'absolute', 
+    top: 24, 
+    left: 0 
   },
-  hostInfo: {
-    alignSelf: 'flex-start',
+  hostDetails: { 
+    position: 'absolute', 
+    bottom: 15, 
+    right: 16, 
+    alignItems: 'flex-end' 
   },
-  hostName: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '700',
-    fontFamily: 'Inter',
-    marginBottom: 2,
+  ratingContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 4 
   },
-  hostLocation: {
-    color: '#FFF',
-    fontSize: 13,
-    fontWeight: '400',
-    fontFamily: 'Inter',
+  rating: { 
+    color: '#FFF', 
+    fontSize: 13, 
+    fontFamily: 'Inter' 
   },
-  petIconsContainer: {
-    position: 'absolute',
-    top: 9,
-    right: 16,
-    flexDirection: 'row',
-    gap: 2,
+  price: { 
+    color: '#FFF', 
+    fontSize: 15, 
+    fontFamily: 'Inter' 
   },
-  petIcon: {
-    width: 25,
-    height: 25,
-    borderRadius: 12.5,
+  priceAmount: { 
+    fontWeight: '700' 
   },
-  cardBottom: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginTop: 'auto',
+  priceUnit: { 
+    fontWeight: '400' 
   },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  starContainer: {
-    width: 15,
-    height: 15,
-    marginRight: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  star: {
-    width: 15,
-    height: 15,
-    backgroundColor: '#FFF',
-    transform: [{ rotate: '45deg' }],
-  },
-  rating: {
-    color: '#FFF',
-    fontSize: 13,
-    fontWeight: '400',
-    fontFamily: 'Inter',
-  },
-  price: {
-    color: '#FFF',
-    fontSize: 15,
-    fontFamily: 'Inter',
-  },
-  priceAmount: {
-    fontWeight: '700',
-  },
-  priceUnit: {
-    fontWeight: '400',
-  },
-  footer: {
+  petIconsContainer: { flexDirection: 'row', gap: 4 },
+  petIconImage: { width: 25, height: 25 },
+  starIconImage: { width: 15, height: 15 },
+  
+  // --- 5. Rodapé Fixo (Fora do ScrollView) ---
+  footerFixed: {
     alignItems: 'center',
     paddingVertical: 15,
-    marginTop: 10,
+    backgroundColor: '#B3D18C', 
+    // Usando a cor de fundo do container principal para a faixa do footer
   },
-  footerText: {
-    color: '#556A44',
-    fontSize: 15,
-    fontWeight: '700',
-    fontFamily: 'Inter',
+  footerTextFixed: {
+    color: '#556A44', 
+    fontSize: 15, 
+    fontWeight: '700', 
+    fontFamily: 'Inter' 
   },
 });

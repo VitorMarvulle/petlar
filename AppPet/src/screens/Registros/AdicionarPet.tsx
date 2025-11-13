@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import { 
+  View, Text, TextInput, TouchableOpacity, Image, 
+  StyleSheet, ScrollView, SafeAreaView 
+} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
@@ -36,7 +39,7 @@ export default function FormularioPet() {
 
   const handleUnitChange = (field: 'unidade' | 'idadeUnidade', value: 'kg' | 'g' | 'ano' | 'mês') => {
     setPetData(prev => ({ ...prev, [field]: value }));
-    };
+  };
 
   const pickImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -72,8 +75,10 @@ export default function FormularioPet() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.innerContainer}>
+          
           <Text style={styles.title}>Cadastro do seu Pet</Text>
 
+          {/* Seletor de espécie */}
           <View style={styles.speciesContainer}>
             {speciesOptions.map(specie => (
               <TouchableOpacity
@@ -84,102 +89,107 @@ export default function FormularioPet() {
                 ]}
                 onPress={() => handleChange('especie', specie)}
               >
-                <Text style={petData.especie === specie ? { color: '#fff' } : { color: '#7AB24E' }}>
+                <Text style={petData.especie === specie ? styles.speciesTextSelected : styles.speciesText}>
                   {specie}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
+          {/* Nome */}
           <TextInput
             placeholder="Nome do pet"
-            placeholderTextColor="#79b24e62"
+            placeholderTextColor="#7AB24E80"
             value={petData.nome}
             onChangeText={v => handleChange('nome', v)}
             style={styles.input}
           />
 
-
+          {/* Idade */}
           <View style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <TextInput
-                placeholder="Idade"
-                placeholderTextColor="#79b24e62"
-                value={petData.idade}
-                onChangeText={v => handleChange('idade', v)}
-                style={styles.inputNoMargin}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.unitSelector}>
-              {(['ano', 'mês'] as const).map(u => (
-                <TouchableOpacity
-                  key={u}
-                  style={[styles.unitButton, petData.idadeUnidade === u && styles.unitSelected]}
-                  onPress={() => handleUnitChange('idadeUnidade', u)}
-                >
-                  <Text style={{ color: petData.idadeUnidade === u ? '#fff' : '#7AB24E', fontSize: 12 }}>
-                    {u === 'mês' ? 'mês' : 'ano'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+            <View style={{ flex: 1 }}>
+              <TextInput
+                placeholder="Idade"
+                placeholderTextColor="#7AB24E80"
+                value={petData.idade}
+                onChangeText={v => handleChange('idade', v)}
+                style={styles.inputNoMargin}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.unitSelector}>
+              {(['ano', 'mês'] as const).map(u => (
+                <TouchableOpacity
+                  key={u}
+                  style={[styles.unitButton, petData.idadeUnidade === u && styles.unitSelected]}
+                  onPress={() => handleUnitChange('idadeUnidade', u)}
+                >
+                  <Text style={petData.idadeUnidade === u ? styles.unitTextSelected : styles.unitText}>
+                    {u}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
 
-{/* Campo de peso com unidade (apenas ajustando a chamada da função) */}
-          <View style={styles.row}>
-          <View style={{ flex: 1 }}>
-            <TextInput
-              placeholder="Peso"
-              placeholderTextColor="#79b24e62"
-              value={petData.peso}
-              onChangeText={v => handleChange('peso', v)}
-              style={styles.inputNoMargin}
-              keyboardType="numeric"
-            />
-          </View>
-          <View style={styles.unitSelector}>
-            {(['kg', 'g'] as const).map(u => (
-              <TouchableOpacity
-                key={u}
-                style={[styles.unitButton, petData.unidade === u && styles.unitSelected]}
-                onPress={() => handleUnitChange('unidade', u)} // <-- Mudança aqui
-              >
-                <Text style={{ color: petData.unidade === u ? '#fff' : '#7AB24E' }}>{u}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+          {/* Peso */}
+          <View style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <TextInput
+                placeholder="Peso"
+                placeholderTextColor="#7AB24E80"
+                value={petData.peso}
+                onChangeText={v => handleChange('peso', v)}
+                style={styles.inputNoMargin}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.unitSelector}>
+              {(['kg', 'g'] as const).map(u => (
+                <TouchableOpacity
+                  key={u}
+                  style={[styles.unitButton, petData.unidade === u && styles.unitSelected]}
+                  onPress={() => handleUnitChange('unidade', u)}
+                >
+                  <Text style={petData.unidade === u ? styles.unitTextSelected : styles.unitText}>{u}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
 
+          {/* Especificações */}
           <TextInput
             placeholder="Especificações (opcional)"
-            placeholderTextColor="#79b24e62"
+            placeholderTextColor="#7AB24E80"
             value={petData.especificacoes}
             onChangeText={v => handleChange('especificacoes', v)}
-            style={[styles.input, { height: 100 }]}
+            style={[styles.input, styles.multilineInput]}
             multiline
           />
 
-          <Text style={styles.texto}>Galeria de fotos do seu pet:</Text>
-          <TouchableOpacity style={styles.photoBox} onPress={pickImages}>
+          {/* Fotos */}
+          <Text style={styles.texto}>Galeria de fotos do seu pet</Text>
+          <TouchableOpacity style={styles.photoBox} onPress={pickImages} activeOpacity={0.8}>
             {petData.fotos && petData.fotos.length > 0 ? (
-              <ScrollView horizontal>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {petData.fotos.map((uri, index) => (
                   <Image
                     key={index}
                     source={{ uri }}
-                    style={{ width: 120, height: 120, borderRadius: 10, marginRight: 5 }}
+                    style={styles.photo}
                   />
                 ))}
               </ScrollView>
             ) : (
-              <Text style={styles.textoFoto}>Adicionar fotos</Text>
+              <Text style={styles.textoFoto}>📸 Adicionar fotos</Text>
             )}
           </TouchableOpacity>
 
+          {/* Botão */}
           <TouchableOpacity style={styles.addPetButton} onPress={handleSubmit}>
             <Text style={styles.addPetButtonText}>Salvar Pet</Text>
           </TouchableOpacity>
+
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -187,7 +197,7 @@ export default function FormularioPet() {
 }
 
 const styles = StyleSheet.create({
-  // Fundo verde padrão
+  // --- Fundo ---
   container: {
     flex: 1,
     backgroundColor: '#B3D18C',
@@ -195,25 +205,30 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
   },
-  // Caixa branca central
+
+  // --- Caixa branca ---
   innerContainer: {
     flex: 1,
-    marginHorizontal: 12,
-    marginTop: 30,
+    marginHorizontal: 16,
+    marginTop: 25,
     marginBottom: 45,
     backgroundColor: '#FFFFFF',
     borderRadius: 40,
-    paddingHorizontal: 30,
-    paddingVertical: 20,
+    paddingHorizontal: 25,
+    paddingVertical: 25,
     alignItems: 'center',
+    elevation: 4,
   },
+
   title: {
     color: '#7AB24E',
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
-    marginBottom: 30,
-    marginTop: 30,
+    textAlign: 'center',
+    marginBottom: 16,
   },
+
+  // --- Inputs ---
   input: {
     width: '100%',
     height: 55,
@@ -223,10 +238,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF6E2',
     paddingHorizontal: 16,
     marginBottom: 16,
-    marginTop: -4,
     fontSize: 15,
+    color: '#556A44',
   },
-  inputNoMargin: { 
+  inputNoMargin: {
     width: '100%',
     height: 55,
     borderWidth: 2,
@@ -235,80 +250,115 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF6E2',
     paddingHorizontal: 16,
     fontSize: 15,
+    color: '#556A44',
+  },
+  multilineInput: {
+    height: 100,
+    textAlignVertical: 'top',
   },
 
+  // --- Layout de linhas ---
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
     marginBottom: 18,
   },
-unitSelector: {
+
+  // --- Seletor de unidade ---
+  unitSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 55, // mesma altura do input
+    height: 55,
   },
   unitButton: {
-    height: 55, // igual ao input
-    width: 75,
-    paddingHorizontal: 3,
+    height: 55,
+    width: 70,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#B3D18C',
-    borderRadius: 18,
+    borderRadius: 15,
     backgroundColor: '#FFF6E2',
-    marginLeft: 4,
+    marginLeft: 6,
   },
   unitSelected: {
     backgroundColor: '#7AB24E',
     borderColor: '#7AB24E',
   },
+  unitText: {
+    color: '#7AB24E',
+    fontWeight: '600',
+  },
+  unitTextSelected: {
+    color: '#FFF6E2',
+    fontWeight: '700',
+  },
+
+  // --- Espécie ---
+  speciesContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  speciesButton: {
+    flex: 1,
+    paddingVertical: 10,
+    marginHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#B3D18C',
+    borderRadius: 15,
+    backgroundColor: '#FFF6E2',
+    alignItems: 'center',
+  },
+  speciesButtonSelected: {
+    backgroundColor: '#7AB24E',
+    borderColor: '#7AB24E',
+  },
+  speciesText: {
+    color: '#7AB24E',
+    fontWeight: '600',
+  },
+  speciesTextSelected: {
+    color: '#FFF6E2',
+    fontWeight: '700',
+  },
+
+  // --- Fotos ---
   texto: {
     color: '#7AB24E',
     fontSize: 16,
-    marginBottom: 10,
-    alignSelf: 'center',
-  },
-    texto2: {
-    color: '#7AB24E',
-    fontSize: 16,
-    marginBottom: 10,
+    fontWeight: '600',
+    marginBottom: 8,
     alignSelf: 'flex-start',
   },
   textoFoto: {
     color: '#7AB24E',
     textAlign: 'center',
-  },
-  speciesContainer: {
-    flexDirection: 'row',
-    width: '100%',
-    marginBottom: 20,
-    paddingHorizontal: -4,
-  },
-  speciesButton: {
-    padding: 10,
-    borderWidth: 2,
-    backgroundColor: '#FFF6E2',
-    borderColor: '#b2d09bff',
-    borderRadius: 13,
-    marginRight: 5,
-  },
-  speciesButtonSelected: {
-    backgroundColor: '#84b55eff',
-    borderColor: '#7AB24E',
+    fontSize: 15,
+    fontWeight: '500',
   },
   photoBox: {
-    width: 150,
-    height: 150,
-    borderRadius: 8,
+    width: '100%',
+    minHeight: 130,
+    borderRadius: 18,
     borderWidth: 3,
     borderColor: '#B3D18C',
     backgroundColor: '#FFF6E2',
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 10,
+    marginVertical: 12,
+    padding: 10,
   },
+  photo: {
+    width: 110,
+    height: 110,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+
+  // --- Botão final ---
   addPetButton: {
     height: 55,
     width: '100%',
@@ -319,6 +369,7 @@ unitSelector: {
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 25,
+    elevation: 3,
   },
   addPetButtonText: {
     color: '#FFF6E2',

@@ -9,7 +9,8 @@ import InfoAdc from '../screens/Registros/InfoAdc';
 import AdicionarPet from '../screens/Registros/AdicionarPet';
 
 import Perfil_Tutor from '../screens/Perfis/Perfil_Tutor';
-import PerfilHost from '../screens/Perfis/Card_Host';
+import Perfil_Host from '../screens/Perfis/Perfil_Host';
+import Card_Host from '../screens/Perfis/Card_Host';
 
 import Home from '../screens/Home';
 import Favoritos from '../screens/Favoritos';
@@ -28,7 +29,8 @@ export default function AppNavigator() {
       <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
       <Stack.Screen name="Cadastro" component={Cadastro} options={{ headerShown: false }} />
       <Stack.Screen name="Perfil_Tutor" component={Perfil_Tutor} options={{ headerShown: false }} />
-      <Stack.Screen name="PerfilHost" component={PerfilHost} options={{ headerShown: false }} />
+      <Stack.Screen name="Perfil_Host" component={Perfil_Host} options={{ headerShown: false }} />
+      <Stack.Screen name="Card_Host" component={Card_Host} options={{ headerShown: false }} />
       <Stack.Screen name="Favoritos" component={Favoritos} options={{ headerShown: false }} />
       <Stack.Screen name="InfoAdc" component={InfoAdc} options={{ headerShown: false }} />
       <Stack.Screen name="Filtros" component={Filtros} options={{ headerShown: false }} />
