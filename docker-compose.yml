@@ -19,6 +19,16 @@ services:
         "--reload",
       ] #permite o hot-reload!!
 
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "8501:8501" # Mapeia a porta 8000 do contêiner para a 8000 da sua máquina
+    volumes:
+      - ./dashboard:/app # Espelha o código local para dentro do contêiner
+    command: ["streamlit", "run", "app.py"]
+    depends_on:
+      - backend
+
   # Serviço do Frontend (React App)
   frontend:
     build:
