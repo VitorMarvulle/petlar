@@ -67,10 +67,10 @@ const FeedPage = () => {
       });
     }
 
-    // Filter by tamanho (space size)
+    // Filter by tamanho_pet (pet size)
     if (activeFilters.tamanhos.length > 0) {
       filtered = filtered.filter((host) =>
-        activeFilters.tamanhos.includes(host.tamanho)
+        activeFilters.tamanhos.includes(host.tamanhoPet)
       );
     }
 

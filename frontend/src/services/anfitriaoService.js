@@ -46,7 +46,7 @@ const transformAnfitriaoToHostCard = (anfitriao) => {
     price: anfitriao.preco || 60,
     rating: anfitriao.rating || 5, // TODO: Calculate from reviews
     pets: pets, // Convert especie to emojis
-    tamanho: anfitriao.tamanho || 'medio', // Size: pequeno, medio, grande
+    tamanhoPet: anfitriao.tamanho_pet || 'medio', 
     imageUrl: usuario?.imagem_usuario || 'https://placehold.co/80x80/A7D2CB/5C5552?text=Host',
     capacidade_maxima: anfitriao.capacidade_maxima,
     status: anfitriao.status,

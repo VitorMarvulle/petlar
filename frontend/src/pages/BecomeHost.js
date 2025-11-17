@@ -75,7 +75,7 @@ const BecomeHost = () => {
         descricao: descricao,
         capacidade_maxima: parseInt(capacidade),
         especie: especie, // Array of pet types
-        tamanho: tamanho, // Size of space
+        tamanho_pet: tamanho, // Size of pet
         preco: parseFloat(preco), // Daily price
       });
 
@@ -168,7 +168,7 @@ const BecomeHost = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="tamanho" className="block text-sm font-medium text-gray-700">
-                Tamanho do seu espaço:
+                Tamanho do Pet que você cuida:
               </label>
               <select
                 id="tamanho"

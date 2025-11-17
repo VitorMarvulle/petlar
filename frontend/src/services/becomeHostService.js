@@ -19,7 +19,7 @@ export const createAnfitriao = async (data) => {
         descricao: data.descricao,
         capacidade_maxima: data.capacidade_maxima,
         especie: data.especie || [], // Array of pet types
-        tamanho: data.tamanho, // Size of space
+        tamanho_pet: data.tamanho_pet, // Size of pet
         preco: data.preco, // Daily price
         status: 'ativo', // New hosts start as active
       }),

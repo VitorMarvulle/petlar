@@ -32,11 +32,11 @@ const HostCard = ({ host }) => {
                     <span key={index} className="text-xl">{pet}</span>
                   ))}
                 </div>
-                {host.tamanho && (
+                {host.tamanhoPet && (
                   <div className="flex items-center space-x-1">
-                    <span className="text-xs text-gray-600 font-medium">Tamanho:</span>
+                    <span className="text-xs text-gray-600 font-medium">Tamanho do Pet:</span>
                     <span className="text-sm text-gray-700 bg-blue-100 px-2 py-1 rounded">
-                      {host.tamanho === 'pequeno' ? 'Pequeno' : host.tamanho === 'medio' ? 'Médio' : 'Grande'}
+                      {host.tamanhoPet === 'pequeno' ? 'Pequeno' : host.tamanhoPet === 'medio' ? 'Médio' : 'Grande'}
                     </span>
                   </div>
                 )}

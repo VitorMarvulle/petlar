@@ -11,10 +11,10 @@ const FilterSidebar = ({ onFiltersChange }) => {
     { value: 'silvestre', label: 'Silvestre', emoji: '🦎' },
   ];
 
-  const tamanhos = [
-    { value: 'pequeno', label: 'Pequeno', emoji: '🏠' },
-    { value: 'medio', label: 'Médio', emoji: '🏡' },
-    { value: 'grande', label: 'Grande', emoji: '🏘️' },
+  const tamanhosPet = [
+    { value: 'pequeno', label: 'Pequeno' },
+    { value: 'medio', label: 'Médio' },
+    { value: 'grande', label: 'Grande' },
   ];
 
   const toggleEspecie = (especie) => {
@@ -75,11 +75,11 @@ const FilterSidebar = ({ onFiltersChange }) => {
         </div>
       </div>
 
-      {/* Filtro por Tamanho do Espaço */}
+      {/* Filtro por Tamanho do Pet */}
       <div>
-        <h4 className="font-semibold text-gray-700 mb-3">Tamanho do Espaço:</h4>
+        <h4 className="font-semibold text-gray-700 mb-3">Tamanho do Pet:</h4>
         <div className="space-y-2">
-          {tamanhos.map((tamanho) => (
+          {tamanhosPet.map((tamanho) => (
             <label
               key={tamanho.value}
               className="flex items-center p-2 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-green-400 hover:bg-green-50 transition-colors"
