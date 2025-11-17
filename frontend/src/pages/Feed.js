@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SearchBar from '../components/common/SearchBar';
 import FilterSidebar from '../components/feed/FilterSidebar';
 import HostCard from '../components/host/HostCard';
 import { getAllHosts } from '../services/anfitriaoService';
 import { getCurrentUser } from '../services/authService';
+import { SearchContext } from '../context/SearchContext';
 
 const FeedPage = () => {
+  const { searchFilters } = useContext(SearchContext);
+
   const [hosts, setHosts] = useState([]);
   const [filteredHosts, setFilteredHosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,7 +21,7 @@ const FeedPage = () => {
 
   useEffect(() => {
     fetchHosts();
-    
+
     // Check if current user is a host
     const user = getCurrentUser();
     if (user) {
@@ -27,10 +30,10 @@ const FeedPage = () => {
     }
   }, []);
 
-  // Apply filters whenever hosts or filters change
+  // Apply filters whenever hosts, filters, or search params change
   useEffect(() => {
     applyFilters();
-  }, [hosts, activeFilters]);
+  }, [hosts, activeFilters, searchFilters]);
 
   const fetchHosts = async () => {
     setLoading(true);
@@ -49,8 +52,19 @@ const FeedPage = () => {
   const applyFilters = () => {
     let filtered = [...hosts];
 
-    // Filter by especie (pet type)
-    if (activeFilters.especies.length > 0) {
+    // Filter by city (from search bar)
+    if (searchFilters.cidade) {
+      filtered = filtered.filter((host) =>
+        host.location.toLowerCase().includes(searchFilters.cidade.toLowerCase())
+      );
+    }
+
+    // Filter by especie (pet type) - from search bar OR sidebar
+    const especie = searchFilters.especie;
+    const sidebarEspecies = activeFilters.especies;
+    const especiesToFilter = especie ? [especie] : sidebarEspecies;
+
+    if (especiesToFilter.length > 0) {
       filtered = filtered.filter((host) => {
         // Check if host has any of the selected species
         return host.pets.some((pet) => {
@@ -61,13 +75,13 @@ const FeedPage = () => {
             '🐦': 'passaro',
             '🦎': 'silvestre',
           };
-          const especie = especieMap[pet];
-          return activeFilters.especies.includes(especie);
+          const petEspecie = especieMap[pet];
+          return especiesToFilter.includes(petEspecie);
         });
       });
     }
 
-    // Filter by tamanho_pet (pet size)
+    // Filter by tamanho_pet (pet size) - only from sidebar
     if (activeFilters.tamanhos.length > 0) {
       filtered = filtered.filter((host) =>
         activeFilters.tamanhos.includes(host.tamanhoPet)
@@ -96,7 +110,7 @@ const FeedPage = () => {
         <button className="hover:text-red-500">Como funciona?</button>
         <p className="text-gray-400">|</p>
         {!isUserHost && (
-          <button 
+          <button
             onClick={handleBecomeHost}
             className="hover:text-red-500 font-semibold text-red-500"
           >
@@ -118,7 +132,10 @@ const FeedPage = () => {
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
               <p>{error}</p>
-              <button onClick={fetchHosts} className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+              <button
+                onClick={fetchHosts}
+                className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+              >
                 Tentar Novamente
               </button>
             </div>
@@ -126,7 +143,7 @@ const FeedPage = () => {
           {!loading && filteredHosts.length === 0 && !error && (
             <div className="flex items-center justify-center py-12">
               <p className="text-gray-600 text-lg">
-                {hosts.length === 0 
+                {hosts.length === 0
                   ? 'Nenhum anfitrião disponível no momento.'
                   : 'Nenhum anfitrião corresponde aos filtros selecionados.'}
               </p>
@@ -136,8 +153,7 @@ const FeedPage = () => {
             <HostCard key={host.id_anfitriao || host.id} host={host} />
           ))}
         </div>
-        <div className="lg:col-span-3">
-        </div>
+        <div className="lg:col-span-3"></div>
       </div>
     </div>
   );

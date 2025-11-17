@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
+import { SearchContext } from '../../context/SearchContext';
 
 const FilterSidebar = ({ onFiltersChange }) => {
+  const { searchFilters } = useContext(SearchContext);
   const [selectedEspecies, setSelectedEspecies] = useState([]);
   const [selectedTamanho, setSelectedTamanho] = useState([]);
 
@@ -12,10 +14,18 @@ const FilterSidebar = ({ onFiltersChange }) => {
   ];
 
   const tamanhosPet = [
-    { value: 'pequeno', label: 'Pequeno' },
-    { value: 'medio', label: 'Médio' },
-    { value: 'grande', label: 'Grande' },
+    { value: 'pequeno', label: 'Pequeno', emoji: '🐭' },
+    { value: 'medio', label: 'Médio', emoji: '🐕' },
+    { value: 'grande', label: 'Grande', emoji: '🐘' },
   ];
+
+  // Initialize species from search context if a pet type is selected via SearchBar
+  useEffect(() => {
+    if (searchFilters.especie && !selectedEspecies.includes(searchFilters.especie)) {
+      setSelectedEspecies([searchFilters.especie]);
+      onFiltersChange({ especies: [searchFilters.especie], tamanhos: selectedTamanho });
+    }
+  }, [searchFilters.especie]);
 
   const toggleEspecie = (especie) => {
     const updated = selectedEspecies.includes(especie)
