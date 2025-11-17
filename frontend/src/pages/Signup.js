@@ -91,8 +91,9 @@ const SignUp = () => {
   };
 
   return (
+    <div data-aos="zoom-in">
     <div className="flex items-center justify-center py-12">
-      <div className="w-full max-w-2xl bg-blue-50 border-2 border-gray-300 rounded-2xl p-8 shadow-lg">
+      <div className="w-full max-w-2xl bg-blue-50 border-2 rounded-2xl p-8 shadow-lg">
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Criar Conta</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Info */}
@@ -152,6 +153,7 @@ const SignUp = () => {
           </Link>
         </p>
       </div>
+    </div>
     </div>
   );
 };

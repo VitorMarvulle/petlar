@@ -7,24 +7,104 @@ const HomePage = () => {
 
       <section className="mt-[30px] text-center">
         <h2 className="text-3xl font-bold text-gray-700 mb-10">Como funciona:</h2>
+
         <div className="flex flex-col md:flex-row justify-center items-center gap-8">
-          {/* Placeholder Card 1 */}
 
-          <div className="bg-[#addb8a] w-64 h-80 rounded-2xl shadow-lg border-2 border-gray-300"></div>
-          
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 transform md:rotate-0 rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {/* Card 1 */}
+          <div
+            data-aos="flip-left"
+            data-aos-easing="ease-out-cubic"
+            data-aos-duration="1600"
+            data-aos-delay="200"            
+            className="bg-[#addb8a] w-64 h-80 rounded-2xl shadow-lg border-2 border-gray-300 p-6 flex flex-col justify-between"
+          >
+            <div>
+              <h3 className="text-3xl mb-3 -mt-4">📍</h3>
+              <h3 className="text-xl font-bold text-gray-800 mb-3">Encontre o anfitrião ideal</h3>
+              <p className="text-gray-700 text-sm leading-tight">
+                Busque anfitriões próximos a você filtrando por espécie, tamanho,
+                preço e disponibilidade. Encontre quem combina com as necessidades
+                do seu pet.
+              </p>
+            </div>
+
+            <ul className="text-left text-gray-600 text-sm mt-3">
+              <li>✔ Resultados perto de você</li>
+              <li>✔ Filtre por espécie e preço</li>
+              <li>✔ Disponibilidade por data</li>
+            </ul>
+          </div>
+
+          {/* Arrow */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-12 w-12 text-gray-400 transform md:rotate-0 rotate-90"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
           </svg>
-          
-          {/* Placeholder Card 2 */}
-          <div className="bg-[#addb8a] w-64 h-80 rounded-2xl shadow-lg border-2 border-gray-300"></div>
-          
-           <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 transform md:rotate-0 rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+
+          {/* Card 2 */}
+          <div
+            data-aos="flip-left"
+            data-aos-easing="ease-out-cubic"
+            data-aos-duration="1800"
+            data-aos-delay="400"
+            className="bg-[#addb8a] w-64 h-80 rounded-2xl shadow-lg border-2 border-gray-300 p-6 flex flex-col justify-between"
+          >
+            <div>
+              <h3 className="text-3xl mb-3 -mt-4">👀</h3>
+              <h3 className="text-xl font-bold text-gray-800 mb-3">Avalie o perfil</h3>
+              <p className="text-gray-700 text-sm leading-tight">
+                Veja avaliações de outros tutores, fotos reais do ambiente,
+                comentários e histórico do anfitrião antes de decidir.
+              </p>
+            </div>
+
+            <ul className="text-left text-gray-600 text-sm mt-3">
+              <li>✔ Fotos do espaço</li>
+              <li>✔ Comentários detalhados</li>
+              <li>✔ Avaliações reais de tutores</li>
+            </ul>
+          </div>
+
+          {/* Arrow */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-12 w-12 text-gray-400 transform md:rotate-0 rotate-90"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
           </svg>
 
-          {/* Placeholder Card 3 */}
-          <div className="bg-[#addb8a] w-64 h-80 rounded-2xl shadow-lg border-2 border-gray-300"></div>
+          {/* Card 3 */}
+          <div
+            data-aos="flip-left"
+            data-aos-easing="ease-out-cubic"
+            data-aos-duration="2000"
+            data-aos-delay="600"            
+            className="bg-[#addb8a] w-64 h-80 rounded-2xl shadow-lg border-2 border-gray-300 p-6 flex flex-col justify-between"
+          >
+            <div>
+              <h3 className="text-3xl mb-3 -mt-4">🗓️</h3>
+              <h3 className="text-xl font-bold text-gray-800 mb-3">Reserve com segurança</h3>
+              <p className="text-gray-700 text-sm leading-tight">
+                Escolha as datas, confirme a disponibilidade e finalize sua reserva.
+                Tudo rápido, seguro e transparente.
+              </p>
+            </div>
+
+            <ul className="text-left text-gray-600 text-sm mt-3">
+              <li>✔ Confirmação rápida</li>
+              <li>✔ Processo seguro</li>
+              <li>✔ Combine detalhes com o anfitrião</li>
+            </ul>
+          </div>
+
         </div>
       </section>
     </div>

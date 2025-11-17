@@ -34,6 +34,7 @@ const Login = () => {
   };
 
   return (
+    <div data-aos="zoom-in">
     <div className="flex items-center justify-center py-12">
       <div className="w-full max-w-md bg-blue-50 border-2 border-gray-300 rounded-2xl p-8 shadow-lg">
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Login</h2>
@@ -62,6 +63,7 @@ const Login = () => {
           </Link>
         </p>
       </div>
+    </div>
     </div>
   );
 };

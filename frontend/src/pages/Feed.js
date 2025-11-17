@@ -106,18 +106,21 @@ const FeedPage = () => {
   return (
     <div className="py-8">
       <SearchBar />
-      <div className="flex justify-center mt-4 space-x-8 text-gray-600">
-        <button className="hover:text-red-500">Como funciona?</button>
-        <p className="text-gray-400">|</p>
-        {!isUserHost && (
-          <button
-            onClick={handleBecomeHost}
-            className="hover:text-red-500 font-semibold text-red-500"
-          >
-            Quero ser host
-          </button>
-        )}
-      </div>
+        <div className="flex justify-center mt-4 space-x-8 text-gray-600">
+          <button className="hover:text-red-500">Como funciona?</button>
+          {!isUserHost && (
+            <>
+              <p className="text-gray-400">|</p>
+              <button
+                onClick={handleBecomeHost}
+                className="hover:text-red-500 font-semibold text-red-500"
+              >
+                Quero ser host
+              </button>
+            </>
+          )}
+        </div>
+
 
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-3">
