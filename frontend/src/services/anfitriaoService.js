@@ -3,6 +3,21 @@
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 /**
+ * Map especie (pet type) to emoji
+ * @param {string} especie - Pet type
+ * @returns {string} - Emoji representation
+ */
+const especieToEmoji = (especie) => {
+  const emojiMap = {
+    'cachorro': '🐶',
+    'gato': '🐱',
+    'passaro': '🐦',
+    'silvestre': '🦎',
+  };
+  return emojiMap[especie] || '🐾';
+};
+
+/**
  * Transform Anfitriao database data to HostCard format
  * @param {Object} anfitriao - Raw anfitriao data from backend (with nested usuarios)
  * @returns {Object} - Transformed data for HostCard component
@@ -16,6 +31,11 @@ const transformAnfitriaoToHostCard = (anfitriao) => {
   const bairro = usuario?.bairro || '';
   const location = bairro ? `${cidade}, ${bairro}` : cidade;
 
+  // Convert especie array to emojis
+  const pets = anfitriao.especie && Array.isArray(anfitriao.especie)
+    ? anfitriao.especie.map(especieToEmoji)
+    : ['🐾'];
+
   return {
     id: anfitriao.id_anfitriao,
     id_anfitriao: anfitriao.id_anfitriao,
@@ -23,9 +43,10 @@ const transformAnfitriaoToHostCard = (anfitriao) => {
     description: anfitriao.descricao || 'Sem descrição',
     distance: '1.5km', // TODO: Calculate from user location and host location
     location: location,
-    price: anfitriao.preco || 60, // TODO: Get from anfitriao table if available
+    price: anfitriao.preco || 60,
     rating: anfitriao.rating || 5, // TODO: Calculate from reviews
-    pets: ['🐶', '🐱', '🐢'], // TODO: Get from pets table
+    pets: pets, // Convert especie to emojis
+    tamanho: anfitriao.tamanho || 'medio', // Size: pequeno, medio, grande
     imageUrl: usuario?.imagem_usuario || 'https://placehold.co/80x80/A7D2CB/5C5552?text=Host',
     capacidade_maxima: anfitriao.capacidade_maxima,
     status: anfitriao.status,

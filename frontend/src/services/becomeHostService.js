@@ -4,7 +4,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 /**
  * Create a new anfitriao (host) for the current user
- * @param {Object} data - { id_anfitriao, descricao, capacidade_maxima, status }
+ * @param {Object} data - { id_anfitriao, descricao, capacidade_maxima, especie, tamanho, preco, status }
  * @returns {Promise<Object>} - Created anfitriao data
  */
 export const createAnfitriao = async (data) => {
@@ -18,6 +18,9 @@ export const createAnfitriao = async (data) => {
         id_anfitriao: data.id_anfitriao,
         descricao: data.descricao,
         capacidade_maxima: data.capacidade_maxima,
+        especie: data.especie || [], // Array of pet types
+        tamanho: data.tamanho, // Size of space
+        preco: data.preco, // Daily price
         status: 'ativo', // New hosts start as active
       }),
     });

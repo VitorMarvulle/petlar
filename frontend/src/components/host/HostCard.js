@@ -25,10 +25,21 @@ const HostCard = ({ host }) => {
             <div>
               <h3 className="text-xl font-bold text-gray-800">{host.name}</h3>
               <p className="text-sm text-gray-500">{host.distance} - {host.location}</p>
-              <div className="mt-1 flex items-center space-x-2">
-                {host.pets.map((pet, index) => (
-                  <span key={index} className="text-xl">{pet}</span>
-                ))}
+              <div className="mt-2 flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-600 font-medium">Espécies:</span>
+                  {host.pets.map((pet, index) => (
+                    <span key={index} className="text-xl">{pet}</span>
+                  ))}
+                </div>
+                {host.tamanho && (
+                  <div className="flex items-center space-x-1">
+                    <span className="text-xs text-gray-600 font-medium">Tamanho:</span>
+                    <span className="text-sm text-gray-700 bg-blue-100 px-2 py-1 rounded">
+                      {host.tamanho === 'pequeno' ? 'Pequeno' : host.tamanho === 'medio' ? 'Médio' : 'Grande'}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="text-lg flex items-center">{renderStars(host.rating)}</div>

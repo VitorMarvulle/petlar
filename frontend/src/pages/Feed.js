@@ -8,10 +8,12 @@ import { getCurrentUser } from '../services/authService';
 
 const FeedPage = () => {
   const [hosts, setHosts] = useState([]);
+  const [filteredHosts, setFilteredHosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
   const [isUserHost, setIsUserHost] = useState(false);
+  const [activeFilters, setActiveFilters] = useState({ especies: [], tamanhos: [] });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,6 +27,11 @@ const FeedPage = () => {
     }
   }, []);
 
+  // Apply filters whenever hosts or filters change
+  useEffect(() => {
+    applyFilters();
+  }, [hosts, activeFilters]);
+
   const fetchHosts = async () => {
     setLoading(true);
     setError('');
@@ -37,6 +44,41 @@ const FeedPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const applyFilters = () => {
+    let filtered = [...hosts];
+
+    // Filter by especie (pet type)
+    if (activeFilters.especies.length > 0) {
+      filtered = filtered.filter((host) => {
+        // Check if host has any of the selected species
+        return host.pets.some((pet) => {
+          // Map emoji back to especie value
+          const especieMap = {
+            '🐶': 'cachorro',
+            '🐱': 'gato',
+            '🐦': 'passaro',
+            '🦎': 'silvestre',
+          };
+          const especie = especieMap[pet];
+          return activeFilters.especies.includes(especie);
+        });
+      });
+    }
+
+    // Filter by tamanho (space size)
+    if (activeFilters.tamanhos.length > 0) {
+      filtered = filtered.filter((host) =>
+        activeFilters.tamanhos.includes(host.tamanho)
+      );
+    }
+
+    setFilteredHosts(filtered);
+  };
+
+  const handleFiltersChange = (filters) => {
+    setActiveFilters(filters);
   };
 
   const handleBecomeHost = () => {
@@ -65,7 +107,7 @@ const FeedPage = () => {
 
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-3">
-          <FilterSidebar />
+          <FilterSidebar onFiltersChange={handleFiltersChange} />
         </div>
         <div className="lg:col-span-6 space-y-6">
           {loading && (
@@ -81,12 +123,16 @@ const FeedPage = () => {
               </button>
             </div>
           )}
-          {!loading && hosts.length === 0 && !error && (
+          {!loading && filteredHosts.length === 0 && !error && (
             <div className="flex items-center justify-center py-12">
-              <p className="text-gray-600 text-lg">Nenhum anfitrião disponível no momento.</p>
+              <p className="text-gray-600 text-lg">
+                {hosts.length === 0 
+                  ? 'Nenhum anfitrião disponível no momento.'
+                  : 'Nenhum anfitrião corresponde aos filtros selecionados.'}
+              </p>
             </div>
           )}
-          {hosts.map((host) => (
+          {filteredHosts.map((host) => (
             <HostCard key={host.id_anfitriao || host.id} host={host} />
           ))}
         </div>

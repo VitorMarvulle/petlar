@@ -8,8 +8,9 @@ import { getCurrentUser } from '../services/authService';
 const BecomeHost = () => {
   const [descricao, setDescricao] = useState('');
   const [capacidade, setCapacidade] = useState('');
-  const [tiposPet, setTiposPet] = useState('');
-  const [preco, setPreco] = useState('');
+  const [especie, setEspecie] = useState([]); // Array of selected pet types
+  const [tamanho, setTamanho] = useState(''); // Size of space
+  const [preco, setPreco] = useState(''); // Daily price
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -20,6 +21,12 @@ const BecomeHost = () => {
     { value: 'gato', label: 'Gato 🐱' },
     { value: 'passaro', label: 'Pássaro 🐦' },
     { value: 'silvestre', label: 'Silvestre 🦎' },
+  ];
+
+  const tamanhoOptions = [
+    { value: 'pequeno', label: 'Pequeno' },
+    { value: 'medio', label: 'Médio' },
+    { value: 'grande', label: 'Grande' },
   ];
 
   useEffect(() => {
@@ -45,7 +52,7 @@ const BecomeHost = () => {
     setError('');
 
     // Validation
-    if (!descricao || !capacidade || !tiposPet || !preco) {
+    if (!descricao || !capacidade || especie.length === 0 || !tamanho || !preco) {
       setError('Todos os campos são obrigatórios');
       return;
     }
@@ -67,7 +74,9 @@ const BecomeHost = () => {
         id_anfitriao: currentUser.id_usuario,
         descricao: descricao,
         capacidade_maxima: parseInt(capacidade),
-        tipos_pet: tiposPet, // Store pet types in description or separate field
+        especie: especie, // Array of pet types
+        tamanho: tamanho, // Size of space
+        preco: parseFloat(preco), // Daily price
       });
 
       alert('Parabéns! Você agora é um host! 🎉');
@@ -77,6 +86,15 @@ const BecomeHost = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Toggle pet type selection
+  const togglePetType = (petType) => {
+    setEspecie((prev) =>
+      prev.includes(petType)
+        ? prev.filter((p) => p !== petType)
+        : [...prev, petType]
+    );
   };
 
   if (!currentUser) {
@@ -119,36 +137,65 @@ const BecomeHost = () => {
             />
 
             <div>
-              <label htmlFor="tiposPet" className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Qual tipo de pet você cuida?
               </label>
+              <div className="grid grid-cols-2 gap-2">
+                {petOptions.map((option) => (
+                  <label
+                    key={option.value}
+                    className={`flex items-center p-2 border rounded-md cursor-pointer transition-colors ${
+                      especie.includes(option.value)
+                        ? 'bg-blue-100 border-blue-500'
+                        : 'bg-white border-gray-300 hover:border-blue-300'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      value={option.value}
+                      checked={especie.includes(option.value)}
+                      onChange={() => togglePetType(option.value)}
+                      className="mr-2"
+                    />
+                    {option.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Size and Price */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="tamanho" className="block text-sm font-medium text-gray-700">
+                Tamanho do seu espaço:
+              </label>
               <select
-                id="tiposPet"
-                value={tiposPet}
-                onChange={(e) => setTiposPet(e.target.value)}
+                id="tamanho"
+                value={tamanho}
+                onChange={(e) => setTamanho(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Selecione...</option>
-                {petOptions.map((option) => (
+                {tamanhoOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
               </select>
             </div>
-          </div>
 
-          {/* Daily Price */}
-          <Input
-            label="Preço da diária (R$):"
-            type="number"
-            id="preco"
-            value={preco}
-            onChange={(e) => setPreco(e.target.value)}
-            min="1"
-            step="0.01"
-            placeholder="Ex: 60.00"
-          />
+            <Input
+              label="Preço da diária (R$):"
+              type="number"
+              id="preco"
+              value={preco}
+              onChange={(e) => setPreco(e.target.value)}
+              min="1"
+              step="0.01"
+              placeholder="Ex: 60.00"
+            />
+          </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <Button type="submit" disabled={loading}>
