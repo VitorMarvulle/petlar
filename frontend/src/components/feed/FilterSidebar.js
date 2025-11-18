@@ -14,9 +14,9 @@ const FilterSidebar = ({ onFiltersChange }) => {
   ];
 
   const tamanhosPet = [
-    { value: 'pequeno', label: 'Pequeno', emoji: '🐭' },
-    { value: 'medio', label: 'Médio', emoji: '🐕' },
-    { value: 'grande', label: 'Grande', emoji: '🐘' },
+    { value: 'pequeno', label: 'Pequeno', emoji: '' },
+    { value: 'medio', label: 'Médio', emoji: '' },
+    { value: 'grande', label: 'Grande', emoji: '' },
   ];
 
   // Initialize species from search context if a pet type is selected via SearchBar

@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { SearchContext } from '../../context/SearchContext';
 
 const petOptions = [
-  { name: 'cachorro', value: 'cachorro', icon: '🐶' },
-  { name: 'gato', value: 'gato', icon: '🐱' },
-  { name: 'pássaro', value: 'passaro', icon: '🐦' },
-  { name: 'silvestre', value: 'silvestre', icon: '🦎' },
+  { name: 'Cachorro', value: 'cachorro', icon: '🐶' },
+  { name: 'Gato', value: 'gato', icon: '🐱' },
+  { name: 'Pássaro', value: 'passaro', icon: '🐦' },
+  { name: 'Silvestre', value: 'silvestre', icon: '🦎' },
 ];
 
 const SearchBar = () => {
@@ -96,7 +96,7 @@ const SearchBar = () => {
         <input
           type="text"
           id="destination"
-          placeholder="Buscar destinos"
+          placeholder="Buscar cidade"
           value={destinationInput}
           onChange={(e) => handleDestinationChange(e.target.value)}
           className="w-full border-none p-0 focus:ring-0"
@@ -159,13 +159,13 @@ const SearchBar = () => {
       {/* Pet Type Selection */}
       <div className="relative border-l border-gray-200 pl-4 md:col-span-2">
         <label htmlFor="pets" className="block text-sm font-medium text-gray-500">
-          Quem
+          Seu Pet
         </label>
         <button
           onClick={() => setShowPetOptions(!showPetOptions)}
           className="w-full text-left p-0 hover:text-red-500 transition-colors"
         >
-          {selectedPet ? `${selectedPet.icon} ${selectedPet.name}` : 'Hóspedes?'}
+          {selectedPet ? `${selectedPet.icon} ${selectedPet.name}` : 'Espécies'}
         </button>
         {showPetOptions && (
           <div className="absolute top-full left-0 mt-2 w-full bg-white rounded-lg shadow-xl border z-10">
@@ -179,7 +179,7 @@ const SearchBar = () => {
                 <span className="capitalize">{pet.name}</span>
               </div>
             ))}
-            <div
+            {/* <div
               onClick={() => {
                 updateSearchFilters({ especie: '' });
                 setShowPetOptions(false);
@@ -188,7 +188,7 @@ const SearchBar = () => {
             >
               <span className="text-2xl mr-3">❌</span>
               <span className="capitalize text-gray-500">Limpar seleção</span>
-            </div>
+            </div> */}
           </div>
         )}
       </div>
