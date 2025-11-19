@@ -1,406 +1,342 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, TextInput, Platform, Alert } from 'react-native';
+import { 
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, 
+  Image, TextInput, Platform, Modal 
+} from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types'; 
 import DateTimePicker from '@react-native-community/datetimepicker';
 
+// --- ALERTA CUSTOMIZADO ---
+const CustomAlert = ({
+  visible,
+  title,
+  message,
+  onClose,
+}: {
+  visible: boolean;
+  title: string;
+  message: string;
+  onClose: () => void;
+}) => (
+  <Modal transparent visible={visible} animationType="fade">
+    <View style={styles.modalOverlay}>
+      <View style={styles.modalContainer}>
+        <Text style={styles.modalTitle}>{title}</Text>
+        <Text style={styles.modalMessage}>{message}</Text>
 
-const ICON_AVATAR = require('../../assets/icons/user.png'); // Icone de avatar para PetCard (se precisar)
-const ICON_CHECK = require('../../assets/icons/check.png'); // Icone de check para o pet selecionado (assumindo que você tem um)
+        <TouchableOpacity style={styles.modalButton} onPress={onClose}>
+          <Text style={styles.modalButtonText}>OK</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+);
 
-// --- MOCK DE DADOS DO PET DO TUTOR (FRONT-END) ---
-// Simula os pets cadastrados pelo tutor no banco de dados
+const ICON_AVATAR = require('../../assets/icons/user.png');
+const ICON_CHECK = require('../../assets/icons/check.png');
+
 const mockUserPets = [
-    {
-        id: 'p1',
-        imageUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=300&h=200&fit=crop',
-        name: "Nina",
-        species: "Gato",
-        age: "8 anos",
-        weight: "3kg",
-        comportamento: 'Calma',
-        specifications: "Gosta de sachê pela manhã, ODEIA colo, arranha.",
-    },
-    {
-        id: 'p2',
-        imageUrl: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=300&h=200&fit=crop',
-        name: "Bolinho Fofo",
-        species: "Gato",
-        age: "3 meses",
-        weight: "0.5kg",
-        comportamento: 'Medrosa',
-        specifications: "Gosta de sachê pela manhã, é bastante falante.",
-    },
-    {
-        id: 'p3',
-        imageUrl: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=300&h=200&fit=crop',
-        name: "Thor",
-        species: "Cachorro",
-        age: "5 anos",
-        weight: "20kg",
-        comportamento: 'Brincalhão',
-        specifications: "Precisa de 3 passeios diários, come ração especial.",
-    },
+  { id: 'p1', imageUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=300&h=200&fit=crop', name: "Nina", species: "Gato", age: "8 anos", weight: "3kg", comportamento: 'Calma', specifications: "Gosta de sachê pela manhã, ODEIA colo, arranha." },
+  { id: 'p2', imageUrl: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=300&h=200&fit=crop', name: "Bolinho Fofo", species: "Gato", age: "3 meses", weight: "0.5kg", comportamento: 'Medrosa', specifications: "Gosta de sachê pela manhã, é bastante falante." },
+  { id: 'p3', imageUrl: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=300&h=200&fit=crop', name: "Thor", species: "Cachorro", age: "5 anos", weight: "20kg", comportamento: 'Brincalhão', specifications: "Precisa de 3 passeios diários, come ração especial." },
 ];
 
-// --- CONSTANTES DE VALOR (MOCK) ---
-const PRICE_PER_DAY_BASE = 65.00; // Puxado do Card_Host: R$ 65,00
-
-// -------------------------------------------------------------------
-// ---------------------- COMPONENTES REUTILIZÁVEIS --------------------
-// -------------------------------------------------------------------
+const PRICE_PER_DAY_BASE = 65.00;
 
 interface FiltroGroupProps {
-    title: string;
-    children: React.ReactNode;
-    styleProp?: any;
+  title: string;
+  children: React.ReactNode;
+  styleProp?: any;
 }
 
 const FiltroGroup = ({ title, children, styleProp }: FiltroGroupProps) => (
-    <View style={[styles.groupContainer, styleProp]}>
-        <Text style={styles.groupTitle}>{title}</Text>
-        {children}
-    </View>
+  <View style={[styles.groupContainer, styleProp]}>
+    <Text style={styles.groupTitle}>{title}</Text>
+    {children}
+  </View>
 );
 
-// Componente PetCard simplificado para a seleção
 const PetSelectionCard = ({
-    pet,
-    isSelected,
-    onToggleSelect,
+  pet,
+  isSelected,
+  onToggleSelect,
 }: {
-    pet: typeof mockUserPets[0];
-    isSelected: boolean;
-    onToggleSelect: () => void;
+  pet: typeof mockUserPets[0];
+  isSelected: boolean;
+  onToggleSelect: () => void;
 }) => (
-    <TouchableOpacity style={styles.petSelectionCard} onPress={onToggleSelect} activeOpacity={0.8}>
-        <View style={styles.petImageContainer}>
-            <Image 
-                source={{ uri: pet.imageUrl }} 
-                style={styles.petImage} 
-                resizeMode="cover" 
-            />
-            {isSelected && (
-                <View style={styles.checkmarkContainer}>
-                    <Image source={ICON_CHECK} style={styles.checkmarkIcon} />
-                </View>
-            )}
+  <TouchableOpacity style={styles.petSelectionCard} onPress={onToggleSelect} activeOpacity={0.8}>
+    <View style={styles.petImageContainer}>
+      <Image source={{ uri: pet.imageUrl }} style={styles.petImage} resizeMode="cover" />
+      {isSelected && (
+        <View style={styles.checkmarkContainer}>
+          <Image source={ICON_CHECK} style={styles.checkmarkIcon} />
         </View>
-        <View style={styles.petDetails}>
-            <Text style={styles.petName}>{pet.name}</Text>
-            <Text style={styles.petDetailText}><Text style={styles.boldText}>Espécie:</Text> {pet.species}</Text>
-            <Text style={styles.specificationsText} numberOfLines={2}>{pet.specifications}</Text>
-        </View>
-    </TouchableOpacity>
+      )}
+    </View>
+    <View style={styles.petDetails}>
+      <Text style={styles.petName}>{pet.name}</Text>
+      <Text style={styles.petDetailText}><Text style={styles.boldText}>Espécie:</Text> {pet.species}</Text>
+      <Text style={styles.specificationsText} numberOfLines={2}>{pet.specifications}</Text>
+    </View>
+  </TouchableOpacity>
 );
 
-// Novo Dropdown de Seleção de Pet
 const PetSelectionDropdown = ({ 
-    selectedPets, 
-    setSelectedPets, 
-    maxPetsAllowed 
+  selectedPets, 
+  setSelectedPets, 
+  maxPetsAllowed,
+  showAlert
 }: { 
-    selectedPets: string[]; 
-    setSelectedPets: React.Dispatch<React.SetStateAction<string[]>>; 
-    maxPetsAllowed: number;
+  selectedPets: string[]; 
+  setSelectedPets: React.Dispatch<React.SetStateAction<string[]>>; 
+  maxPetsAllowed: number;
+  showAlert: (title: string, message: string) => void;
 }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    
-    const handleToggleSelect = (petId: string) => {
-        setSelectedPets(prevSelectedPets => {
-            if (prevSelectedPets.includes(petId)) {
-                return prevSelectedPets.filter(id => id !== petId);
-            } else {
-                // Verifica o limite do host
-                if (prevSelectedPets.length >= maxPetsAllowed) {
-                    Alert.alert(
-                        "Limite Atingido",
-                        `Este Host só permite um máximo de ${maxPetsAllowed} Pet(s) por reserva.`,
-                        [{ text: "OK" }]
-                    );
-                    return prevSelectedPets; 
-                }
-                return [...prevSelectedPets, petId];
-            }
-        });
-    };
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const handleToggleSelect = (petId: string) => {
+    setSelectedPets(prev => {
+      if (prev.includes(petId)) {
+        return prev.filter(id => id !== petId);
+      } else {
+        if (prev.length >= maxPetsAllowed) {
+          showAlert('Limite Atingido', `Este Host só permite um máximo de ${maxPetsAllowed} Pet(s) por reserva.`);
+          return prev;
+        }
+        return [...prev, petId];
+      }
+    });
+  };
 
-    const displayLabel = selectedPets.length > 0 
-        ? `${selectedPets.length} Pet(s) Selecionado(s)` 
-        : "Selecione seu(s) pet(s) ...";
+  const displayLabel = selectedPets.length > 0 
+    ? `${selectedPets.length} Pet(s) Selecionado(s)` 
+    : "Selecione seu(s) pet(s) ...";
 
-    return (
-        <View>
-            {/* Botão para abrir/fechar o Dropdown */}
-            <TouchableOpacity 
-                style={[styles.dropdownButton, isOpen && styles.dropdownButtonOpen]}
-                onPress={() => setIsOpen(!isOpen)}
-                activeOpacity={0.7}
-            >
-                <Text style={styles.dropdownLabel}>{displayLabel}</Text>
-                <Text style={styles.dropdownLimit}>Máx: {maxPetsAllowed}</Text>
-            </TouchableOpacity>
+  return (
+    <View>
+      <TouchableOpacity 
+        style={[styles.dropdownButton, isOpen && styles.dropdownButtonOpen]}
+        onPress={() => setIsOpen(!isOpen)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.dropdownLabel}>{displayLabel}</Text>
+        <Text style={styles.dropdownLimit}>Máx: {maxPetsAllowed}</Text>
+      </TouchableOpacity>
 
-            {/* Conteúdo do Dropdown (Pets cadastrados) */}
-            {isOpen && (
-                <View style={styles.dropdownContent}>
-                    {mockUserPets.map((pet) => (
-                        <PetSelectionCard
-                            key={pet.id}
-                            pet={pet}
-                            isSelected={selectedPets.includes(pet.id)}
-                            onToggleSelect={() => handleToggleSelect(pet.id)}
-                        />
-                    ))}
-                    {mockUserPets.length === 0 && (
-                        <Text style={styles.noPetsText}>Você ainda não possui pets cadastrados.</Text>
-                    )}
-                </View>
-            )}
+      {isOpen && (
+        <View style={styles.dropdownContent}>
+          {mockUserPets.map((pet) => (
+            <PetSelectionCard
+              key={pet.id}
+              pet={pet}
+              isSelected={selectedPets.includes(pet.id)}
+              onToggleSelect={() => handleToggleSelect(pet.id)}
+            />
+          ))}
+          {mockUserPets.length === 0 && (
+            <Text style={styles.noPetsText}>Você ainda não possui pets cadastrados.</Text>
+          )}
         </View>
-    );
+      )}
+    </View>
+  );
 };
 
-// Novo Card de Resumo de Preço
 const PriceSummaryCard = ({ daysCount, petsCount, pricePerDayBase }: { 
-    daysCount: number; 
-    petsCount: number; 
-    pricePerDayBase: number; 
+  daysCount: number; 
+  petsCount: number; 
+  pricePerDayBase: number; 
 }) => {
-    // Cálculo do valor
-    const dailyPricePerQuantity = petsCount * pricePerDayBase;
-    const totalValue = daysCount * dailyPricePerQuantity;
-    
-    // Formatação
-    const formatCurrency = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`;
+  const dailyPricePerQuantity = petsCount * pricePerDayBase;
+  const totalValue = daysCount * dailyPricePerQuantity;
+  const formatCurrency = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`;
 
-    return (
-        <View style={styles.priceSummaryCard}>
-            <Text style={styles.priceSummaryTitle}>Resumo da Reserva</Text>
-            
-            <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Valor Base (1 Pet) por Diária</Text>
-                <Text style={styles.priceValue}>{formatCurrency(pricePerDayBase)}</Text>
-            </View>
-
-            <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Quantidade de Pets</Text>
-                <Text style={styles.priceValue}>{petsCount}</Text>
-            </View>
-            
-            <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Diárias Selecionadas</Text>
-                <Text style={styles.priceValue}>{daysCount} dia(s)</Text>
-            </View>
-            
-            <View style={styles.priceDivider} />
-
-            <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Valor por Diária ({petsCount} Pets)</Text>
-                <Text style={styles.priceValue}>{formatCurrency(dailyPricePerQuantity)}</Text>
-            </View>
-
-            <View style={[styles.priceRow, styles.priceRowTotal]}>
-                <Text style={styles.priceLabelTotal}>Total da Locação</Text>
-                <Text style={styles.priceValueTotal}>{formatCurrency(totalValue)}</Text>
-            </View>
-        </View>
-    );
+  return (
+    <View style={styles.priceSummaryCard}>
+      <Text style={styles.priceSummaryTitle}>Resumo da Reserva</Text>
+      <View style={styles.priceRow}>
+        <Text style={styles.priceLabel}>Valor Base (1 Pet) por Diária</Text>
+        <Text style={styles.priceValue}>{formatCurrency(pricePerDayBase)}</Text>
+      </View>
+      <View style={styles.priceRow}>
+        <Text style={styles.priceLabel}>Quantidade de Pets</Text>
+        <Text style={styles.priceValue}>{petsCount}</Text>
+      </View>
+      <View style={styles.priceRow}>
+        <Text style={styles.priceLabel}>Diárias Selecionadas</Text>
+        <Text style={styles.priceValue}>{daysCount} dia(s)</Text>
+      </View>
+      <View style={styles.priceDivider} />
+      <View style={styles.priceRow}>
+        <Text style={styles.priceLabel}>Valor por Diária ({petsCount} Pets)</Text>
+        <Text style={styles.priceValue}>{formatCurrency(dailyPricePerQuantity)}</Text>
+      </View>
+      <View style={[styles.priceRow, styles.priceRowTotal]}>
+        <Text style={styles.priceLabelTotal}>Total da Locação</Text>
+        <Text style={styles.priceValueTotal}>{formatCurrency(totalValue)}</Text>
+      </View>
+    </View>
+  );
 };
 
-
-// -------------------------------------------------------------------
-// ------------------------- TELA PRINCIPAL --------------------------
-// -------------------------------------------------------------------
-
+// --------------------------------------------------------------
+// --------------------- TELA PRINCIPAL --------------------------
+// --------------------------------------------------------------
 type ReservaScreenProps = NativeStackScreenProps<RootStackParamList, 'Reserva'>;
-// Renomeei a função exportada para 'Reserva'
+
 export default function Reserva({ navigation }: ReservaScreenProps) {
-    // --- ESTADOS ATUAIS (LIMPOS) ---
-    // Removido selectedTipo, selectedRegion, searchText, availableBairros, selectedSize, selectedPrice
-    
-    // Novo estado para a seleção de Pets
-    const [selectedPets, setSelectedPets] = useState<string[]>([]);
+  const [selectedPets, setSelectedPets] = useState<string[]>([]);
+  const [dataEntrada, setDataEntrada] = useState<Date | null>(null);
+  const [dataSaida, setDataSaida] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const [dateField, setDateField] = useState<'entrada' | 'saida' | null>(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
-    // Estados de Data
-    const [dataEntrada, setDataEntrada] = useState<Date | null>(null);
-    const [dataSaida, setDataSaida] = useState<Date | null>(null);
-    const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
-    const [dateField, setDateField] = useState<'entrada' | 'saida' | null>(null);
-    const [currentDate, setCurrentDate] = useState(new Date());
+  const MAX_PETS_ALLOWED = 3;
 
-    // --- MOCK DE DADOS DO HOST (Puxado do Card_Host) ---
-    const MAX_PETS_ALLOWED = 3; // Puxado do Card_Host (Máx de Pets por reserva: 3)
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertData, setAlertData] = useState({ title: '', message: '' });
+  const showAlert = (title: string, message: string) => {
+    setAlertData({ title, message });
+    setAlertVisible(true);
+  };
 
-    // --- LÓGICA DE DATAS ---
-    const calculateDays = (entrada: Date | null, saida: Date | null): number => {
-        if (!entrada || !saida) return 0;
-        // Calcula a diferença em milissegundos
-        const diffTime = Math.abs(saida.getTime() - entrada.getTime());
-        // Converte milissegundos para dias e arredonda para o inteiro mais próximo
-        // Adiciona 1 para incluir o dia de saída se for uma estadia noturna,
-        // mas em locação de diárias, é comum ser a diferença de dias.
-        // Vamos usar a diferença de dias.
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        // Se as datas forem iguais, 1 dia (se for reserva de dia inteiro, mas aqui é diária)
-        // Se for 24/10 a 25/10 é 1 diária. Se for 24/10 a 27/10 é 3 diárias.
-        return diffDays > 0 ? diffDays : 0; 
-    };
+  const calculateDays = (entrada: Date | null, saida: Date | null): number => {
+    if (!entrada || !saida) return 0;
+    const diffTime = Math.abs(saida.getTime() - entrada.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  };
 
-    const daysCount = useMemo(() => calculateDays(dataEntrada, dataSaida), [dataEntrada, dataSaida]);
-    const petsCount = selectedPets.length;
+  const daysCount = useMemo(() => calculateDays(dataEntrada, dataSaida), [dataEntrada, dataSaida]);
+  const petsCount = selectedPets.length;
 
-    const handleDateChange = (event: any, selectedDate?: Date) => {
-        setShowDatePicker(false);
-        if (event.type === 'set' || Platform.OS === 'ios') {
-            const dateToSet = selectedDate || currentDate; 
-            
-            if (dateField === 'entrada') {
-                setDataEntrada(dateToSet);
-            } else if (dateField === 'saida') {
-                setDataSaida(dateToSet);
-            }
-            setCurrentDate(dateToSet);
-        }
-        setDateField(null);
-    };
+  const handleApplyFilters = () => {
+    if (petsCount === 0) {
+      showAlert("Erro", "Selecione pelo menos um pet para a reserva.");
+      return;
+    }
+    if (daysCount === 0) {
+      showAlert("Erro", "Selecione as datas de entrada e saída válidas.");
+      return;
+    }
+    showAlert("Reserva Solicitada", `Total: R$ ${(daysCount * petsCount * PRICE_PER_DAY_BASE).toFixed(2).replace('.', ',')}`);
+  };
 
-    const handleOpenDatePicker = (field: 'entrada' | 'saida', initialDate: Date | null) => {
-        setDateField(field);
-        setCurrentDate(initialDate || new Date()); 
-        setShowDatePicker(true);
-    };
-    
-    const formatDate = (date: Date | null) => {
-        if (!date) return 'Escolha uma opção...';
-        return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    };
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (event.type === 'set' || Platform.OS === 'ios') {
+      const dateToSet = selectedDate || currentDate;
+      if (dateField === 'entrada') setDataEntrada(dateToSet);
+      else if (dateField === 'saida') setDataSaida(dateToSet);
+      setCurrentDate(dateToSet);
+    }
+    setDateField(null);
+  };
 
-    // --- LÓGICA DE APLICAÇÃO ---
-    const handleApplyFilters = () => {
-        // Validação básica do front-end
-        if (petsCount === 0) {
-            Alert.alert("Erro", "Selecione pelo menos um pet para a reserva.");
-            return;
-        }
-        if (daysCount === 0) {
-            Alert.alert("Erro", "Selecione as datas de entrada e saída válidas.");
-            return;
-        }
+  const handleOpenDatePicker = (field: 'entrada' | 'saida', initialDate: Date | null) => {
+    setDateField(field);
+    setCurrentDate(initialDate || new Date());
+    setShowDatePicker(true);
+  };
 
-        console.log('Dados da Reserva para o Backend:', { 
-            petsSelecionados: selectedPets,
-            dataEntrada: formatDate(dataEntrada), 
-            dataSaida: formatDate(dataSaida), 
-            quantidadeDiarias: daysCount,
-            totalCalculado: daysCount * petsCount * PRICE_PER_DAY_BASE,
-        });
+  const formatDate = (date: Date | null) =>
+    date ? date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Escolha uma opção...';
 
-        // Simula a navegação após a confirmação
-        // navigation.navigate('ConfirmacaoReserva'); // Assumindo uma tela de confirmação real
-        Alert.alert("Reserva Solicitada", `Total: R$ ${(daysCount * petsCount * PRICE_PER_DAY_BASE).toFixed(2).replace('.', ',')}`, [{ text: "OK" }]);
-        // navigation.navigate('Home'); 
-    };
+  const CornerIconClickable = () => (
+    <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.cornerImageContainer}>
+      <Image source={require('../../assets/icons/LogoPATA.png')} style={styles.cornerImage} resizeMode="contain" />
+    </TouchableOpacity>
+  );
 
-    // --- COMPONENTE DE ÍCONE DO CANTO ---
-    const CornerIconClickable = () => (
-        <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.cornerImageContainer}>
+  return (
+    <View style={styles.container}>
+      {showDatePicker && (
+        <DateTimePicker
+          testID="dateTimePicker"
+          value={currentDate}
+          mode={'date'}
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleDateChange}
+          minimumDate={new Date()}
+        />
+      )}
+
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <View style={styles.innerContainer}>
+          <CornerIconClickable />
+          <Text style={styles.mainTitle}>Fazer Reserva</Text>
+
+          <FiltroGroup title={`Selecione seu pet (Máx: ${MAX_PETS_ALLOWED})`}>
+            <PetSelectionDropdown
+              selectedPets={selectedPets}
+              setSelectedPets={setSelectedPets}
+              maxPetsAllowed={MAX_PETS_ALLOWED}
+              showAlert={showAlert}
+            />
+          </FiltroGroup>
+
+          <View style={styles.groupContainer}>
+            <Text style={styles.groupTitle}>Datas da Hospedagem:</Text>
+            <View style={styles.datesRowContainer}>
+              <View style={styles.datePickerWrapper}>
+                <Text style={styles.dateLabel}>Entrada</Text>
+                <TouchableOpacity
+                  onPress={() => handleOpenDatePicker('entrada', dataEntrada)}
+                  style={[styles.dateOptionButton, !!dataEntrada && styles.dateOptionButtonSelected]}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.optionText, !!dataEntrada && styles.optionTextSelected]}>
+                    {formatDate(dataEntrada)}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.datePickerWrapper}>
+                <Text style={styles.dateLabel}>Saída</Text>
+                <TouchableOpacity
+                  onPress={() => handleOpenDatePicker('saida', dataSaida)}
+                  style={[styles.dateOptionButton, !!dataSaida && styles.dateOptionButtonSelected]}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.optionText, !!dataSaida && styles.optionTextSelected]}>
+                    {formatDate(dataSaida)}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {daysCount > 0 && petsCount > 0 && (
+            <PriceSummaryCard
+              daysCount={daysCount}
+              petsCount={petsCount}
+              pricePerDayBase={PRICE_PER_DAY_BASE}
+            />
+          )}
+
+          <TouchableOpacity style={styles.applyButton} onPress={handleApplyFilters}>
+            <Text style={styles.applyButtonText}>Reservar</Text>
+          </TouchableOpacity>
+
           <Image
-            source={require('../../assets/icons/LogoPATA.png')} 
-            style={styles.cornerImage}
+            source={require('../../assets/icons/Pata.png')}
+            style={styles.decoracaoImage}
             resizeMode="contain"
           />
-        </TouchableOpacity>
-    );
 
-    // --- RENDERIZAÇÃO ---
-    return (
-        <View style={styles.container}>
-
-            {showDatePicker && (
-                <DateTimePicker
-                    testID="dateTimePicker"
-                    value={currentDate}
-                    mode={'date'} 
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'} 
-                    onChange={handleDateChange}
-                    minimumDate={new Date()} 
-                />
-            )}
-
-            <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-                <View style={styles.innerContainer}>
-                    <CornerIconClickable />
-                    <Text style={styles.mainTitle}>Fazer Reserva</Text>
-                    
-                    {/* NOVO - SELEÇÃO DE PETS */}
-                    <FiltroGroup title={`Selecione seu pet (Máx: ${MAX_PETS_ALLOWED})`}>
-                        <PetSelectionDropdown
-                            selectedPets={selectedPets}
-                            setSelectedPets={setSelectedPets}
-                            maxPetsAllowed={MAX_PETS_ALLOWED}
-                        />
-                    </FiltroGroup>
-
-                    {/* DATAS (Mantido e Limpo) */}
-                    <View style={styles.groupContainer}>
-                        <Text style={styles.groupTitle}>Datas da Hospedagem:</Text>
-                        <View style={styles.datesRowContainer}> 
-                                
-                            {/* DATA DE ENTRADA */}
-                            <View style={styles.datePickerWrapper}>
-                                <Text style={styles.dateLabel}>Entrada</Text>
-                                <TouchableOpacity
-                                    onPress={() => handleOpenDatePicker('entrada', dataEntrada)}
-                                    style={[styles.dateOptionButton, !!dataEntrada && styles.dateOptionButtonSelected]}
-                                    activeOpacity={0.7}
-                                >
-                                    <Text style={[styles.optionText, !!dataEntrada && styles.optionTextSelected]}>
-                                        {formatDate(dataEntrada)}
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            {/* DATA DE SAÍDA */}
-                            <View style={styles.datePickerWrapper}>
-                                <Text style={styles.dateLabel}>Saída</Text>
-                                <TouchableOpacity
-                                    onPress={() => handleOpenDatePicker('saida', dataSaida)}
-                                    style={[styles.dateOptionButton, !!dataSaida && styles.dateOptionButtonSelected]}
-                                    activeOpacity={0.7}
-                                >
-                                    <Text style={[styles.optionText, !!dataSaida && styles.optionTextSelected]}>
-                                        {formatDate(dataSaida)}
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </View>
-
-                    {/* NOVO - RESUMO DE VALORES */}
-                    {daysCount > 0 && petsCount > 0 && (
-                        <PriceSummaryCard 
-                            daysCount={daysCount}
-                            petsCount={petsCount}
-                            pricePerDayBase={PRICE_PER_DAY_BASE}
-                        />
-                    )}
-                    
-                    {/* BOTÃO APLICAR/RESERVAR */}
-                    <TouchableOpacity style={styles.applyButton} onPress={handleApplyFilters}>
-                        <Text style={styles.applyButtonText}>Reservar</Text>
-                    </TouchableOpacity>
-
-                    <Image
-                        source={require('../../assets/icons/Pata.png')}
-                        style={styles.decoracaoImage} 
-                        resizeMode="contain"
-                    />
-
-                </View> 
-            </ScrollView> 
+          <CustomAlert
+            visible={alertVisible}
+            title={alertData.title}
+            message={alertData.message}
+            onClose={() => setAlertVisible(false)}
+          />
         </View>
-    );
+      </ScrollView>
+    </View>
+  );
 }
 
 
@@ -696,4 +632,47 @@ const styles = StyleSheet.create({
         color: '#4d654bff',
         fontWeight: '800',
     },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '80%',
+    backgroundColor: '#FFF6E2',
+    borderRadius: 20,
+    paddingVertical: 25,
+    paddingHorizontal: 20,
+    borderWidth: 3,
+    borderColor: '#B3D18C',
+    alignItems: 'center',
+    elevation: 6,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#556A44',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#556A44',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalButton: {
+    backgroundColor: '#85B65E',
+    borderRadius: 10,
+    paddingHorizontal: 45,
+    paddingVertical: 10,
+    borderWidth: 2,
+    borderColor: '#B3D18C',
+  },
+  modalButtonText: {
+    color: '#FFF6E2',
+    fontSize: 18,
+    fontWeight: '700',
+  },
 });

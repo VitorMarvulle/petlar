@@ -23,7 +23,7 @@ const PetIconItem = ({ petName }: { petName: string }) => {
 const HomeIcon = ({ name }: { name: string }) => {
   const icons: Record<string, { src: any; size: number }> = {
     config: { src: require('../../assets/icons/config.png'), size: 30 },
-    chats: { src: require('../../assets/icons/chats.png'), size: 40 },
+    Reservas: { src: require('../../assets/icons/planilha.png'), size: 35 },
     favoritos: { src: require('../../assets/icons/Favoritos.png'), size: 40 },
     conta: { src: require('../../assets/icons/user.png'), size: 30 },
   };
@@ -118,7 +118,7 @@ export default function Home() {
         
         {/* Top Navigation */}
         <View style={styles.topNav}>
-          {['config', 'chats', 'favoritos', 'conta'].map((item, i) => (
+          {['config', 'Reservas', 'favoritos', 'conta'].map((item, i) => (
             
             <TouchableOpacity
               key={i}
@@ -126,7 +126,8 @@ export default function Home() {
               onPress={() => {
                 if (item === 'favoritos') navigation.navigate('Favoritos');
                 if (item === 'conta') navigation.navigate('Perfil_Tutor');
-                if (item === 'chats') navigation.navigate('Reserva_Lista');
+                if (item === 'Reservas') navigation.navigate('Reserva_Lista');
+                if (item === 'config') navigation.navigate('Perfil_Host');
               }}>
               
               <HomeIcon name={item} />
@@ -135,28 +136,12 @@ export default function Home() {
           ))}
         </View>
 
-        {/* Filters & Search */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchFilters}>
-            {['Entrada', 'Saída', 'Onde', 'Quem'].map((text, i) => (
-              
-              <React.Fragment key={i}>
-                <TouchableOpacity style={styles.filterButton}>
-                  <Text style={styles.filterText}>{text}</Text>
-                  <DropdownArrow />
-                </TouchableOpacity>
-                {i < 3 && <View style={styles.filterDivider} />}
-              </React.Fragment>
-            ))}
-          </View>
-        </View>
-
         <View style={styles.filtersHeader}>
           <TouchableOpacity 
             style={styles.filtersButton}
             onPress={() => navigation.navigate('Filtros')}
             >
-            <Text style={styles.filtersText}>Filtros</Text>
+            <Text style={styles.filtersText}>Filtros de Busca</Text>
             <FilterIcon />
           </TouchableOpacity>
         </View>
@@ -167,7 +152,7 @@ export default function Home() {
             <HostCard
               key={i}
               {...host}
-              onPress={() => navigation.navigate('PerfilHost', { host })}
+              onPress={() => navigation.navigate('Card_Host', { host })}
             />
           ))}
 

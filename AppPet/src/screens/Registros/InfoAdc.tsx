@@ -213,8 +213,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginVertical: 15,
-        marginTop: 20,
+    marginTop: 20,
     marginBottom: -3,
+    elevation: 2, 
   },
   addPetButtonText: {
     color: '#FFF6E2',
@@ -238,6 +239,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginVertical: 15,
+    elevation: 2, 
   },
   registerButtonText: {
     color: '#FFF6E2',
