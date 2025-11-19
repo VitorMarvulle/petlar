@@ -122,8 +122,8 @@ const FeedPage = () => {
         </div>
 
 
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-3">
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-8 gap-8">
+        <div className="lg:col-span-2">
           <FilterSidebar onFiltersChange={handleFiltersChange} />
         </div>
         <div className="lg:col-span-6 space-y-6">

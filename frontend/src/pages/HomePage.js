@@ -21,18 +21,14 @@ const HomePage = () => {
             <div>
               <h3 className="text-3xl mb-3 -mt-4">📍</h3>
               <h3 className="text-xl font-bold text-gray-800 mb-3">Encontre o anfitrião ideal</h3>
-              <p className="text-gray-700 text-sm leading-tight">
-                Busque anfitriões próximos a você filtrando por espécie, tamanho,
-                preço e disponibilidade. Encontre quem combina com as necessidades
-                do seu pet.
+              <p className="mt-8 text-gray-700 text-sm leading-tight">
+                Busque anfitriões próximos a você filtrando por data, espécie e tamanho do seu pet!
+                Encontre quem combina com as necessidades
+                do seu amiguinho :)
               </p>
             </div>
 
-            <ul className="text-left text-gray-600 text-sm mt-3">
-              <li>✔ Resultados perto de você</li>
-              <li>✔ Filtre por espécie e preço</li>
-              <li>✔ Disponibilidade por data</li>
-            </ul>
+
           </div>
 
           {/* Arrow */}
@@ -55,15 +51,15 @@ const HomePage = () => {
             className="bg-[#addb8a] w-64 h-80 rounded-2xl shadow-lg border-2 border-gray-300 p-6 flex flex-col justify-between"
           >
             <div>
-              <h3 className="text-3xl mb-3 -mt-4">👀</h3>
+              <h3 className="text-3xl mb-3 -mt-4">🐕</h3>
               <h3 className="text-xl font-bold text-gray-800 mb-3">Avalie o perfil</h3>
               <p className="text-gray-700 text-sm leading-tight">
                 Veja avaliações de outros tutores, fotos reais do ambiente,
-                comentários e histórico do anfitrião antes de decidir.
+                comentários e as Perguntas e Respostas do anfitrião antes de decidir.
               </p>
             </div>
 
-            <ul className="text-left text-gray-600 text-sm mt-3">
+            <ul className="text-left text-gray-600 text-sm mb-8">
               <li>✔ Fotos do espaço</li>
               <li>✔ Comentários detalhados</li>
               <li>✔ Avaliações reais de tutores</li>

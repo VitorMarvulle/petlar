@@ -16,7 +16,7 @@ const renderStars = (rating) => {
 const HostCard = ({ host }) => {
   return (
     <Link to={`/host/${host.id}`} className="block">
-      <div className="bg-white p-4 rounded-xl shadow-lg border-2 border-gray-300 flex items-center space-x-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+      <div className="bg-white p-8 w-100 rounded-xl shadow-lg border-2 border-gray-300 flex items-center space-x-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
         <div className="flex-shrink-0">
           <img src={host.imageUrl} alt={host.name} className="w-20 h-20 rounded-full border-2 border-gray-200" />
         </div>
