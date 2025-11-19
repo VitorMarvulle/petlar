@@ -1,5 +1,6 @@
 annotated-types==0.7.0
 anyio==4.10.0
+boto3==1.40.50
 bcrypt==4.3.0
 certifi==2025.8.3
 charset-normalizer==3.4.3
@@ -25,3 +26,4 @@ typing-inspection==0.4.1
 typing_extensions==4.15.0
 urllib3==2.5.0
 uvicorn==0.35.0
+python-multipart
