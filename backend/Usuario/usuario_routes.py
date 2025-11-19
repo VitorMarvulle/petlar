@@ -30,11 +30,15 @@ def get_usuarios():
 def get_usuario_by_id(id: int):
     url = f"{SUPABASE_URL}/rest/v1/usuarios?id_usuario=eq.{id}"
     response = requests.get(url, headers=HEADERS)
-    
+
     if response.status_code != 200:
         raise HTTPException(status_code=response.status_code, detail=response.text)
 
     data = response.json()
+
+    if not data:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
     return data[0]
 
 @usuario_router.post("/", status_code=HTTP_201_CREATED)
