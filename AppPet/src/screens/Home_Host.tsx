@@ -118,15 +118,14 @@ export default function Home() {
         
         {/* Top Navigation */}
         <View style={styles.topNav}>
-          {['config', 'Reservas', 'favoritos', 'conta'].map((item, i) => (
+          {['config', 'Reservas', 'conta'].map((item, i) => (
             
             <TouchableOpacity
               key={i}
               style={styles.navButton}
               onPress={() => {
-                if (item === 'favoritos') navigation.navigate('Favoritos');
-                if (item === 'conta') navigation.navigate('Perfil_Tutor');
-                if (item === 'Reservas') navigation.navigate('Reserva_Tutor');
+                if (item === 'conta') navigation.navigate('Perfil_Host');
+                if (item === 'Reservas') navigation.navigate('Reserva_Host');
                 if (item === 'config') navigation.navigate('Configuracoes');
               }}>
               
@@ -187,7 +186,7 @@ const styles = StyleSheet.create({
 
   // === Top Navigation (Ícones Config/Chats/Favoritos/Conta) ===
   topNav: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  navButton: { width: 70, height: 70, borderRadius: 17, borderWidth: 2, borderColor: '#B3D18C', backgroundColor: '#85B65E', justifyContent: 'center', alignItems: 'center' },
+  navButton: { width: 100, height: 70, borderRadius: 17, borderWidth: 2, borderColor: '#B3D18C', backgroundColor: '#85B65E', justifyContent: 'center', alignItems: 'center' },
   navButtonText: { color: '#FFF6E2', fontSize: 11, fontFamily: 'Inter', marginTop: 4 },
 
   // === Filtros de Busca ===

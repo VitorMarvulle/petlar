@@ -49,8 +49,8 @@ export default function Login({ navigation }: RootStackScreenProps<'Login'>) {
           />
 
           <TouchableOpacity
-            style={styles.loginButton}
-            onPress={() => navigation.navigate('Home')}
+            style={styles.loginButton} 
+            onPress={() => navigation.navigate('Home_Host')}
           >
             <Text style={styles.loginButtonText}>Entrar</Text>
           </TouchableOpacity>

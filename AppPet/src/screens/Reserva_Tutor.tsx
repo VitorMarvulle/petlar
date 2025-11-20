@@ -140,14 +140,14 @@ const StatusButton = ({ status }: { status: ReservaStatus }) => {
 
 // Componente do Botão de Avaliar
 const AvaliarButton = ({ navigation, reservaId }: { 
-    navigation: RootStackScreenProps<'Reserva_Lista'>['navigation']; 
+    navigation: RootStackScreenProps<'Reserva_Tutor'>['navigation']; 
     reservaId: string;
 }) => (
     <TouchableOpacity
         style={listaStyles.avaliarButton}
         onPress={() => {
             console.log(`Navegando para a tela de avaliação da reserva ${reservaId}`);
-            // navigation.navigate('AvaliarHospedagem', { reservaId }); // Rota real
+            navigation.navigate('HostAvaliacao', { reservaId });
         }}
     >
         <Text style={listaStyles.avaliarButtonText}>Avaliar Host</Text>
@@ -157,7 +157,7 @@ const AvaliarButton = ({ navigation, reservaId }: {
 // Componente Principal do Card de Reserva
 const ReservaCard = ({ reserva, navigation }: { 
     reserva: typeof mockReservas[0]; 
-    navigation: RootStackScreenProps<'Reserva_Lista'>['navigation'];
+    navigation: RootStackScreenProps<'Reserva_Tutor'>['navigation'];
 }) => {
     const isConcluida = reserva.status === 'Concluida';
 
@@ -256,7 +256,7 @@ const StatusFilterOptions = ({
 // -------------------------------------------------------------------
 
 
-export default function Reserva_Lista({ navigation }: RootStackScreenProps<'Reserva_Lista'>) {
+export default function Reserva_Lista({ navigation }: RootStackScreenProps<'Reserva_Tutor'>) {
     const [selectedStatusFilter, setSelectedStatusFilter] = useState<FilterStatus>('Todos');
 
     // Lógica de Filtro
