@@ -80,6 +80,28 @@ def test_post_usuarios():
     assert data["cep"] == user["cep"]
     assert data["complemento"] == user["complemento"]
 
+def test_post_usuarios_eith_email_exists():
+
+    user = dict(UsuarioCreate(
+        nome="John Doe",
+        email=f"lKb8A@example.com",
+        senha_hash="hashed_password",
+        telefone="1234567890",
+        tipo="tutor",
+        data_cadastro="2023-01-01",
+        logradouro="Rua A",
+        numero="123",
+        bairro="Bairro X",
+        cidade="Cidade Y",
+        uf="UF",
+        cep="12345-678",
+        complemento="Complemento Z"
+    ))
+
+    response = client.post("/usuarios", json=user)
+    assert response.status_code == 409
+    
+
 
 # ------------------------
 # DELETE /usuarios/{id}
