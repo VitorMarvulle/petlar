@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File
 import  requests
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 import uuid
+from datetime import datetime
 from utils.config import SUPABASE_URL, SUPABASE_KEY, bcrypt_context
 from Usuario.dto.LoginRequest import LoginRequest  # e LoginResponse se for usar
 
@@ -30,11 +31,15 @@ def get_usuarios():
 def get_usuario_by_id(id: int):
     url = f"{SUPABASE_URL}/rest/v1/usuarios?id_usuario=eq.{id}"
     response = requests.get(url, headers=HEADERS)
-    
+
     if response.status_code != 200:
         raise HTTPException(status_code=response.status_code, detail=response.text)
 
     data = response.json()
+
+    if not data:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
     return data[0]
 
 @usuario_router.post("/", status_code=HTTP_201_CREATED)
@@ -42,8 +47,15 @@ def create_usuario(usuario: UsuarioCreate):
     url = f"{SUPABASE_URL}/rest/v1/usuarios"
 
     usuario.senha_hash = bcrypt_context.hash(usuario.senha_hash)
+    
+    # Set default data_cadastro if not provided
+    if not usuario.data_cadastro:
+        usuario.data_cadastro = datetime.now().isoformat()
 
-    response = requests.post(url, json=usuario.dict(), headers=HEADERS)
+    # Convert to dict and remove None values
+    usuario_data = {k: v for k, v in usuario.dict().items() if v is not None}
+
+    response = requests.post(url, json=usuario_data, headers=HEADERS)
 
     if response.status_code != 201:
         raise HTTPException(status_code=response.status_code, detail=response.text)

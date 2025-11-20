@@ -80,8 +80,3 @@ export const hosts = [
   },
 ];
 
-export const chatMessages = [
-  { id: 1, user: 'Eduarda M.', text: 'Oi, gostaria de mais informações?', type: 'received' },
-  { id: 2, user: 'Você', text: 'Bom dia, claro! teste Teste TEsssss', type: 'sent' },
-  { id: 3, user: 'Eduarda M.', text: 'Obrigado!', type: 'received' },
-];
