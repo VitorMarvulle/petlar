@@ -43,3 +43,23 @@ services:
       - CHOKIDAR_USEPOLLING=true # Ajuda o hot-reload a funcionar de forma mais confiável no Docker
     stdin_open: true
     tty: true
+
+  # Serviço do AppPet (React Native/Expo - Web)
+  apppet:
+    build:
+      context: ./AppPet
+      dockerfile: Dockerfile
+    ports:
+      - "19000:19000" # Expo bundler
+      - "19001:19001" # Expo DevTools
+      - "8081:8081" # Metro bundler fallback
+    volumes:
+      - ./AppPet:/app # Espelha o código local para dentro do contêiner
+      - /app/node_modules # Garante que a node_modules de dentro do contêiner não seja sobrescrita
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Ajuda o hot-reload a funcionar
+      - EXPO_DEBUG=true
+    stdin_open: true
+    tty: true
+    depends_on:
+      - backend
