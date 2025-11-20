@@ -6,6 +6,9 @@ import random
 
 client = TestClient(app)
 
+usuario_ID = 0
+number_random = random.randint(1000, 9999)
+
 # ------------------------
 # GET /usuarios
 # ------------------------
@@ -17,26 +20,6 @@ def test_get_usuarios():
     assert isinstance(body, list), "GET /usuarios deve retornar lista"
 
 
-# ------------------------
-# GET /usuarios/{id}
-# ------------------------
-def test_get_usuarios_by_id():
-    response = client.get("/usuarios/11")
-    assert response.status_code == 200
-
-    data = response.json()
-    assert isinstance(data, dict), "GET /usuarios/{id} deve retornar dict"
-
-
-# ------------------------
-# GET /usuarios/{id} - usuário inexistente
-# ------------------------
-def test_get_usuario_by_id_not_found():
-    response = client.get("/usuarios/999999")  
-    assert response.status_code == 404
-    assert response.json()["detail"] == "Usuário não encontrado"
-
-
 
 # ------------------------
 # POST /usuarios
@@ -45,7 +28,7 @@ def test_post_usuarios():
 
     user = dict(UsuarioCreate(
         nome="John Doe",
-        email=f"lKb8A{random.randint(1000, 9999)}@example.com",
+        email=f"lKb8A{number_random}@example.com",
         senha_hash="hashed_password",
         telefone="1234567890",
         tipo="tutor",
@@ -80,11 +63,28 @@ def test_post_usuarios():
     assert data["cep"] == user["cep"]
     assert data["complemento"] == user["complemento"]
 
+    global usuario_ID
+    usuario_ID = data["id_usuario"]
+
+
+# ------------------------
+# GET /usuarios/{id}
+# ------------------------
+def test_get_usuarios_by_id():
+    response = client.get("/usuarios/11")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert isinstance(data, dict), "GET /usuarios/{id} deve retornar dict"
+
+
+
+
 def test_post_usuarios_eith_email_exists():
 
     user = dict(UsuarioCreate(
         nome="John Doe",
-        email=f"lKb8A@example.com",
+        email=f"lKb8A{number_random}@example.com",
         senha_hash="hashed_password",
         telefone="1234567890",
         tipo="tutor",
@@ -100,14 +100,14 @@ def test_post_usuarios_eith_email_exists():
 
     response = client.post("/usuarios", json=user)
     assert response.status_code == 409
-    
+
 
 
 # ------------------------
 # DELETE /usuarios/{id}
 # ------------------------
 def test_delete_usuario_by_id():
-    response = client.delete("/usuarios/10")
+    response = client.delete(f"/usuarios/{usuario_ID}")
     assert response.status_code in (200, 204), "DELETE deve retornar 200 ou 204"
 
 
@@ -115,6 +115,15 @@ def test_delete_usuario_by_id():
 # DELETE /usuarios/{id} - não encontrado
 # ------------------------
 def test_delete_usuario_by_id_not_found():
-    response = client.delete("/usuarios/999999")
+    response = client.delete(f"/usuarios/{usuario_ID}")
     # Supabase retorna 204 mesmo quando o registro não existe
-    assert response.status_code in (200, 204)
+    assert response.status_code in (200, 204), "DELETE deve retornar 200 ou 204"
+
+# ------------------------
+# GET /usuarios/{id} - usuário inexistente
+# ------------------------
+def test_get_usuario_by_id_not_found():
+    response = client.get(f"/usuarios/{usuario_ID}")  
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Usuário não encontrado"
+
