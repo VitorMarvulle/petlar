@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';  
+import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import {View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Dimensions, FlatList } from 'react-native';
@@ -79,12 +81,22 @@ const HostCard = ({ name, location, rating, price, imageUri, petsAccepted, onPre
 );
 
 // --- Home Screen ---
-type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
+type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;  
+type HomeScreenRouteProp = RouteProp<RootStackParamList, 'Home'>;
+
 
 export default function Home() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
+  const route = useRoute<HomeScreenRouteProp>();
+
+  const { usuario } = route.params;  // <- aqui você pega o usuário logado  
+  
+  console.log('Usuário logado na Home:', usuario);
+
+
   const [currentPage, setCurrentPage] = useState(1);
 
+// mock hosts
   const hostData: HostCardProps[] = [
     {
       name: 'Vitor M.',
