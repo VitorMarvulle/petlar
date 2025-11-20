@@ -8,7 +8,8 @@ export type RootStackParamList = {
   Home: undefined;
   Filtros: undefined;
   Perfil_Tutor: undefined;
-  PerfilHost: { host: HostCardProps };
+  Perfil_Host: { host: HostCardProps };
+  Card_Host: { host: HostCardProps };
   Favoritos: undefined;
   InfoAdc: undefined;
   AdicionarPet: { onAddPet: (newPet: Pet) => void };

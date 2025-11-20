@@ -167,7 +167,7 @@ export default function PerfilHost({ navigation }) {
 
             {/* Review Cards */}
             <View style={styles.reviewCard}>
-              <Image source={UserIconPng} style={styles.reviewUserAvatar} />
+              <View style={styles.reviewUserAvatar} />
               <View style={styles.reviewContent}>
                 <View style={styles.reviewHeader}>
                   <Text style={styles.reviewerName}>Vitor M.</Text>
@@ -183,7 +183,7 @@ export default function PerfilHost({ navigation }) {
             </View>
 
             <View style={styles.reviewCard}>
-              <Image source={UserIconPng} style={styles.reviewUserAvatar} />
+              <View style={styles.reviewUserAvatar} />
               <View style={styles.reviewContent}>
                 <View style={styles.reviewHeader}>
                   <Text style={styles.reviewerName}>Gabriel D.</Text>
