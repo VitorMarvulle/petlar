@@ -12,13 +12,23 @@ from Upload.upload_routes import upload_router
 
 app = FastAPI(title="Lar Doce Pet API")
 
-# Configure CORS to allow requests from frontend
+# Configuração de CORS
+origins = [
+    "http://localhost:19006",  # Expo Web (ajuste se a porta for outra)
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8081",
+    "http://localhost",        # genérico
+    "*",                       # durante desenvolvimento, pode deixar * (não é recomendado em produção)
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Frontend URLs
+    # allow_origins=["*"],
+    allow_origins=origins,              # ou ["*"] para liberar tudo em dev
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, DELETE, etc.)
-    allow_headers=["*"],  # Allow all headers
+    allow_methods=["*"],            # GET, POST, PUT, DELETE, OPTIONS, etc
+    allow_headers=["*"],            # Headers customizados
 )
 
 app.include_router(usuario_router)  

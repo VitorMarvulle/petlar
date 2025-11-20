@@ -1,10 +1,7 @@
-import React from 'react';
-// CORREÇÃO: Adicionando Dimensions para calcular a largura do card da Home
-import {View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Dimensions} from 'react-native';
-// Certifique-se de que '@react-navigation/native' está instalado e configurado
-import {useNavigation} from '@react-navigation/native';
+import React, { useState, useEffect } from 'react';
+import {View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Dimensions, Modal} from 'react-native';
+import {useNavigation, useRoute} from '@react-navigation/native'; // 💡 Importamos useRoute
 
-// CONSTANTE NECESSÁRIA PARA O ESTILO DO CARD
 const { width } = Dimensions.get('window');
 
 // --- ÍCONES REUTILIZADOS DA TELA TUTOR ---
@@ -12,38 +9,33 @@ const ICON_STAR = require('../../../assets/icons/starFilled.png');
 const ICON_AVATAR = require('../../../assets/icons/user.png'); 
 const ICON_DELETE = require('../../../assets/icons/delete.png'); 
 const ICON_EDIT = require('../../../assets/icons/edit.png'); 
-
-// --- ÍCONES NOVOS PARA AÇÕES ---
-const ICON_CONFIRM = require('../../../assets/icons/check.png'); 
-const ICON_DENY = require('../../../assets/icons/delete.png'); 
+const ICON_LIST = require('../../../assets/icons/planilha.png');
+const ICON_LOGO_BRANCO = require('../../../assets/icons/LogoBranco.png');
 
 // --- MOCK DE DADOS PARA DEMONSTRAÇÃO ---
 const MOCK_HOST_CARD = {
     name: 'Vitor M.', // Mock Host Name
     location: 'Praia Grande, Tupi',
     rating: '4,5',
-    price: '65,00', // Preço deve ser string sem R$ / dia
-    imageUri: 'https://api.builder.io/api/v1/image/assets/TEMP/af2836f80ee9f66f26be800dc23edbde1db69238?width=680', // Usando a imagem do MOCK_LISTING, mas com W/H adequados.
+    price: '65,00', 
+    imageUri: 'https://api.builder.io/api/v1/image/assets/TEMP/af2836f80ee9f66f26be800dc23edbde1db69238?width=680', 
     petsAccepted: ['gato', 'cachorro'], 
 };
+// Definimos um tipo para os dados do novo anúncio
+interface NewListingData {
+    location: string;
+    price: string;
+    petsAccepted: string[];
+    imageUri: string;
+}
 
-// MOCK_LISTING É NECESSÁRIO APENAS SE FOR PASSAR DETALHES NA NAVEGAÇÃO. MANTENDO UMA VERSÃO SIMPLES:
-const MOCK_LISTING = {
-    imageUrl: MOCK_HOST_CARD.imageUri, // Usando a mesma imagem
-    address: 'R. Alameda dos Cães Felizes, 123 - Boqueirão',
-    price: `R$ ${MOCK_HOST_CARD.price} / diária`,
-    capacity: 'Até 3 pets (Pequeno/Médio)',
-    specifications: 'Casa com grande quintal gramado e piscina. Aceitamos cães e gatos. Monitoramento 24h e passeio diário. Exigimos carteira de vacinação em dia.',
-    available: true,
-};
-
-
-// Componente PetIconItem e PetIcons (Copiados da Home)
+// Componente PetIconItem e PetIcons (Inalterados)
 const PetIconItem = ({ petName }: { petName: string }) => {
     const icons: Record<string, any> = {
-        cachorro: require('../../../assets/icons/animais/cachorro.png'), // Corrija o caminho do asset
-        gato: require('../../../assets/icons/animais/gato.png'),      // Corrija o caminho do asset
-        // Adicione outros pets se necessário
+        cachorro: require('../../../assets/icons/animais/cachorro.png'), 
+        gato: require('../../../assets/icons/animais/gato.png'),    
+        pássaro: require('../../../assets/icons/animais/passaro.png'), 
+        réptil: require('../../../assets/icons/animais/tartaruga.png'), 
     };
 
     const source = icons[petName.toLowerCase()];
@@ -58,18 +50,11 @@ const PetIcons = ({ petsAccepted }: { petsAccepted: string[] }) => (
     </View>
 );
 
-// Ícone de Estrela (Copiado da Home)
 const StarIcon = () => <Image source={ICON_STAR} style={hostCardStyles.starIconImage} resizeMode="contain" />;
 
-// Novo Componente HostCardHomeStyle
+// Novo Componente HostCardHomeStyle (Inalterado)
 const HostCardHomeStyle = ({ 
-    name, 
-    location, 
-    rating, 
-    price, 
-    imageUri, 
-    petsAccepted, 
-    onPress 
+    name, location, rating, price, imageUri, petsAccepted, onPress 
 }: typeof MOCK_HOST_CARD & { onPress: () => void }) => (
     <TouchableOpacity style={hostCardStyles.hostCard} onPress={onPress} activeOpacity={0.8}>
       <Image source={{ uri: imageUri }} style={hostCardStyles.hostImage} resizeMode="cover" />
@@ -94,24 +79,16 @@ const HostCardHomeStyle = ({
     </TouchableOpacity>
 );
 
-// Adaptação dos dados de reserva para usar o Tutor como solicitante
-const MOCK_REQUEST = {
-    id: 'req1',
-    tutor: { name: 'Ellen Rodrigues Magueta', location: 'Aviação', avatarUrl: ICON_AVATAR }, // Agora é o Tutor solicitando
-    dataEntrada: '01/12/2025',
-    dataSaida: '05/12/2025', 
-    dias: 4,
-    pets: [
-        { id: 'p1', name: "Nina", imageUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=60&h=60&fit=crop' },
-        { id: 'p2', name: "Bolinho", imageUrl: 'https://images.unsplash-com/photo-1592194996308-7b43878e84a6?w=60&h=60&fit=crop' },
-    ],
-    totalValue: 'R$ 600,00', 
-};
-const MOCK_REQUESTS = [MOCK_REQUEST, {...MOCK_REQUEST, id: 'req2', tutor: { name: 'Carlos Pereira', location: 'Tupi', avatarUrl: ICON_AVATAR }, dias: 2, totalValue: 'R$ 300,00'}];
+// Componente Botão de Criar Anúncio (Inalterado)
+const CreateListingButton = ({ onPress }: { onPress: () => void }) => (
+    <TouchableOpacity style={styles.createButton} onPress={onPress}>
+        <Text style={styles.createButtonText}>Criar Anúncio</Text>
+        navigation.navigate('Criar_anuncio');
+        console.log('Navegar para Criar Anúncio');
+    </TouchableOpacity>
+);
 
-
-// --- COMPONENTES REUTILIZADOS DA TELA TUTOR ---
-
+// Componentes Auxiliares (Inalterados)
 const UserAvatar = () => (
     <View style={styles.avatarContainer}>
       <View style={styles.avatarIcon}>
@@ -125,7 +102,6 @@ const UserAvatar = () => (
     </View>
 );
 
-// O componente StarRating original (para o perfil) continua usando estilos 'styles'
 const StarRating = ({rating}: {rating: string}) => (
     <View style={styles.ratingContainer}>
       <Image source={ICON_STAR} style={styles.starImage} resizeMode="contain" />
@@ -133,137 +109,129 @@ const StarRating = ({rating}: {rating: string}) => (
     </View>
 );
 
-// REMOVIDO: O ListingCard original não é mais necessário, pois foi substituído por HostCardHomeStyle
-
-const ActionButton = ({
-    onPress,
-    backgroundColor,
-    iconSource,
-    label,
-}: {
-    onPress: () => void;
-    backgroundColor: string;
-    iconSource: any;
-    label: string;
-}) => (
+const ActionButton = ({ onPress, backgroundColor, iconSource, label, }: { onPress: () => void; backgroundColor: string; iconSource: any; label: string; }) => (
     <View style={styles.actionButtonWrapper}>
-      <TouchableOpacity
-        style={[styles.actionButton, {backgroundColor}]}
-        onPress={onPress}>
+      <TouchableOpacity style={[styles.actionButton, {backgroundColor}]} onPress={onPress}>
         <Image source={iconSource} style={styles.actionIcon} resizeMode="contain" />
       </TouchableOpacity>
       <Text style={styles.actionButtonLabel}>{label}</Text>
     </View>
 );
 
-// --- COMPONENTES DO CARD DE SOLICITAÇÃO (REAPROVEITADOS) ---
-const TutorMiniCard = ({ name, location, avatarUrl }: { name: string; location: string; avatarUrl: any }) => (
-    <View style={hostStyles.tutorCard}>
-        <Image source={avatarUrl} style={hostStyles.tutorAvatar} tintColor="#FFF6E2" />
-        <View style={hostStyles.tutorInfo}>
-            <Text style={hostStyles.tutorName}>{name}</Text>
-            <Text style={hostStyles.tutorLocation}>{location}</Text>
+const LogoLarDocePet = () => (
+    <>
+      <View style={styles.cornerImageContainer}>
+        <Image source={ICON_LOGO_BRANCO} style={styles.cornerImage} resizeMode="contain"/>
+      </View>
+      <Text style={styles.LogoText}>Lar Doce Pet</Text>
+    </>
+);
+
+// Componente CustomAlert (Inalterado)
+const CustomAlert = ({
+    visible, title, message, onConfirm, onCancel, confirmText, cancelText
+}: {
+    visible: boolean; title: string; message: string; onConfirm: () => void; onCancel: () => void; confirmText: string; cancelText: string;
+}) => (
+    <Modal transparent visible={visible} animationType="fade">
+      <View style={alertStyles.modalOverlay}>
+        <View style={alertStyles.modalContainer}>
+          <Text style={alertStyles.modalTitle}>{title}</Text>
+          <Text style={alertStyles.modalMessage}>{message}</Text>
+          <View style={alertStyles.modalButtonsContainer}>
+            <TouchableOpacity style={[alertStyles.modalButton, alertStyles.modalCancelButton]} onPress={onCancel}>
+                <Text style={alertStyles.modalCancelButtonText}>{cancelText}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={alertStyles.modalButton} onPress={onConfirm}>
+              <Text style={alertStyles.modalButtonText}>{confirmText}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-    </View>
+      </View>
+    </Modal>
 );
 
-const PetsInRequest = ({ pets }: { pets: typeof MOCK_REQUEST.pets }) => (
-    <View style={hostStyles.petsSelectedContainer}>
-        <Text style={hostStyles.petsLabel}>Pets Solicitados:</Text>
-        {pets.map((pet, index) => (
-            <View key={index} style={hostStyles.petAvatarWrapper}>
-                <Image source={{ uri: pet.imageUrl }} style={hostStyles.smallPetAvatar} />
-            </View>
-        ))}
-        {pets.length === 0 && (
-            <Text style={hostStyles.petsLabel}>Nenhum pet informado.</Text>
-        )}
-    </View>
-);
-
-const RequestDetails = ({ dataEntrada, dataSaida, dias, totalValue }: typeof MOCK_REQUEST) => (
-    <View style={hostStyles.detailsContainer}>
-        <View style={hostStyles.dateHeader}>
-            <Text style={hostStyles.dateText}>{dataEntrada}</Text>
-            <Text style={hostStyles.dateDivider}>{' - '}</Text>
-            <Text style={hostStyles.dateText}>{dataSaida}</Text>
-        </View>
-        <Text style={hostStyles.detailRow}>
-            <Text style={hostStyles.boldDetail}>Diárias:</Text> {dias} dia(s)
-        </Text>
-        <Text style={hostStyles.detailRow}>
-            <Text style={hostStyles.boldDetail}>Valor Total:</Text> <Text style={hostStyles.totalValue}>{totalValue}</Text>
-        </Text>
-    </View>
-);
-
-const HostActionButtons = ({ onConfirm, onDeny }: { onConfirm: () => void; onDeny: () => void }) => (
-    <View style={hostStyles.hostActionButtonsContainer}>
-        <TouchableOpacity style={[hostStyles.hostActionButton, hostStyles.denyButton]} onPress={onDeny}>
-            <Image source={ICON_DENY} style={hostStyles.hostActionIcon} tintColor="#fff" resizeMode="contain" />
-            <Text style={hostStyles.hostActionButtonText}>Negar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[hostStyles.hostActionButton, hostStyles.confirmButton]} onPress={onConfirm}>
-            <Image source={ICON_CONFIRM} style={hostStyles.hostActionIcon} tintColor="#fff" resizeMode="contain" />
-            <Text style={hostStyles.hostActionButtonText}>Confirmar</Text>
-        </TouchableOpacity>
-    </View>
-);
-
-const RequestCard = ({ request, onConfirm, onDeny }: { request: typeof MOCK_REQUEST; onConfirm: () => void; onDeny: () => void }) => (
-    <View style={hostStyles.cardContainer}>
-        <TutorMiniCard 
-            name={request.tutor.name} 
-            location={request.tutor.location} 
-            avatarUrl={request.tutor.avatarUrl} 
-        />
-        <RequestDetails {...request} />
-        <PetsInRequest pets={request.pets} />
-        <HostActionButtons onConfirm={onConfirm} onDeny={onDeny} />
-    </View>
-);
-
-
-// --- TELA PRINCIPAL DO HOST ---
+// --- TELA PRINCIPAL DO HOST (AGORA COM LÓGICA DE ATUALIZAÇÃO) ---
 export default function PerfilHost({navigation}) {
+    const route = useRoute();
+    // 💡 DEFINIMOS O TIPO DE PARÂMETROS ESPERADOS NA ROTA Perfil_Host
+    const params = route.params as { listingCreated?: boolean; newListingData?: NewListingData } | undefined;
+
+    // Estado para o anúncio: começa com o mock padrão (se tiver) ou null
+    const [currentListing, setCurrentListing] = useState<typeof MOCK_HOST_CARD | null>(MOCK_HOST_CARD);
+    const [alertVisible, setAlertVisible] = useState(false);
     
+    // 💡 EFEITO PARA CAPTURAR A CRIAÇÃO DO ANÚNCIO
+    useEffect(() => {
+        // Se a navegação veio da tela de criação E trouxe dados
+        if (params?.listingCreated && params.newListingData) {
+            const newListing: typeof MOCK_HOST_CARD = {
+                ...MOCK_HOST_CARD, 
+                // Atualiza com os dados do novo anúncio
+                location: params.newListingData.location,
+                price: params.newListingData.price.replace(',', '.'), // Assume que a diária virá em string '0,00'
+                petsAccepted: params.newListingData.petsAccepted,
+                imageUri: params.newListingData.imageUri,
+                // Mantemos o nome/rating mockados
+            };
+            setCurrentListing(newListing);
+            
+            // Limpa o parâmetro para evitar que o useEffect rode novamente
+            navigation.setParams({ listingCreated: undefined, newListingData: undefined });
+        }
+    }, [params?.listingCreated, params?.newListingData]);
+
+
+    const handleViewRequests = () => {
+        console.log('Navegar para Reserva_Host');
+        navigation.navigate('Reserva_Host'); 
+    };
     const handleEditListing = () => {
         console.log('Navegar para Editar Locação');
-        navigation.navigate('EditarLocacao');};
-
+        // navigation.navigate('EditarLocacao');
+    };
+    
+    // Lógica de Exclusão (Atualiza currentListing para null)
     const handleDeleteListing = () => {
-        console.log('Solicitar Exclusão da Locação');
-        navigation.navigate('ExcluirLocacao');}; 
-
-
-    const handleConfirmRequest = (requestId) => {
-        console.log(`Solicitação ${requestId} CONFIRMADA (Ação Front-end)`);
+        setAlertVisible(true);
     };
 
-    const handleDenyRequest = (requestId) => {
-        console.log(`Solicitação ${requestId} NEGADA (Ação Front-end)`);
+    const confirmDeleteListing = () => {
+        setAlertVisible(false);
+        setCurrentListing(null); 
+        console.log('Anúncio excluído localmente.');
     };
 
+    const cancelDeleteListing = () => {
+        setAlertVisible(false);
+    };
 
-    const CornerIconClickable = () => (
-        <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.cornerImageContainer}>
-            <Image
-                source={require('../../../assets/icons/PETLOGO.png')} 
-                style={styles.cornerImage}
-                resizeMode="contain"
-            />
-        </TouchableOpacity>
-    );
+    const handleCreateListing = () => {
+        console.log('Navegar para Criar Anúncio');
+        // Usamos o nome correto da rota
+        navigation.navigate('Criar_anuncio');
+    };
+    
+    // Criando o objeto MOCK_LISTING baseado no currentListing para a navegação de detalhes
+    const getListingDetails = () => {
+        if (!currentListing) return null;
+        return {
+            imageUrl: currentListing.imageUri, 
+            address: currentListing.location,
+            price: `R$ ${currentListing.price} / diária`,
+            capacity: 'Até 3 pets (Pequeno/Médio)', // Mock
+            specifications: 'Casa com grande quintal gramado e piscina. Aceitamos cães e gatos...', // Mock
+            available: true,
+        };
+    };
 
     return (
         <SafeAreaView style={styles.container}>
+            <LogoLarDocePet /> 
             <ScrollView
                 contentContainerStyle={styles.scrollContainer}
                 showsVerticalScrollIndicator={false}>
                 <View style={styles.innerContainer}>
-                    <CornerIconClickable />
-
-                    {/* SEÇÃO PERFIL DO HOST */}
                     <View style={styles.profileSection}>
                         <UserAvatar />
                         <View style={styles.profileInfo}>
@@ -273,65 +241,72 @@ export default function PerfilHost({navigation}) {
                         <View style={styles.profileRating}>
                             <StarRating rating="4,8" />
                         </View>
-
                     </View>
 
-                    {/* SEÇÃO ANÚNCIO DE LOCAÇÃO */}
+                    {/* SEÇÃO ANÚNCIO DE LOCAÇÃO - RENDERIZAÇÃO CONDICIONAL */}
                     <View style={styles.listingSection}>
                         <Text style={styles.sectionTitle}>Seu Anúncio de Locação</Text>
 
-                        {/* CARD DE LOCAÇÃO - AGORA COM ESTILO DA HOME */}
-                        <HostCardHomeStyle 
-                            {...MOCK_HOST_CARD} 
-                            onPress={() => navigation.navigate('Card_Host', { listing: MOCK_LISTING })} 
-                        />
-                        
-                        {/* BOTÕES DE AÇÃO (2 APENAS) */}
-                        <View style={styles.actionButtonsContainerHost}>
-                            <ActionButton
-                                onPress={handleDeleteListing}
-                                backgroundColor="#556A44"
-                                iconSource={ICON_DELETE}
-                                label="Excluir"
-                            />
-
-                            <ActionButton
-                                onPress={handleEditListing}
-                                backgroundColor="#A6C57F"
-                                iconSource={ICON_EDIT}
-                                label="Editar"
-                            />
-                        </View>
-                    </View>
-
-                    {/* SEÇÃO: SOLICITAÇÕES DE RESERVA */}
-                    <View style={styles.requestsSection}>
-                        <Text style={styles.sectionTitle}>Solicitações de Reserva (Pendentes)</Text>
-
-                        {MOCK_REQUESTS.length > 0 ? (
-                            MOCK_REQUESTS.map((request) => (
-                                <RequestCard 
-                                    key={request.id}
-                                    request={request}
-                                    onConfirm={() => handleConfirmRequest(request.id)}
-                                    onDeny={() => handleDenyRequest(request.id)}
+                        {currentListing ? (
+                            <>
+                                {/* CARD DE LOCAÇÃO */}
+                                <HostCardHomeStyle 
+                                    {...currentListing} 
+                                    onPress={() => navigation.navigate('Card_Host', { listing: getListingDetails() })} 
                                 />
-                            ))
+                                
+                                {/* BOTÕES DE AÇÃO */}
+                                <View style={styles.actionButtonsContainerHost}>
+                                    <ActionButton
+                                        onPress={handleDeleteListing}
+                                        backgroundColor="#556A44"
+                                        iconSource={ICON_DELETE}
+                                        label="Excluir"
+                                    />
+                                    <ActionButton
+                                        onPress={handleEditListing}
+                                        backgroundColor="#A6C57F"
+                                        iconSource={ICON_EDIT}
+                                        label="Editar"
+                                    />
+                                </View>
+                            </>
                         ) : (
-                            <Text style={styles.noRequestsText}>Nenhuma solicitação de reserva pendente no momento. 🎉</Text>
+                            // CONTEÚDO QUANDO NÃO HÁ ANÚNCIO
+                            <View style={styles.noListingContainer}>
+                                <Text style={styles.noListingText}>Você ainda não possui um anúncio de locação</Text>
+                                <CreateListingButton onPress={handleCreateListing} />
+                            </View>
                         )}
-
                     </View>
+                    
+                    <View style={styles.requestsButtonWrapper}>
+                        <TouchableOpacity style={styles.requestsButton} onPress={handleViewRequests}>
+                            <Image source={ICON_LIST} style={styles.requestsIcon} tintColor="#FFFFFF" resizeMode="contain" />
+                            <Text style={styles.requestsButtonText}>Ver Solicitações de Reserva</Text>
+                        </TouchableOpacity>
+                    </View>
+
                 </View>
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>Como funciona?</Text>
-                  </View>
-
-
+                </View>
             </ScrollView>
+            
+            <CustomAlert
+                visible={alertVisible}
+                title="Confirmar Exclusão"
+                message="Tem certeza que deseja excluir permanentemente o seu anúncio de locação? Esta ação não pode ser desfeita."
+                onConfirm={confirmDeleteListing}
+                onCancel={cancelDeleteListing}
+                confirmText="Excluir"
+                cancelText="Cancelar"
+            />
         </SafeAreaView>
     );
 }
+
+// ... Mantenha todos os estilos (styles, hostCardStyles, alertStyles) inalterados.
 
 // --- ESTILOS REUTILIZADOS E REVISADOS ---
 const styles = StyleSheet.create({
@@ -349,23 +324,36 @@ const styles = StyleSheet.create({
         borderRadius: 49,
         paddingHorizontal: 20,
         paddingVertical: 20,
-        marginTop: 32,
+        // Ajustado o marginTop para compensar o Logo que flutua por cima
+        marginTop: 100, 
         marginBottom: 20,
         position: 'relative',
     },
 
-    //LOGO DO PET
+    // --- LOGO DO PET (COPIADO DA TELA FAVORITOS) ---
     cornerImageContainer: {
-        alignItems: 'center',
-        marginTop: 30,
-        marginBottom: -68,
-        top: -35,
-        left: 140,
+        position: 'absolute',
+        top: 29, 
+        left: '50%', 
+        marginLeft: -85, 
+        width: 60, 
+        height: 60,
+        zIndex: 10, 
     },
     cornerImage: {
-        width: 55,
-        height: 55,
-        marginBottom: 3,
+        width: '100%', 
+        height: '100%', 
+        resizeMode: 'contain',
+    },
+    LogoText: {
+        position: 'absolute',
+        top: 60,
+        left: '50%',
+        marginLeft: -25, // Ajuste para centralizar o texto "Lar Doce Pet"
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#ffffff',
+        zIndex: 10,
     },
 
     // ESTILOS DE IMAGEM E ÍCONES
@@ -384,12 +372,18 @@ const styles = StyleSheet.create({
         height: 20,
         tintColor: '#FFFFFF', 
     },
+    requestsIcon: {
+        width: 20,
+        height: 20,
+        marginRight: 10,
+    },
 
     // SEÇÃO PERFIL DO HOST
     profileSection: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        marginTop: 15,
+        marginTop: 5,
+        marginLeft: -6,
         marginBottom: 30,
     },
     avatarContainer: {
@@ -447,65 +441,40 @@ const styles = StyleSheet.create({
         fontWeight: '700', 
         color: '#556A44',
         fontFamily: 'Inter',
-        marginTop: -10,
+        marginTop: 5,
         marginBottom: 20,
     },
-    // O ListingCard original foi substituído, mas mantive os estilos não utilizados abaixo
-    // para não quebrar outras referências que possam existir.
-    listingCard: {
-        flexDirection: 'row',
-        backgroundColor: '#c8d3b7ff', 
-        borderRadius: 10,
-        padding: 10,
+
+    // ESTILOS PARA QUANDO NÃO HÁ ANÚNCIO (NOVO)
+    noListingContainer: {
+        alignItems: 'center',
+        backgroundColor: '#FFF6E2',
+        borderRadius: 15,
+        borderWidth: 2,
+        borderColor: '#B3D18C', 
+        paddingVertical: 40,
+        paddingHorizontal: 20,
+        marginBottom: 15,
+    },
+    noListingText: {
+        fontSize: 16,
+        color: '#556A44',
+        fontWeight: '500',
+        textAlign: 'center',
         marginBottom: 20,
-        elevation: 2,
     },
-    listingImageContainer: {
-        width: 130,
-        height: 180, 
-        borderRadius: 6,
-        overflow: 'hidden',
-        marginRight: 10,
+    createButton: {
+        backgroundColor: '#85B65E',
+        borderRadius: 15,
+        paddingVertical: 12,
+        paddingHorizontal: 30,
+        borderWidth: 2,
+        borderColor: '#B3D18C',
     },
-    listingImage: {
-        width: '100%',
-        height: '100%',
-        resizeMode: 'cover',
-    },
-    listingDetails: {
-        flex: 1,
-        paddingTop: 5,
-    },
-    listingTitle: {
-        fontSize: 17,
+    createButtonText: {
+        color: '#FFF6E2',
+        fontSize: 16,
         fontWeight: '700',
-        color: '#4d654bff',
-        fontFamily: 'Inter',
-        marginBottom: 8,
-    },
-    listingDetailText: {
-        fontSize: 13,
-        color: '#556A44',
-        fontFamily: 'Inter',
-        lineHeight: 18,
-    },
-    boldText: {
-        fontWeight: 'bold',
-    },
-    specificationsTitle: {
-        fontSize: 13,
-        fontWeight: 'bold',
-        color: '#556A44',
-        fontFamily: 'Inter',
-        marginTop: 8,
-        marginBottom: 2,
-    },
-    specificationsText: {
-        fontSize: 12,
-        color: '#556A44',
-        fontFamily: 'Inter',
-        lineHeight: 16,
-        fontStyle: 'italic',
     },
 
     // SEÇÃO BOTÕES DE AÇÃO (Host - 2 botões)
@@ -519,7 +488,7 @@ const styles = StyleSheet.create({
     actionButtonWrapper: {
         alignItems: 'center',
         width: 80, 
-        marginBottom: -40,
+        marginBottom: -80,
     },
     actionButton: {
         width: 80, 
@@ -538,18 +507,33 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
 
-    // --- SEÇÃO SOLICITAÇÕES ---
-    requestsSection: {
-        marginTop: 30,
+    // --- NOVO BOTÃO DE NAVEGAÇÃO PARA SOLICITAÇÕES ---
+    requestsButtonWrapper: {
+        alignItems: 'center',
+        marginTop: 90, // Espaçamento após a seção de locação
         marginBottom: 20,
     },
-    noRequestsText: {
-        fontSize: 16,
-        color: '#556A44',
-        textAlign: 'center',
-        paddingVertical: 20,
-        fontStyle: 'italic',
+    requestsButton: {
+        flexDirection: 'row',
+        backgroundColor: '#4d654bff', // Cor de destaque para o botão
+        paddingVertical: 12,
+        paddingHorizontal: 25,
+        borderRadius: 30,
+        alignItems: 'center',
+        justifyContent: 'center',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
     },
+    requestsButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '700',
+        fontFamily: 'Inter',
+    },
+
 
     // RODAPÉ
     footer: {
@@ -567,145 +551,7 @@ const styles = StyleSheet.create({
 });
 
 
-// --- ESTILOS PARA OS CARDS DE SOLICITAÇÃO ---
-const hostStyles = StyleSheet.create({
-    cardContainer: {
-        backgroundColor: '#FFF6E2', 
-        borderRadius: 15,
-        borderWidth: 2,
-        borderColor: '#7AB24E', 
-        padding: 15,
-        marginBottom: 20,
-    },
-
-    tutorCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 10,
-        backgroundColor: '#E0EFD3', 
-        borderRadius: 10,
-        marginBottom: 15,
-    },
-    tutorAvatar: {
-        width: 45,
-        height: 45,
-        borderRadius: 25,
-        backgroundColor: '#7AB24E',
-        marginRight: 10,
-    },
-    tutorInfo: {
-        flex: 1,
-    },
-    tutorName: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#556A44',
-    },
-    tutorLocation: {
-        fontSize: 13,
-        color: '#556A44',
-    },
-
-    detailsContainer: {
-        paddingVertical: 5,
-        marginBottom: 10,
-    },
-    dateHeader: { 
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 10,
-        paddingBottom: 5,
-        borderBottomWidth: 1,
-        borderBottomColor: '#B3D18C',
-    },
-    dateText: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#4d654bff',
-    },
-    dateDivider: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#B3D18C',
-    },
-    detailRow: {
-        fontSize: 14,
-        color: '#556A44',
-        marginBottom: 5,
-    },
-    boldDetail: {
-        fontWeight: 'bold',
-    },
-    totalValue: {
-        fontSize: 15,
-        fontWeight: '900',
-        color: '#4d654bff',
-    },
-
-    petsSelectedContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 20,
-        marginTop: 10,
-        paddingHorizontal: 5,
-    },
-    petsLabel: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: '#556A44',
-        marginRight: 10,
-    },
-    petAvatarWrapper: {
-        marginRight: 8,
-        alignItems: 'center',
-    },
-    smallPetAvatar: {
-        width: 35, 
-        height: 35,
-        borderRadius: 17.5,
-        borderWidth: 2,
-        borderColor: '#7AB24E',
-        backgroundColor: '#FFF6E2',
-    },
-
-    hostActionButtonsContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: '#B3D18C',
-        paddingTop: 15,
-    },
-    hostActionButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 10,
-        borderRadius: 20,
-        width: '45%',
-        elevation: 3,
-    },
-    denyButton: {
-        backgroundColor: '#d85e38ff', 
-    },
-    confirmButton: {
-        backgroundColor: '#7AB24E', 
-    },
-    hostActionIcon: {
-        width: 18,
-        height: 18,
-        marginRight: 8,
-        tintColor: '#FFFFFF',
-    },
-    hostActionButtonText: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: '#FFFFFF',
-    },
-});
-
-// --- ESTILOS DO HOST CARD (CRIADO E CORRIGIDO) ---
+// --- ESTILOS DO HOST CARD (REUTILIZADOS) ---
 const hostCardStyles = StyleSheet.create({
     // === Host Card ===
     hostCard: { 
@@ -799,4 +645,68 @@ const hostCardStyles = StyleSheet.create({
         width: 25, 
         height: 25 
     },
+});
+
+// --- ESTILOS DO ALERTA CUSTOMIZADO (Copiado e Adaptado) ---
+const alertStyles = StyleSheet.create({
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+        width: '80%',
+        backgroundColor: '#FFF6E2',
+        borderRadius: 20,
+        paddingVertical: 25,
+        paddingHorizontal: 20,
+        borderWidth: 3,
+        borderColor: '#B3D18C',
+        alignItems: 'center',
+        elevation: 6,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#556A44',
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    modalMessage: {
+        fontSize: 16,
+        color: '#556A44',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    modalButtonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        paddingHorizontal: 10,
+    },
+    modalButton: {
+        backgroundColor: '#85B65E',
+        borderRadius: 10,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderWidth: 2,
+        borderColor: '#B3D18C',
+        flex: 1,
+        marginHorizontal: 5,
+        alignItems: 'center',
+    },
+    modalButtonText: {
+        color: '#FFF6E2',
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    modalCancelButton: {
+        backgroundColor: '#556A44', // Cor de cancelamento mais escura
+    },
+    modalCancelButtonText: {
+        color: '#FFF6E2',
+        fontSize: 16,
+        fontWeight: '700',
+    }
 });

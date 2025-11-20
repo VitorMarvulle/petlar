@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, FlatList } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Alert } from 'react-native';
 import { RootStackScreenProps } from '../../navigation/types';
 
 const PetIcon = () => (
@@ -15,6 +15,7 @@ const PetIcon = () => (
 
 export default function RegisterScreen({ navigation }: RootStackScreenProps<'Cadastro'>) {
   const [userType, setUserType] = useState<'tutor' | 'host' | null>(null);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -27,23 +28,83 @@ export default function RegisterScreen({ navigation }: RootStackScreenProps<'Cad
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleRegister = () => {
-    if (formData.password !== formData.confirmPassword) {
-      alert('As senhas não coincidem');
-      return;
-    } if (!userType) { alert('Você precisa escolher qual tipo de usuário será!'); 
+  const handleRegister = async () => {
+    // Validações
+    if (!formData.name || !formData.email || !formData.password) {
+      Alert.alert('Atenção', 'Preencha nome, email e senha');
       return;
     }
-    
-    console.log('Registro realizado com:', formData);
-    navigation.navigate('InfoAdc');
+
+    if (formData.password !== formData.confirmPassword) {
+      Alert.alert('Atenção', 'As senhas não coincidem');
+      return;
+    }
+
+    if (!userType) {
+      Alert.alert('Atenção', 'Você precisa escolher qual tipo de usuário será!');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:8000/usuarios/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nome: formData.name,
+          email: formData.email.trim(),
+          senha_hash: formData.password,  // backend vai fazer o hash
+          telefone: formData.phone || null,
+          tipo: userType,                 // 'tutor' ou 'host'
+          data_cadastro: null,
+          logradouro: null,
+          numero: null,
+          bairro: null,
+          cidade: null,
+          uf: null,
+          cep: null,
+          complemento: null,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.log('Erro cadastro:', data);
+        throw new Error(data.detail || 'Erro ao cadastrar usuário');
+      }
+
+      console.log('Usuário cadastrado:', data);
+
+      Alert.alert(
+        'Sucesso',
+        'Cadastro realizado com sucesso!',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('Login'),
+          },
+        ]
+      );
+      // data[0] = novo usuário  
+      navigation.navigate('InfoAdc', { id_usuario: data[0].id_usuario });
+      // navigation.navigate('InfoAdc');
+
+    } catch (error: any) {
+      console.error('Erro no cadastro:', error);
+      Alert.alert('Erro', error.message || 'Não foi possível cadastrar. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleRegister = () => {
     console.log('Registro via Google');
-    navigation.navigate('InfoAdc');
+    Alert.alert('Em breve', 'Cadastro com Google será implementado em breve!');
   };
-
 
   return (
     <View style={styles.container}>
@@ -62,7 +123,6 @@ export default function RegisterScreen({ navigation }: RootStackScreenProps<'Cad
               { label: 'Confirmar senha', field: 'confirmPassword', keyboardType: 'default', secure: true },
             ].map(({ label, field, keyboardType, secure }) => (
               <View key={field} style={styles.inputContainer}>
-
                 <TextInput
                   style={styles.input}
                   value={formData[field]}
@@ -72,40 +132,46 @@ export default function RegisterScreen({ navigation }: RootStackScreenProps<'Cad
                   secureTextEntry={secure}
                   keyboardType={keyboardType as any}
                   autoCapitalize={field === 'email' ? 'none' : 'words'}
+                  editable={!loading}
                 />
               </View>
             ))}
             
-          {/* Escolha do tipo de usuário */}
+            {/* Escolha do tipo de usuário */}
+            <Text style={styles.texto}>Que tipo de usuário gostaria de ser?</Text>
+            <View style={styles.userTypeContainer}>
+              <TouchableOpacity
+                style={[styles.userTypeOption, userType === 'tutor' && styles.userTypeOptionSelected]}
+                onPress={() => setUserType('tutor')}
+                disabled={loading}
+              >
+                <Text style={[styles.userTypeText, userType === 'tutor' && styles.userTypeTextSelected]}>
+                  Sou Tutor
+                </Text>
+              </TouchableOpacity>
 
-          <Text style={styles.texto}>Que tipo de usuário gostaria de ser?</Text>
-          <View style={styles.userTypeContainer}>
-            
-            <TouchableOpacity
-              style={[styles.userTypeOption, userType === 'tutor' && styles.userTypeOptionSelected]}
-              onPress={() => setUserType('tutor')}
+              <TouchableOpacity
+                style={[styles.userTypeOption, userType === 'host' && styles.userTypeOptionSelected]}
+                onPress={() => setUserType('host')}
+                disabled={loading}
+              >
+                <Text style={[styles.userTypeText, userType === 'host' && styles.userTypeTextSelected]}>
+                  Sou Host
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.registerButton, loading && styles.registerButtonDisabled]} 
+              onPress={handleRegister}
+              disabled={loading}
             >
-              <Text style={[styles.userTypeText, userType === 'tutor' && styles.userTypeTextSelected]}>
-                Sou Tutor
+              <Text style={styles.registerButtonText}>
+                {loading ? 'Criando conta...' : 'Criar Conta'}
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.userTypeOption, userType === 'host' && styles.userTypeOptionSelected]}
-              onPress={() => setUserType('host')}
-            >
-              <Text style={[styles.userTypeText, userType === 'host' && styles.userTypeTextSelected]}>
-                Sou Host
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-
-            <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
-              <Text style={styles.registerButtonText}>Criar Conta</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')} disabled={loading}>
               <Text style={styles.loginText}>
                 <Text style={styles.loginTextNormal}>Já tem uma conta? </Text>
                 <Text style={styles.loginTextLink}>Faça login!</Text>
@@ -118,7 +184,11 @@ export default function RegisterScreen({ navigation }: RootStackScreenProps<'Cad
               <View style={styles.dividerLine} />
             </View>
 
-            <TouchableOpacity style={styles.googleButton} onPress={handleGoogleRegister}>
+            <TouchableOpacity 
+              style={styles.googleButton} 
+              onPress={handleGoogleRegister}
+              disabled={loading}
+            >
               <Image
                 source={require('../../../assets/icons/google.png')}
                 style={styles.googleIcon}
@@ -129,7 +199,6 @@ export default function RegisterScreen({ navigation }: RootStackScreenProps<'Cad
           </View>
         </View>
       </ScrollView>
-      
     </View>
   );
 }
@@ -139,9 +208,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#B3D18C',
-    paddingHorizontal: 12,  // só lateral
-    paddingTop: 30,          // aumenta topo
-    paddingBottom: 45,       // aumenta fundo
+    paddingHorizontal: 12,
+    paddingTop: 30,
+    paddingBottom: 45,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -229,6 +298,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginVertical: 15,
+  },
+  registerButtonDisabled: {
+    opacity: 0.6,
   },
   registerButtonText: {
     color: '#FFF6E2',

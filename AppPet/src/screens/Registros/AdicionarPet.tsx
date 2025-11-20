@@ -1,12 +1,14 @@
+// AppPet/src/screens/Registros/AdicionarPet.tsx
 import React, { useState } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, Image, 
-  StyleSheet, ScrollView, SafeAreaView 
+  StyleSheet, ScrollView, SafeAreaView, Alert, Platform 
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 export type Pet = {
+  id_pet?: number;
   nome: string;
   especie: 'Gato' | 'Cachorro' | 'Pássaro' | 'Exótico';
   idade: string;
@@ -15,12 +17,13 @@ export type Pet = {
   unidade: 'kg' | 'g';
   especificacoes?: string;
   fotos?: string[];
+  fotos_urls?: string[]; // URLs do Supabase
 };
 
 export default function FormularioPet() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { onAddPet }: any = route.params || {};
+  const { id_tutor, onAddPet }: any = route.params || {};
 
   const [petData, setPetData] = useState<Pet>({
     nome: '',
@@ -32,6 +35,7 @@ export default function FormularioPet() {
     especificacoes: '',
     fotos: [],
   });
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (field: keyof Pet, value: string) => {
     setPetData(prev => ({ ...prev, [field]: value }));
@@ -55,18 +59,121 @@ export default function FormularioPet() {
     }
   };
 
-  const handleSubmit = () => {
+  // Função para criar o pet no backend
+  const createPetInBackend = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/pets/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_tutor: id_tutor,
+          nome: petData.nome,
+          especie: petData.especie,
+          idade: parseInt(petData.idade),
+          idade_unidade: petData.idadeUnidade,
+          peso: parseFloat(petData.peso),
+          peso_unidade: petData.unidade,
+          observacoes: petData.especificacoes || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Erro ao criar pet');
+      }
+
+      const createdPet = await response.json();
+      return createdPet[0]; // Supabase retorna array
+    } catch (error) {
+      console.error('Erro ao criar pet:', error);
+      throw error;
+    }
+  };
+
+  // Função para fazer upload das fotos
+  const uploadFotosPet = async (id_pet: number) => {
+    if (!petData.fotos || petData.fotos.length === 0) return [];
+
+    try {
+      const formData = new FormData();
+
+      for (const fotoUri of petData.fotos) {
+        const filename = fotoUri.split('/').pop() || `pet_${id_pet}.jpg`;
+        const match = /\.(\w+)$/.exec(filename);
+        const ext = match ? match[1] : 'jpg';
+        const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
+
+        if (Platform.OS === 'web') {
+          // Web: converter blob para File
+          const response = await fetch(fotoUri);
+          const blob = await response.blob();
+          const file = new File([blob], filename, { type: mimeType });
+          formData.append('arquivos', file);
+        } else {
+          // Mobile
+          (formData as any).append('arquivos', {
+            uri: fotoUri,
+            name: filename,
+            type: mimeType,
+          });
+        }
+      }
+
+      const response = await fetch(`http://localhost:8000/pets/${id_pet}/fotos`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Erro ao enviar fotos');
+      }
+
+      const data = await response.json();
+      return data.fotos_urls;
+    } catch (error) {
+      console.error('Erro ao fazer upload das fotos:', error);
+      throw error;
+    }
+  };
+
+  const handleSubmit = async () => {
     if (!petData.nome || !petData.idade || !petData.peso) {
-      alert('Preencha os campos obrigatórios!');
+      Alert.alert('Atenção', 'Preencha os campos obrigatórios!');
       return;
     }
     if (!petData.fotos || petData.fotos.length < 3) {
-      alert('Adicione pelo menos 3 fotos do seu pet!');
+      Alert.alert('Atenção', 'Adicione pelo menos 3 fotos do seu pet!');
       return;
     }
 
-    if (onAddPet) onAddPet(petData);
-    navigation.goBack();
+    try {
+      setLoading(true);
+
+      // 1. Criar o pet no backend
+      const createdPet = await createPetInBackend();
+      const id_pet = createdPet.id_pet;
+
+      // 2. Fazer upload das fotos
+      const fotos_urls = await uploadFotosPet(id_pet);
+
+      // 3. Preparar dados para a prévia na InfoAdc
+      const petComFotos: Pet = {
+        ...petData,
+        id_pet,
+        fotos_urls,
+      };
+
+      // 4. Callback para InfoAdc (prévia)
+      if (onAddPet) onAddPet(petComFotos);
+
+      Alert.alert('Sucesso', 'Pet cadastrado com sucesso!');
+      navigation.goBack();
+    } catch (error: any) {
+      Alert.alert('Erro', error.message || 'Não foi possível cadastrar o pet.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const speciesOptions: Pet['especie'][] = ['Gato', 'Cachorro', 'Pássaro', 'Exótico'];
@@ -186,8 +293,14 @@ export default function FormularioPet() {
           </TouchableOpacity>
 
           {/* Botão */}
-          <TouchableOpacity style={styles.addPetButton} onPress={handleSubmit}>
-            <Text style={styles.addPetButtonText}>Salvar Pet</Text>
+          <TouchableOpacity 
+            style={styles.addPetButton} 
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            <Text style={styles.addPetButtonText}>
+              {loading ? 'Salvando...' : 'Salvar Pet'}
+            </Text>
           </TouchableOpacity>
 
         </View>
@@ -196,6 +309,7 @@ export default function FormularioPet() {
   );
 }
 
+// ... (estilos permanecem os mesmos)
 const styles = StyleSheet.create({
   // --- Fundo ---
   container: {

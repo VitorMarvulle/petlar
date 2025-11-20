@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
         color: '#556A44', 
         marginBottom: 22, 
         textAlign: 'center',
-        marginTop: 100,
+        marginTop: 120,
     },
 
     //LOGO DO PET
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
         height: 150,
         alignSelf: 'center',
         marginBottom: 10,
-        top: 57, 
+        top: 200, 
         right: 130, 
     },
 

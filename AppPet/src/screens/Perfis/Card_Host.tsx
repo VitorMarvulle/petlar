@@ -140,7 +140,7 @@ export default function PerfilHost({ navigation }) {
 
 
             <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.actionButton_FAQ}>
+              <TouchableOpacity style={styles.actionButton_FAQ} onPress={() => navigation.navigate('FAQ_Tutor')}>
                 <Text style={styles.actionButtonText}>Perguntas Frequentes</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionButton_Reserva} onPress={() => navigation.navigate('Reserva')}>
@@ -223,6 +223,7 @@ const styles = StyleSheet.create({
     borderRadius: 49,
     paddingHorizontal: 15,
     paddingTop: 12,
+    paddingBottom: 2,
     position: 'relative',
   },
   scrollContainer: {
