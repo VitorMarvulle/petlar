@@ -2,7 +2,7 @@
 from PyInstaller.utils.hooks import collect_all
 from PyInstaller.utils.hooks import copy_metadata
 
-datas = [('D:\\develop\\testes\\pc_dashboard\\app.py', '.')]
+datas = [('D:\\develop\\testes\\petlar\\dashboard\\app.py', '.')]
 binaries = []
 hiddenimports = ['matplotlib.pyplot', 'matplotlib.ticker.MaxNLocator', 'pandas', 'pandasql.sqldf', 'requests', 'streamlit']
 datas += copy_metadata('streamlit')
@@ -11,7 +11,7 @@ datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
-    ['C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\tmpc397bm7i.py'],
+    ['C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\tmp560hlf7q.py'],
     pathex=['.'],
     binaries=binaries,
     datas=datas,
