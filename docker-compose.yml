@@ -33,11 +33,8 @@ services:
       - CHOKIDAR_USEPOLLING=true # Ajuda o hot-reload a funcionar de forma mais confiável no Docker
     stdin_open: true
     tty: true
-<<<<<<< HEAD
     depends_on:
       - backend
-=======
->>>>>>> 015094ada3f870e18dc344027e7a21326617b696
 
   # Serviço do AppPet (React Native/Expo - Web)
   apppet:
@@ -57,8 +54,4 @@ services:
     stdin_open: true
     tty: true
     depends_on:
-<<<<<<< HEAD
       - backend
-=======
-      - backend
->>>>>>> 015094ada3f870e18dc344027e7a21326617b696
