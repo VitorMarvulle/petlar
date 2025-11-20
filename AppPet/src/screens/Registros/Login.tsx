@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import {View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Image} from 'react-native';
+import {View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Image, Alert} from 'react-native';
 import { RootStackScreenProps } from '../../navigation/types';
 
 const PetIcon = () => (
@@ -16,9 +16,79 @@ const PetIcon = () => (
 export default function Login({ navigation }: RootStackScreenProps<'Login'>) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    // Validações básicas
+    if (!email || !password) {
+      Alert.alert('Atenção', 'Por favor, preencha email e senha');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:8000/usuarios/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          senha: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Erro de autenticação (401) ou outro erro
+        throw new Error(data.detail || 'Erro ao fazer login');
+      }
+
+      // Login bem-sucedido
+      console.log('Login realizado:', data);
+      
+      navigation.navigate('Home', {  
+        usuario: {  
+        id_usuario: data.id_usuario,  
+        nome: data.nome,  
+        email: data.email,  
+        tipo: data.tipo,  
+        telefone: data.telefone,  
+        },  
+      });
+      // Aqui você pode salvar os dados do usuário
+      // Exemplo com AsyncStorage:
+      // await AsyncStorage.setItem('usuario', JSON.stringify(data));
+
+      //teste para celular solução abaixo
+      
+      Alert.alert('Sucesso', data.message || 'Login realizado com sucesso!', [
+        {
+          text: 'OK',
+          onPress: () => navigation.navigate('Home', {  
+              usuario: {  
+                id_usuario: data.id_usuario,  
+                nome: data.nome,  
+                email: data.email,  
+                tipo: data.tipo,  
+                telefone: data.telefone,},      
+              }),
+        },
+      ]);
+
+    } catch (error: any) {
+      console.error('Erro no login:', error);
+      Alert.alert('Erro', error.message || 'Não foi possível fazer login. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGoogleSignIn = () => {
     console.log('Google sign in pressed');
+    Alert.alert('Em breve', 'Login com Google será implementado em breve!');
   };
 
   return (
@@ -37,6 +107,7 @@ export default function Login({ navigation }: RootStackScreenProps<'Login'>) {
             autoCapitalize="none"
             placeholder="E-mail"
             placeholderTextColor="#79b24e62"
+            editable={!loading}
           />
 
           <TextInput
@@ -46,13 +117,17 @@ export default function Login({ navigation }: RootStackScreenProps<'Login'>) {
             secureTextEntry
             placeholder="Senha"
             placeholderTextColor="#79b24e62"
+            editable={!loading}
           />
 
           <TouchableOpacity
-            style={styles.loginButton}
-            onPress={() => navigation.navigate('Home')}
+            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+            onPress={handleLogin}
+            disabled={loading}
           >
-            <Text style={styles.loginButtonText}>Entrar</Text>
+            <Text style={styles.loginButtonText}>
+              {loading ? 'Entrando...' : 'Entrar'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => navigation.navigate('Cadastro')}>
@@ -74,6 +149,7 @@ export default function Login({ navigation }: RootStackScreenProps<'Login'>) {
           <TouchableOpacity
             style={styles.googleButton}
             onPress={handleGoogleSignIn}
+            disabled={loading}
           >
             <Image
               source={require('../../../assets/icons/google.png')}
@@ -166,6 +242,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 25,
   },
+  loginButtonDisabled: {
+    opacity: 0.6,
+  },
   loginButtonText: {
     fontSize: 20,
     fontWeight: '700',
@@ -185,7 +264,7 @@ const styles = StyleSheet.create({
     color: '#7AB24E',
   },
 
-  // Divisor “ou”
+  // Divisor "ou"
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',

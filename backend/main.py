@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from Usuario.usuario_routes import usuario_router
 from Avaliacao.avaliacao_routes import avaliacao_router
@@ -8,6 +9,25 @@ from Reserva.reserva_routes import reserva_router
 
 
 app = FastAPI(title="Lar Doce Pet API")
+
+# Configuração de CORS
+origins = [
+    "http://localhost:19006",  # Expo Web (ajuste se a porta for outra)
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8081",
+    "http://localhost",        # genérico
+    "*",                       # durante desenvolvimento, pode deixar * (não é recomendado em produção)
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    # allow_origins=["*"],
+    allow_origins=origins,              # ou ["*"] para liberar tudo em dev
+    allow_credentials=True,
+    allow_methods=["*"],            # GET, POST, PUT, DELETE, OPTIONS, etc
+    allow_headers=["*"],            # Headers customizados
+)
 
 app.include_router(usuario_router)  
 app.include_router(pet_router)  
