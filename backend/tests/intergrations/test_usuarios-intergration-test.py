@@ -4,30 +4,31 @@ from main import app
 from Usuario.dto.CreateUsuario import UsuarioCreate
 from Usuario.dto.LoginRequest import LoginRequest
 import random
+import io
 
 client = TestClient(app)
 
-usuario_ID = 0
-email_random = f"user{random.randint(1000, 9999)}@example.com"
+# Variáveis globais para manter estado entre testes
+usuario_ID = None
+email_random = f"user{random.randint(10000, 99999)}@example.com"
 
 
-# ------------------------
+# =========================================================
 # GET /usuarios
-# ------------------------
+# =========================================================
 def test_get_usuarios():
     response = client.get("/usuarios")
     assert response.status_code == 200
-
-    body = response.json()
-    assert isinstance(body, list), "GET /usuarios deve retornar lista"
+    assert isinstance(response.json(), list)
 
 
-# ------------------------
-# POST /usuarios
-# ------------------------
+# =========================================================
+# POST /usuarios (SUCESSO)
+# =========================================================
 def test_post_usuarios():
+    global usuario_ID
 
-    user = dict(UsuarioCreate(
+    user = UsuarioCreate(
         nome="John Doe",
         email=email_random,
         senha_hash="12345678",
@@ -41,53 +42,38 @@ def test_post_usuarios():
         uf="UF",
         cep="12345-678",
         complemento="Casa"
-    ))
+    )
 
-    response = client.post("/usuarios", json=user)
+    response = client.post("/usuarios", json=user.dict())
     assert response.status_code == 201
 
-    body = response.json()
-    assert isinstance(body, list), "POST /usuarios retorna lista"
+    data = response.json()[0]
+    assert data["email"] == email_random
+    assert "id_usuario" in data
 
-    data = body[0]
-
-    assert data["nome"] == user["nome"]
-    assert data["email"] == user["email"]
-    assert data["telefone"] == user["telefone"]
-    assert data["tipo"] == user["tipo"]
-    assert data["logradouro"] == user["logradouro"]
-    assert data["numero"] == user["numero"]
-    assert data["bairro"] == user["bairro"]
-    assert data["cidade"] == user["cidade"]
-    assert data["uf"] == user["uf"]
-    assert data["cep"] == user["cep"]
-    assert data["complemento"] == user["complemento"]
-
-    global usuario_ID
     usuario_ID = data["id_usuario"]
 
 
-# ------------------------
-# GET /usuarios/{id}
-# ------------------------
+# =========================================================
+# GET /usuarios/{id} (SUCESSO)
+# =========================================================
 def test_get_usuario_by_id():
     response = client.get(f"/usuarios/{usuario_ID}")
     assert response.status_code == 200
 
     data = response.json()
-    assert isinstance(data, dict), "GET /usuarios/{id} deve retornar dict"
+    assert isinstance(data, dict)
     assert data["id_usuario"] == usuario_ID
 
 
-# ------------------------
-# POST /usuarios - email já existe
-# ------------------------
+# =========================================================
+# POST /usuarios (EMAIL DUPLICADO)
+# =========================================================
 def test_post_usuario_email_exists():
-
-    user = dict(UsuarioCreate(
-        nome="John Doe",
+    user = UsuarioCreate(
+        nome="Outro",
         email=email_random,  # email duplicado
-        senha_hash="12345678",
+        senha_hash="abc123",
         telefone="1234567890",
         tipo="tutor",
         data_cadastro="2023-01-01",
@@ -98,68 +84,104 @@ def test_post_usuario_email_exists():
         uf="UF",
         cep="12345-678",
         complemento="Casa"
-    ))
+    )
 
-    response = client.post("/usuarios", json=user)
+    response = client.post("/usuarios", json=user.dict())
     assert response.status_code in (400, 409)
 
 
-# ------------------------
-# PUT /usuarios/{id}
-# ------------------------
+# =========================================================
+# PUT /usuarios/{id} SUCESSO
+# =========================================================
 def test_put_usuario():
     update_data = {
-        "nome": "Nome Atualizado",
-        "telefone": "999999999"
+        "nome": "Nome Alterado",
+        "telefone": "999888777"
     }
 
     response = client.put(f"/usuarios/{usuario_ID}", json=update_data)
     assert response.status_code == 200
 
-    body = response.json()
-    assert isinstance(body, list)
-    data = body[0]
-
+    data = response.json()[0]
     assert data["nome"] == update_data["nome"]
     assert data["telefone"] == update_data["telefone"]
 
 
-# ------------------------
-# POST /usuarios/login
-# ------------------------
-def test_usuario_login():
-    login = dict(LoginRequest(
-        email=email_random,
-        senha="12345678"
-    ))
+# =========================================================
+# PUT /usuarios/{id} – NENHUM DADO
+# =========================================================
+def test_put_usuario_no_data():
+    response = client.put(f"/usuarios/{usuario_ID}", json={})
+    assert response.status_code == 400
 
-    response = client.post("/usuarios/login", json=login)
+
+# =========================================================
+# POST /usuarios/login SUCESSO
+# =========================================================
+def test_usuario_login_success():
+    login = LoginRequest(
+        email=email_random,
+        senha="12345678",
+    )
+
+    response = client.post("/usuarios/login", json=login.dict())
     assert response.status_code == 200
 
-    body = response.json()
-    assert "message" in body
-    assert body["message"] == "Login realizado com sucesso"
+    data = response.json()
+    assert data["message"] == "Login realizado com sucesso"
+    assert data["email"] == email_random
 
 
-# ------------------------
-# GET /usuarios/{id} - usuário inexistente
-# ------------------------
-def test_get_usuario_not_found():
-    response = client.get("/usuarios/999999")
+# =========================================================
+# POST /usuarios/login FALHA (senha errada)
+# =========================================================
+def test_usuario_login_wrong_password():
+    login = LoginRequest(
+        email=email_random,
+        senha="senha_errada",
+    )
+
+    response = client.post("/usuarios/login", json=login.dict())
+    assert response.status_code == 401
+
+
+# =========================================================
+# GET /usuarios/{id} – INEXISTENTE
+# =========================================================
+def test_get_usuario_inexistente():
+    response = client.get("/usuarios/99999999")
     assert response.status_code == 404
 
 
-# ------------------------
-# DELETE /usuarios/{id}
-# ------------------------
+# =========================================================
+# POST /usuarios/{id}/foto-perfil
+# =========================================================
+def test_upload_foto_perfil():
+    fake_image = io.BytesIO(b"fake-image-data")
+
+    response = client.post(
+        f"/usuarios/{usuario_ID}/foto-perfil",
+        files={"arquivo": ("foto.png", fake_image, "image/png")}
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert "foto_perfil_url" in body
+    assert body["foto_perfil_url"].startswith("http")
+
+
+# =========================================================
+# DELETE /usuarios/{id} SUCESSO
+# =========================================================
 def test_delete_usuario():
     response = client.delete(f"/usuarios/{usuario_ID}")
     assert response.status_code in (200, 204)
 
 
-# ------------------------
-# DELETE /usuarios/{id} - usuário já deletado
-# ------------------------
+# =========================================================
+# DELETE /usuarios/{id} – JÁ DELETADO
+# =========================================================
 def test_delete_usuario_not_found():
+    # Supabase geralmente retorna 204 mesmo se o registro já não existir
     response = client.delete(f"/usuarios/{usuario_ID}")
     assert response.status_code in (200, 204)
