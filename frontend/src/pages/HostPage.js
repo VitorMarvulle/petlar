@@ -15,8 +15,10 @@ const HostPage = () => {
   const [activeTab, setActiveTab] = useState('avaliacoes');
   const [perguntas, setPerguntas] = useState([]);
   const [avaliacoes, setAvaliacoes] = useState([]);
+  const [fotos, setFotos] = useState([]);
   const [loadingPerguntas, setLoadingPerguntas] = useState(false);
   const [loadingAvaliacoes, setLoadingAvaliacoes] = useState(false);
+  const [loadingFotos, setLoadingFotos] = useState(false);
   const [loadingHost, setLoadingHost] = useState(true);
   const [errorHost, setErrorHost] = useState('');
 
@@ -34,6 +36,9 @@ const HostPage = () => {
         
         // Buscar avaliações do host (usar id_anfitriao que é id_usuario do host)
         await fetchAvaliacoes(hostData.id_anfitriao);
+
+        // Buscar fotos do host
+        await fetchFotos(hostData);
       } catch (error) {
         console.error('Erro ao buscar dados do host:', error);
         setErrorHost(error.message || 'Erro ao carregar anfitrião');
@@ -70,6 +75,20 @@ const HostPage = () => {
       setAvaliacoes([]);
     } finally {
       setLoadingAvaliacoes(false);
+    }
+  };
+
+  const fetchFotos = async (hostData) => {
+    setLoadingFotos(true);
+    try {
+      // Extract fotos from host data - checking common field names
+      const fotosList = hostData.fotos || hostData.foto || hostData.fotos_anfitriao || [];
+      setFotos(Array.isArray(fotosList) ? fotosList : []);
+    } catch (error) {
+      console.error('Erro ao buscar fotos:', error);
+      setFotos([]);
+    } finally {
+      setLoadingFotos(false);
     }
   };
 
@@ -141,12 +160,6 @@ const HostPage = () => {
                   Contratar
                 </button>
               </div>
-
-              {/* Secção de fotos placeholder */}
-              <div className="bg-white p-4 rounded-xl shadow-lg border-2 border-gray-300 space-y-4">
-                 <div className="bg-gray-200 h-40 rounded-lg flex items-center justify-center text-gray-500">Foto 1</div>
-                 <div className="bg-gray-200 h-40 rounded-lg flex items-center justify-center text-gray-500">Foto 2</div>
-              </div>
             </div>
           </div>
 
@@ -173,6 +186,16 @@ const HostPage = () => {
                 }`}
               >
                 Perguntas Frequentes ({perguntas.length || 0})
+              </button>
+              <button
+                onClick={() => setActiveTab('fotos')}
+                className={`pb-3 px-4 font-semibold text-lg transition-colors ${
+                  activeTab === 'fotos'
+                    ? 'text-red-500 border-b-4 border-red-500'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                Fotos ({fotos?.length || 0})
               </button>
             </div>
 
@@ -216,6 +239,30 @@ const HostPage = () => {
                     ))
                   ) : (
                     <p className="text-gray-600 text-center py-8">Sem perguntas e respostas</p>
+                  )}
+                </>
+              )}
+
+              {/* Aba de Fotos */}
+              {activeTab === 'fotos' && (
+                <>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-4">Fotos</h3>
+                  {loadingFotos ? (
+                    <p className="text-gray-600 text-center py-8">Carregando fotos...</p>
+                  ) : fotos && fotos.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {fotos.map((foto, index) => (
+                        <div key={index} className="rounded-lg overflow-hidden shadow-md border-2 border-gray-200 hover:shadow-lg transition-shadow">
+                          <img 
+                            src={typeof foto === 'string' ? foto : foto.url || foto.foto_url} 
+                            alt={`Foto ${index + 1}`} 
+                            className="w-full h-48 object-cover hover:scale-105 transition-transform"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-600 text-center py-8">Sem fotos adicionadas</p>
                   )}
                 </>
               )}
