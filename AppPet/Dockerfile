@@ -15,7 +15,7 @@ RUN npm install
 COPY . .
 
 # Expose the ports
-EXPOSE 3000 19000 19001 8081
+EXPOSE 19000 19001 8081
 
 # Set environment variables
 ENV NODE_ENV=development
