@@ -1,0 +1,18 @@
+# 1. Imagem base: Usamos uma imagem oficial do Python, leve e otimizada.
+FROM python:3.11-slim
+
+# 2. Define o diretório de trabalho dentro do contêiner
+WORKDIR /app
+
+# 3. Copia o arquivo de dependências e instala
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 4. Copia todo o código do backend para dentro do contêiner
+COPY . .
+
+# 5. Expõe a porta do Dashboard
+EXPOSE 8501
+
+# 6. Comando para iniciar a aplicação quando o contêiner rodar
+CMD ["streamlit", "run", "app.py"]

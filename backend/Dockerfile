@@ -6,7 +6,7 @@ WORKDIR /app
 
 # 3. Copia o arquivo de dependências e instala
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirem/////ents.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # 4. Copia todo o código do backend para dentro do contêiner
 COPY . .
