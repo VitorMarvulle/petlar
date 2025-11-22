@@ -48,6 +48,9 @@ export default function RegisterScreen({ navigation }: RootStackScreenProps<'Cad
 
     setLoading(true);
 
+    // >>> MAPEAMENTO PARA O VALOR QUE O BANCO ACEITA <<<
+    const tipoDB = userType === 'host' ? 'anfitriao' : 'tutor';
+
     try {
       const response = await fetch('http://localhost:8000/usuarios/', {
         method: 'POST',
@@ -59,7 +62,7 @@ export default function RegisterScreen({ navigation }: RootStackScreenProps<'Cad
           email: formData.email.trim(),
           senha_hash: formData.password,  // backend vai fazer o hash
           telefone: formData.phone || null,
-          tipo: userType,                 // 'tutor' ou 'host'
+          tipo: tipoDB,                   // 'tutor' ou 'anfitriao'
           data_cadastro: null,
           logradouro: null,
           numero: null,
@@ -75,10 +78,19 @@ export default function RegisterScreen({ navigation }: RootStackScreenProps<'Cad
 
       if (!response.ok) {
         console.log('Erro cadastro:', data);
+        // se o backend mandar JSON em string, melhora a mensagem:
+        if (typeof data === 'string') {
+          throw new Error(data);
+        }
         throw new Error(data.detail || 'Erro ao cadastrar usuário');
       }
 
       console.log('Usuário cadastrado:', data);
+
+      const usuarioId = data[0]?.id_usuario;
+      if (!usuarioId) {
+        throw new Error('ID do usuário não retornado pelo servidor');
+      }
 
       Alert.alert(
         'Sucesso',
@@ -86,18 +98,22 @@ export default function RegisterScreen({ navigation }: RootStackScreenProps<'Cad
         [
           {
             text: 'OK',
-            onPress: () => navigation.navigate('Login'),
+            onPress: () => {
+              // A navegação continua baseada no tipo escolhido na UI
+              if (userType === 'tutor') {
+                navigation.navigate('InfoAdc', { id_usuario: usuarioId });
+              } else if (userType === 'host') {
+                navigation.navigate('InfoHost', { id_usuario: usuarioId });
+              }
+            },
           },
         ]
       );
-      navigation.navigate('InfoHost', { id_usuario: data[0].id_usuario });
-      // data[0] = novo usuário  
-      // if (data[0].userType == 'tutor'){
-      //   navigation.navigate('InfoAdc', { id_usuario: data[0].id_usuario });
-      // // navigation.navigate('InfoAdc');
-      // } else{
-      //   navigation.navigate('InfoHost', { id_usuario: data[0].id_usuario });
-      // }
+    if (userType === 'tutor') {
+              navigation.navigate('InfoAdc', { id_usuario: usuarioId });
+    } else if (userType === 'host') {
+      navigation.navigate('InfoHost', { id_usuario: usuarioId });
+    }
 
     } catch (error: any) {
       console.error('Erro no cadastro:', error);
