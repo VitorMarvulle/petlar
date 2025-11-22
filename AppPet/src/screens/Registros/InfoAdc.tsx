@@ -140,7 +140,7 @@ export default function InfoAdcScreen({ navigation, route }: RootStackScreenProp
       // Aqui só finalizamos o cadastro
 
       Alert.alert('Sucesso', 'Cadastro finalizado com sucesso!');
-      navigation.navigate('Login');
+      navigation.navigate('Endereco', { id_usuario: id_usuario });
     } catch (e) {
       console.log('Erro ao finalizar cadastro:', e);
       Alert.alert('Erro', 'Não foi possível finalizar seu cadastro.');

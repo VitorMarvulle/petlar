@@ -1,3 +1,4 @@
+// petlar\AppPet\src\screens\Registros\Cadastro.tsx
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Alert } from 'react-native';
 import { RootStackScreenProps } from '../../navigation/types';
@@ -89,9 +90,14 @@ export default function RegisterScreen({ navigation }: RootStackScreenProps<'Cad
           },
         ]
       );
+      navigation.navigate('InfoHost', { id_usuario: data[0].id_usuario });
       // data[0] = novo usuário  
-      navigation.navigate('InfoAdc', { id_usuario: data[0].id_usuario });
-      // navigation.navigate('InfoAdc');
+      // if (data[0].userType == 'tutor'){
+      //   navigation.navigate('InfoAdc', { id_usuario: data[0].id_usuario });
+      // // navigation.navigate('InfoAdc');
+      // } else{
+      //   navigation.navigate('InfoHost', { id_usuario: data[0].id_usuario });
+      // }
 
     } catch (error: any) {
       console.error('Erro no cadastro:', error);

@@ -6,6 +6,7 @@ import { RootStackParamList } from './types';
 import Login from '../screens/Registros/Login';
 import Cadastro from '../screens/Registros/Cadastro';
 import InfoAdc from '../screens/Registros/InfoAdc';
+import Endereco from '../screens/Registros/Endereco';
 import AdicionarPet from '../screens/Registros/AdicionarPet';
 import Configuracoes from '../screens/Configuracoes';
 import Alterar_senha from '../screens/Registros/Alterar_senha';
@@ -27,7 +28,10 @@ import HostAvaliacao from '../screens/Registros/HostAvaliacao'
 import TutorAvaliacao from '../screens/Registros/TutorAvaliacao'
 import FAQ_Tutor from '../screens/FAQ_Tutor'
 import FAQ_Host from '../screens/FAQ_Host'
-import Criar_anuncio from '../screens/Registros/Criar_anuncio'
+// import Criar_anuncio from '../screens/Registros/Criar_anuncio'
+
+import CriarAnuncioDetalhes from '../screens/Registros/CriarAnuncioDetalhes'
+import InfoHost from '../screens/Registros/InfoHost'
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -37,6 +41,7 @@ export default function AppNavigator() {
     <Stack.Navigator initialRouteName="Login">
       <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
       <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
+      <Stack.Screen name="Endereco" component={Endereco} options={{ headerShown: false }} />
       <Stack.Screen name="Home_Host" component={Home_Host} options={{ headerShown: false }} />
       <Stack.Screen name="Cadastro" component={Cadastro} options={{ headerShown: false }} />
       <Stack.Screen name="Perfil_Tutor" component={Perfil_Tutor} options={{ headerShown: false }} />
@@ -56,7 +61,9 @@ export default function AppNavigator() {
       <Stack.Screen name="Alterar_email" component={Alterar_email} options={{ headerShown: false }} />
       <Stack.Screen name="FAQ_Tutor" component={FAQ_Tutor} options={{ headerShown: false }} />
       <Stack.Screen name="FAQ_Host" component={FAQ_Host} options={{ headerShown: false }} />
-      <Stack.Screen name="Criar_anuncio" component={Criar_anuncio} options={{ headerShown: false }} />
+      {/* <Stack.Screen name="Criar_anuncio" component={Criar_anuncio} options={{ headerShown: false }} /> */}
+      <Stack.Screen name="CriarAnuncioDetalhes" component={CriarAnuncioDetalhes} options={{ headerShown: false }} />
+      <Stack.Screen name="InfoHost" component={InfoHost} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }
