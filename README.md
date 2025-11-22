@@ -22,6 +22,7 @@ docker-compose up --build -d
 - **Frontend (React):** [http://localhost:3000](http://localhost:3000)
 - **Backend (Python API):** [http://localhost:8000](http://localhost:8000)
 - **Dashboard (Streamlit):** [http://localhost:8501](http://localhost:8501)
+- **Mobile:** [http://localhost:8081](http://localhost:8081)
 
 ## 4. Para Parar os Contêineres
 
@@ -117,6 +118,29 @@ A aplicação estará disponível em [http://localhost:3000](http://localhost:30
    ```
 
 O dashboard estará disponível em [http://localhost:8501](http://localhost:8501).
+
+---
+
+## Mobile (React Native)
+
+1. Navegue até a pasta do mobile
+
+   ```bash
+   cd AppPet
+   ```
+
+2. Instale as dependências
+
+   ```bash
+   npm install
+   ```
+
+3. Inicie o servidor de desenvolvimento
+   ```bash
+   npx expo start
+   ```
+
+O mobile estará disponível em [http://localhost:8081](http://localhost:8081).
 
 ---
 
