@@ -78,6 +78,7 @@ def get_anfitrioes_by_status(status: str):
   
     return response.json()  
   
+# anfitriao_routes.py - Atualizar a rota GET /{id}
 @anfitriao_router.get("/{id}", status_code=HTTP_200_OK)  
 def get_anfitriao_by_id(id: int):  
     """Retorna um anfitrião específico por ID com dados do usuário"""  
@@ -91,7 +92,8 @@ def get_anfitriao_by_id(id: int):
     if not data:  
         raise HTTPException(status_code=404, detail="Anfitrião não encontrado")  
       
-    return data[0]  
+    return data[0]
+
   
 @anfitriao_router.post("/", status_code=HTTP_201_CREATED)  
 def create_anfitriao(anfitriao: AnfitriaoCreate):  

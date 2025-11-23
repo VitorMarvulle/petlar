@@ -1,143 +1,303 @@
-import React, {useState} from 'react';
-import {View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, TextInput, Dimensions} from 'react-native';
+// AppPet\src\screens\Perfis\Card_Host.tsx
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  Dimensions,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../navigation/types';
 
 const { width } = Dimensions.get('window');
+const API_BASE_URL = 'http://localhost:8000';
 
 // Import PNGs
-const UserIconPng = require('../../../assets/icons/user.png'); // Adicione seu PNG para o ícone de usuário
-const StarIconPng = require('../../../assets/icons/YellowStar.png'); // Adicione seu PNG para o ícone de estrela
-const HouseIconPng = require('../../../assets/icons/casa.png'); // Adicione seu PNG para o ícone de casa
-const SearchIconPng = require('../../../assets/icons/search.png'); // Adicione seu PNG para o ícone de busca
-const CatIconPng = require('../../../assets/icons/animais/gatoVerde.png'); // Adicione seu PNG para o ícone de gato
-const DogIconPng = require('../../../assets/icons/animais/cachorroVerde.png'); // Adicione seu PNG para o ícone de cachorro
+const UserIconPng = require('../../../assets/icons/user.png');
+const StarIconPng = require('../../../assets/icons/YellowStar.png');
+const HouseIconPng = require('../../../assets/icons/casa.png');
+const SearchIconPng = require('../../../assets/icons/search.png');
+const CatIconPng = require('../../../assets/icons/animais/gatoVerde.png');
+const DogIconPng = require('../../../assets/icons/animais/cachorroVerde.png');
+const PassaroIconPng = require('../../../assets/icons/animais/passaro.png');
+const TartarugaIconPng = require('../../../assets/icons/animais/tartaruga.png');
 const NaoFavorito = require('../../../assets/icons/GreyFav.png');
 const Favorito = require('../../../assets/icons/GoldFav.png');
 
-const FavoritarButton = ({ hostId }) => {
-    const [isFavorito, setIsFavorito] = useState(false);
-    
-    const toggleFavorito = () => {
-        const newState = !isFavorito;
-        setIsFavorito(newState);
-        
-        if (newState) {
-            console.log(`Usuário ${hostId} ADICIONADO aos favoritos!`);
-        } else {
-            console.log(`Usuário ${hostId} REMOVIDO dos favoritos.`);
-        }
-    };
-
-    const imageSource = isFavorito ? Favorito : NaoFavorito;
-
-    return (
-          <View>
-            <TouchableOpacity onPress={toggleFavorito}>
-              <Image 
-                source={imageSource} 
-                style={styles.fav} 
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-          </View>
-    )
+// Tipos
+interface UsuarioFromApi {
+  id_usuario: number;
+  nome: string;
+  email: string;
+  telefone?: string;
+  cidade?: string;
+  bairro?: string;
+  cep?: string;
+  logradouro?: string;
+  numero?: string;
+  uf?: string;
+  complemento?: string;
 }
 
-const UserAvatar = () => (
-    <View style={styles.profileAvatar}> // Este View é a 'bola' verde 50x50
-        <Image 
-            source={UserIconPng} 
-            style={styles.avatarInnerImage} // Este estilo vai ser menor que 50x50
-            resizeMode="contain"
-        />
+interface AnfitriaoFromApi {
+  id_anfitriao: number;
+  descricao?: string;
+  capacidade_maxima: number;
+  especie?: string[];
+  tamanho_pet?: string;
+  preco?: number | string | null;
+  status?: string;
+  fotos_urls?: string | string[];
+  usuarios?: UsuarioFromApi;
+  rating_medio?: number | null;
+}
+
+interface AvaliacaoFromApi {
+  id_avaliacao: number;
+  id_avaliador: number;
+  id_avaliado: number;
+  id_reserva: number;
+  nota: number;
+  comentario?: string;
+  data_avaliacao?: string;
+  avaliador?: UsuarioFromApi; // join com usuário avaliador
+}
+
+type CardHostRouteProp = RouteProp<RootStackParamList, 'Card_Host'>;
+type CardHostNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Card_Host'>;
+
+// Componentes auxiliares
+const FavoritarButton = ({ hostId }: { hostId: number }) => {
+  const [isFavorito, setIsFavorito] = useState(false);
+
+  const toggleFavorito = () => {
+    const newState = !isFavorito;
+    setIsFavorito(newState);
+
+    if (newState) {
+      console.log(`Anfitrião ${hostId} ADICIONADO aos favoritos!`);
+    } else {
+      console.log(`Anfitrião ${hostId} REMOVIDO dos favoritos.`);
+    }
+  };
+
+  const imageSource = isFavorito ? Favorito : NaoFavorito;
+
+  return (
+    <View>
+      <TouchableOpacity onPress={toggleFavorito}>
+        <Image source={imageSource} style={styles.fav} resizeMode="contain" />
+      </TouchableOpacity>
     </View>
+  );
+};
+
+const UserAvatar = () => (
+  <View style={styles.profileAvatar}>
+    <Image source={UserIconPng} style={styles.avatarInnerImage} resizeMode="contain" />
+  </View>
 );
 
-export default function PerfilHost({ navigation }) {
-  const hostId = 'igor-gallo-seabra';
-  
+// Componente para renderizar ícones de pets aceitos
+const PetIcon = ({ petName }: { petName: string }) => {
+  const icons: Record<string, any> = {
+    cachorro: DogIconPng,
+    gato: CatIconPng,
+    passaro: PassaroIconPng,
+    tartaruga: TartarugaIconPng,
+  };
+
+  const source = icons[petName.toLowerCase()];
+  if (!source) return null;
+
+  return <Image source={source} style={styles.petTypeIcon} />;
+};
+
+export default function PerfilHost() {
+  const route = useRoute<CardHostRouteProp>();
+  const navigation = useNavigation<CardHostNavigationProp>();
+
+  const { host } = route.params;
+
+  const [anfitriao, setAnfitriao] = useState<AnfitriaoFromApi | null>(null);
+  const [avaliacoes, setAvaliacoes] = useState<AvaliacaoFromApi[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Buscar dados do anfitrião
+  useEffect(() => {
+    const fetchAnfitriao = async () => {
+      try {
+        setLoading(true);
+
+        // Buscar anfitrião com dados do usuário
+        const anfitriaoUrl = `${API_BASE_URL}/anfitrioes/${host.id_anfitriao}`;
+        const anfitriaoResponse = await fetch(anfitriaoUrl);
+
+        if (!anfitriaoResponse.ok) {
+          throw new Error(`Erro ao buscar anfitrião: ${anfitriaoResponse.status}`);
+        }
+
+        const anfitriaoData: AnfitriaoFromApi = await anfitriaoResponse.json();
+        setAnfitriao(anfitriaoData);
+
+        // Buscar avaliações do anfitrião
+        const avaliacoesUrl = `${API_BASE_URL}/avaliacoes/avaliado/${anfitriaoData.usuarios?.id_usuario}`;
+        const avaliacoesResponse = await fetch(avaliacoesUrl);
+
+        if (avaliacoesResponse.ok) {
+          const avaliacoesData: AvaliacaoFromApi[] = await avaliacoesResponse.json();
+          setAvaliacoes(avaliacoesData);
+        }
+      } catch (error: any) {
+        console.error('Erro ao carregar dados:', error);
+        Alert.alert('Erro', 'Não foi possível carregar os dados do anfitrião.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnfitriao();
+  }, [host.id_anfitriao]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={[styles.innerContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color="#556A44" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!anfitriao) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={[styles.innerContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+          <Text style={{ color: '#556A44', fontSize: 16 }}>Anfitrião não encontrado</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Processar dados
+  const nome = anfitriao.usuarios?.nome ?? 'Anfitrião';
+  const cidade = anfitriao.usuarios?.cidade ?? '';
+  const bairro = anfitriao.usuarios?.bairro ?? '';
+  const location = cidade && bairro ? `${cidade}, ${bairro}` : cidade || bairro || 'Local não informado';
+
+  const ratingNumber = anfitriao.rating_medio ?? 5;
+  const rating = ratingNumber.toFixed(1).replace('.', ',');
+
+  const precoNumber = typeof anfitriao.preco === 'string' ? parseFloat(anfitriao.preco) : anfitriao.preco ?? 0;
+  const price = precoNumber.toFixed(2).replace('.', ',');
+
+  const petsAccepted = anfitriao.especie ?? [];
+
+  // Processar fotos
+  let fotosArray: string[] = [];
+  if (Array.isArray(anfitriao.fotos_urls)) {
+    fotosArray = anfitriao.fotos_urls;
+  } else if (typeof anfitriao.fotos_urls === 'string' && anfitriao.fotos_urls.trim() !== '') {
+    try {
+      const parsed = JSON.parse(anfitriao.fotos_urls);
+      if (Array.isArray(parsed)) {
+        fotosArray = parsed;
+      }
+    } catch (e) {
+      console.warn('Não foi possível fazer parse de fotos_urls:', anfitriao.fotos_urls);
+    }
+  }
+
+  // Filtrar avaliações pela busca
+  const avaliacoesFiltradas = avaliacoes.filter((av) =>
+    av.comentario?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
-   
         <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-          
+          {/* Perfil */}
           <View style={styles.profileSectionNew}>
             <UserAvatar />
             <View style={styles.profileInfoNew}>
-
               <View style={styles.nameAndLocationRow}>
-                <Text style={styles.hostNameNew}>Igor Gallo Seabra</Text>
-                <Text style={styles.locationNew}>| Tupi</Text>
+                <Text style={styles.hostNameNew}>{nome}</Text>
+                <Text style={styles.locationNew}>| {bairro || 'Bairro'}</Text>
               </View>
 
               <View style={styles.sectionDivider} />
 
               <View style={styles.acceptedPetsRow}>
                 <Text style={styles.acceptedLabelNew}>Aceita:</Text>
-                <Image source={CatIconPng} style={styles.petTypeIcon} />
-                <Image source={DogIconPng} style={styles.petTypeIcon} />
+                {petsAccepted.map((pet, i) => (
+                  <PetIcon key={i} petName={pet} />
+                ))}
               </View>
-                <Text style={styles.maxPetsText}>Máx de Pets por reserva: 3</Text>
-              <Text style={styles.petWeightText}>Cuida de Pets de: 7-18kg</Text>
+              <Text style={styles.maxPetsText}>Máx de Pets por reserva: {anfitriao.capacidade_maxima}</Text>
+              <Text style={styles.petWeightText}>
+                Cuida de Pets de: {anfitriao.tamanho_pet || 'Todos os tamanhos'}
+              </Text>
             </View>
           </View>
 
-          <FavoritarButton hostId={hostId} />
+          <FavoritarButton hostId={anfitriao.id_anfitriao} />
 
-          {/* Rating - Moved and Styled */}
+          {/* Rating */}
           <View style={styles.ratingSectionNew}>
             <Image source={StarIconPng} style={styles.starIcon} />
-            <Text style={styles.ratingTextNew}>5,0</Text>
+            <Text style={styles.ratingTextNew}>{rating}</Text>
           </View>
 
-          {/* Description */}
+          {/* Descrição */}
           <View style={styles.descriptionSection}>
-            <Text style={styles.descriptionTitle}>Descrição de Igor</Text>
+            <Text style={styles.descriptionTitle}>Descrição de {nome}</Text>
             <Text style={styles.description}>
-              Sou morador de Praia Grande e fico na Tupi, adoro animais e estou em busca de renda extra!
-              {'\n\n'}
-              Cuido de animais idosos sem problemas e também cuido de filhotes!
+              {anfitriao.descricao || 'Sem descrição disponível.'}
               {'\n\n'}
               Diaria<Text style={styles.dots}>................................................</Text>
-              <Text style={styles.price}>R$ 65,00</Text>
+              <Text style={styles.price}>R$ {price}</Text>
               <Text style={styles.priceUnit}>/dia</Text>
             </Text>
           </View>
 
-
+          {/* Espaço para o Pet */}
           <View style={styles.petSpaceSection}>
             <Text style={styles.sectionTitle}>Espaço para o Pet</Text>
-            
+
             <View style={styles.imageGrid}>
               <View style={styles.imageRow}>
-                <Image 
-                  source={{ uri: 'https://api.builder.io/api/v1/image/assets/TEMP/fa2cf4f28fc33eefa8830aaf502e6d3c9ba73328?width=200' }}
-                  style={styles.gridImage}
-                  resizeMode="cover"
-                />
-                <Image 
-                  source={{ uri: 'https://api.builder.io/api/v1/image/assets/TEMP/076127244d718d2dc74d00209ff14c4f71fcb007?width=200' }}
-                  style={styles.gridImage}
-                  resizeMode="cover"
-                />
-                <View style={styles.gridImagePlaceholder}>
-                  <Image source={HouseIconPng} style={styles.houseIcon} />
-                </View>
+                {fotosArray.slice(0, 3).map((foto, i) => (
+                  <Image key={i} source={{ uri: foto }} style={styles.gridImage} resizeMode="cover" />
+                ))}
+                {Array.from({ length: Math.max(0, 3 - fotosArray.slice(0, 3).length) }).map((_, i) => (
+                  <View key={`placeholder-${i}`} style={styles.gridImagePlaceholder}>
+                    <Image source={HouseIconPng} style={styles.houseIcon} />
+                  </View>
+                ))}
               </View>
-              
+
               <View style={styles.imageRow}>
-                <View style={styles.gridImagePlaceholder}>
-                  <Image source={HouseIconPng} style={styles.houseIcon} />
-                </View>
-                <View style={styles.gridImagePlaceholder}>
-                  <Image source={HouseIconPng} style={styles.houseIcon} />
-                </View>
-                <View style={styles.gridImagePlaceholder}>
-                  <Image source={HouseIconPng} style={styles.houseIcon} />
-                </View>
+                {fotosArray.slice(3, 6).map((foto, i) => (
+                  <Image key={i} source={{ uri: foto }} style={styles.gridImage} resizeMode="cover" />
+                ))}
+                {Array.from({ length: Math.max(0, 3 - fotosArray.slice(3, 6).length) }).map((_, i) => (
+                  <View key={`placeholder2-${i}`} style={styles.gridImagePlaceholder}>
+                    <Image source={HouseIconPng} style={styles.houseIcon} />
+                  </View>
+                ))}
               </View>
             </View>
-
 
             <View style={styles.buttonRow}>
               <TouchableOpacity style={styles.actionButton_FAQ} onPress={() => navigation.navigate('FAQ_Tutor')}>
@@ -149,56 +309,45 @@ export default function PerfilHost({ navigation }) {
             </View>
           </View>
 
-          {/* Reviews Section */}
+          {/* Avaliações */}
           <View style={styles.reviewsSection}>
             <Text style={styles.sectionTitle}>Avaliações dos Hospedes</Text>
-            
-            {/* Search Bar */}
+
+            {/* Barra de busca */}
             <View style={styles.searchContainer}>
               <TextInput
                 style={styles.searchInput}
-                placeholder="pesquise algo espeficíco..."
+                placeholder="pesquise algo específico..."
                 placeholderTextColor="#556A44"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
               />
               <TouchableOpacity style={styles.searchButton}>
                 <Image source={SearchIconPng} style={styles.searchIcon} />
               </TouchableOpacity>
             </View>
 
-            {/* Review Cards */}
-            <View style={styles.reviewCard}>
-              <View style={styles.reviewUserAvatar} />
-              <View style={styles.reviewContent}>
-                <View style={styles.reviewHeader}>
-                  <Text style={styles.reviewerName}>Vitor M.</Text>
-                  <View style={styles.reviewRating}>
-                    <Image source={StarIconPng} style={styles.starIconSmall} />
-                    <Text style={styles.reviewRatingText}>5,0</Text>
+            {/* Cards de avaliação */}
+            {avaliacoesFiltradas.length === 0 ? (
+              <Text style={styles.noReviewsText}>Nenhuma avaliação encontrada.</Text>
+            ) : (
+              avaliacoesFiltradas.map((av) => (
+                <View key={av.id_avaliacao} style={styles.reviewCard}>
+                  <View style={styles.reviewUserAvatar} />
+                  <View style={styles.reviewContent}>
+                    <View style={styles.reviewHeader}>
+                      <Text style={styles.reviewerName}>{av.avaliador?.nome || 'Usuário'}</Text>
+                      <View style={styles.reviewRating}>
+                        <Image source={StarIconPng} style={styles.starIconSmall} />
+                        <Text style={styles.reviewRatingText}>{av.nota.toFixed(1).replace('.', ',')}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.reviewText}>{av.comentario || 'Sem comentário.'}</Text>
                   </View>
                 </View>
-                <Text style={styles.reviewText}>
-                  Recomendo o Igor! cuidou muito bem da minha tartaruga!
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.reviewCard}>
-              <View style={styles.reviewUserAvatar} />
-              <View style={styles.reviewContent}>
-                <View style={styles.reviewHeader}>
-                  <Text style={styles.reviewerName}>Gabriel D.</Text>
-                  <View style={styles.reviewRating}>
-                    <Image source={StarIconPng} style={styles.starIconSmall} />
-                    <Text style={styles.reviewRatingText}>5,0</Text>
-                  </View>
-                </View>
-                <Text style={styles.reviewText}>
-                  Recomendo o Igor! cuidou muito bem da minha papagaio!
-                </Text>
-              </View>
-            </View>
+              ))
+            )}
           </View>
-
         </ScrollView>
       </View>
 
@@ -231,13 +380,12 @@ const styles = StyleSheet.create({
     paddingTop: 40,
   },
   avatarInnerImage: {
-      width: '60%', // Faz a imagem ter 80% do tamanho do View pai (a bola)
-      height: '60%',
-      tintColor: '#FFF6E2', // Se for um ícone monocromático, pinte ele
-      marginTop: 12,
-      alignSelf: 'center'
+    width: '60%',
+    height: '60%',
+    tintColor: '#FFF6E2',
+    marginTop: 12,
+    alignSelf: 'center',
   },
-//Perfil
   profileSectionNew: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -255,11 +403,9 @@ const styles = StyleSheet.create({
     marginRight: 15,
     marginTop: -40,
   },
-  
   profileInfoNew: {
     flex: 1,
   },
-  
   hostNameNew: {
     color: '#556A44',
     fontSize: 18,
@@ -296,7 +442,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '400',
     fontFamily: 'Inter',
-    marginBottom: 3, 
+    marginBottom: 3,
   },
   petWeightText: {
     color: '#556A44',
@@ -304,32 +450,19 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     fontFamily: 'Inter',
   },
-
-  fav: { 
-    width: 75, 
-    height: 75, 
-    left: 250, 
-    bottom: 55 
+  fav: {
+    width: 75,
+    height: 75,
+    left: 250,
+    bottom: 55,
   },
-
-  petPawIcon: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 40, // Ajuste o tamanho da pata
-    height: 40,
-    resizeMode: 'contain',
-    tintColor: '#7AB24E', // Se a pata for monocromática, pode aplicar um tint
-  },
-
-  // NEW RATING SECTION STYLES (for the 5,0 below the profile info)
   ratingSectionNew: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 15,
     alignSelf: 'flex-start',
-    marginTop: -98, // Traga para cima para sobrepor um pouco
+    marginTop: -98,
     marginBottom: 20,
   },
   starIcon: {
@@ -343,11 +476,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Inter',
   },
-
   descriptionSection: {
     paddingHorizontal: 16,
     marginBottom: 30,
-    backgroundColor: '#E0EFD3', // Cor de fundo como na imagem de referência
+    backgroundColor: '#E0EFD3',
     borderRadius: 15,
     paddingVertical: 15,
     marginHorizontal: 8,
@@ -381,8 +513,6 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     fontFamily: 'Inter',
   },
-
-  //fotos
   sectionDivider: {
     width: '100%',
     height: 2,
@@ -410,8 +540,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   gridImage: {
-    width: (width - 15 * 2 - 14 * 2 - 7 * 2 - 10 * 2) / 3, // Adjust calculation for spacing
-    height: (width - 15 * 2 - 14 * 2 - 7 * 2 - 10 * 2) / 3, // Make square
+    width: (width - 15 * 2 - 14 * 2 - 7 * 2 - 10 * 2) / 3,
+    height: (width - 15 * 2 - 14 * 2 - 7 * 2 - 10 * 2) / 3,
     borderRadius: 6,
   },
   gridImagePlaceholder: {
@@ -425,7 +555,7 @@ const styles = StyleSheet.create({
   houseIcon: {
     width: 30,
     height: 30,
-    tintColor: '#FFF6E2', // Se o ícone de casa for monocromático
+    tintColor: '#FFF6E2',
   },
   buttonRow: {
     flexDirection: 'row',
@@ -434,7 +564,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   actionButton_FAQ: {
-    width: 195, // Aproximadamente metade da largura da tela menos margens
+    width: 195,
     height: 50,
     backgroundColor: '#7AB24E',
     borderRadius: 10,
@@ -443,8 +573,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-    actionButton_Reserva: {
-    width: 110, // Aproximadamente metade da largura da tela menos margens
+  actionButton_Reserva: {
+    width: 110,
     height: 50,
     backgroundColor: '#608641',
     borderRadius: 10,
@@ -464,10 +594,10 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     flexDirection: 'row',
-    height: 40, // Aumentei a altura
+    height: 40,
     marginBottom: 15,
     paddingHorizontal: 8,
-    alignItems: 'center', // Alinhar itens verticalmente
+    alignItems: 'center',
   },
   searchInput: {
     flex: 1,
@@ -479,21 +609,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Inter',
     color: '#556A44',
-    height: '100%', // Preencher a altura do container
+    height: '100%',
   },
   searchButton: {
-    width: 30, // Aumentei o tamanho do botão
+    width: 30,
     height: 30,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 10,
-    backgroundColor: '#7AB24E', // Cor de fundo do botão de busca
+    backgroundColor: '#7AB24E',
     borderRadius: 6,
   },
   searchIcon: {
     width: 20,
     height: 20,
-    tintColor: '#FFF6E2', // Cor do ícone de busca
+    tintColor: '#FFF6E2',
   },
   reviewCard: {
     flexDirection: 'row',
@@ -504,13 +634,13 @@ const styles = StyleSheet.create({
     padding: 8,
     marginBottom: 15,
     marginHorizontal: 8,
-    height: 75,
+    minHeight: 75,
   },
   reviewUserAvatar: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#7AB24E', // Cor de fundo do ícone de usuário na avaliação
+    backgroundColor: '#7AB24E',
     marginRight: 10,
   },
   reviewContent: {
@@ -551,6 +681,13 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     flex: 1,
   },
+  noReviewsText: {
+    color: '#556A44',
+    fontSize: 14,
+    fontFamily: 'Inter',
+    textAlign: 'center',
+    marginTop: 20,
+  },
   footer: {
     alignItems: 'center',
     paddingVertical: 15,
@@ -562,8 +699,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
   },
   nameAndLocationRow: {
-    flexDirection: 'row', // Isso coloca os filhos (os dois Text) lado a lado
-    alignItems: 'center', // Opcional: alinha verticalmente (se um texto for maior que o outro)
-    marginBottom: 5, // Ajuste o espaçamento abaixo, se necessário
-},
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
 });
