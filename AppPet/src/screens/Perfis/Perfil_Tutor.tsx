@@ -1,4 +1,5 @@
-import React, {useState} from 'react';
+// AppPet\src\screens\Perfis\Perfil_Tutor.tsx
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -7,80 +8,33 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Alert, // Manter Alert para tipagem, mas usaremos Modal customizado
-  Modal, // Importar Modal para o alerta customizado
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect, useRoute} from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { RootStackScreenProps } from '../../navigation/types';
 
 const ICON_STAR = require('../../../assets/icons/starFilled.png');
 const ICON_AVATAR = require('../../../assets/icons/user.png');
 const ICON_DELETE = require('../../../assets/icons/delete.png');
 const ICON_ADD = require('../../../assets/icons/add.png');
 const ICON_EDIT = require('../../../assets/icons/edit.png');
-// Novo Ícone para o Alerta de Sucesso (Opcional, mas útil visualmente)
-const ICON_CHECK = require('../../../assets/icons/check.png'); 
+const ICON_CHECK = require('../../../assets/icons/check.png');
 
-// --- DADOS MOCADOS DE PETS ---
-const MOCKED_PETS = [
-  {
-    id: 1,
-    imageUrl:
-      'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=300&h=200&fit=crop',
-    name: 'Nina',
-    species: 'Gato',
-    age: '8 anos',
-    weight: '3kg',
-    comportamento: 'Calma',
-    specifications:
-      'Gosta de sachê pela manhã, é bastante falante e ODEIA colo, sempre nos arranha e fica brava quando fazemos isso.',
-  },
-  {
-    id: 2,
-    imageUrl:
-      'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=300&h=200&fit=crop',
-    name: 'Bolinho Fofo',
-    species: 'Gato',
-    age: '3 meses',
-    weight: '0.5kg',
-    comportamento: 'Medrosa',
-    specifications:
-      'Gosta de sachê pela manhã, é bastante falante e ODEIA colo, sempre nos arranha e fica brava quando fazemos isso.',
-  },
-];
-// ------------------------------------------------------------------------
+// ⚙️ CONFIGURAÇÃO DA API
+const API_BASE_URL = 'http://localhost:8000'; // ⚠️ ALTERE PARA O IP DO SEU BACKEND
 
-let nextId = MOCKED_PETS.length + 1;
-
-type NewPetData = {
-  nome: string;
-  especie: string;
-  idade: string;
-  idadeUnidade: string;
-  peso: string;
-  unidade: string;
-  especificacoes?: string;
-  fotos?: string[];
-};
-
-// ⭐️ NOVO: Componente CustomAlert (Adaptado da sua tela reserva)
+// ⭐️ Componente CustomAlert
 const CustomAlert = ({
   visible,
   title,
   message,
-  onConfirm, // Usado para a confirmação de exclusão
+  onConfirm,
   onClose,
-  confirmText = 'OK', // Texto padrão
-  cancelText, // Se houver, é um modal de confirmação
-  isSuccess = false, // Para mostrar um ícone de sucesso/check
-}: {
-  visible: boolean;
-  title: string;
-  message: string;
-  onConfirm?: () => void;
-  onClose: () => void;
-  confirmText?: string;
-  cancelText?: string;
-  isSuccess?: boolean;
+  confirmText = 'OK',
+  cancelText,
+  isSuccess = false,
 }) => (
   <Modal transparent visible={visible} animationType="fade">
     <View style={styles.modalOverlay}>
@@ -96,7 +50,6 @@ const CustomAlert = ({
         <Text style={styles.modalMessage}>{message}</Text>
 
         <View style={styles.modalButtonsContainer}>
-          {/* Botão de Cancelar (se for confirmação) */}
           {cancelText && (
             <TouchableOpacity
               style={[styles.modalButton, styles.modalCancelButton]}
@@ -105,12 +58,10 @@ const CustomAlert = ({
             </TouchableOpacity>
           )}
 
-          {/* Botão Principal/Confirmação */}
           <TouchableOpacity
             style={[
               styles.modalButton,
               cancelText ? styles.modalConfirmButton : styles.modalSingleButton,
-              // Mudar cor se for uma ação destrutiva (exclusão)
               title.includes('Excluir') && styles.modalDeleteButton,
             ]}
             onPress={onConfirm || onClose}>
@@ -121,17 +72,28 @@ const CustomAlert = ({
     </View>
   </Modal>
 );
-// ------------------------------------------------------------------------
 
-const UserAvatar = () => (
+const UserAvatar = ({fotoUrl}) => (
   <View style={styles.avatarContainer}>
     <View style={styles.avatarIcon}>
-      <Image style={styles.avatarImageContent} resizeMode="contain" />
+      {fotoUrl ? (
+        <Image
+          source={{uri: fotoUrl}}
+          style={styles.avatarImageContent}
+          resizeMode="cover"
+        />
+      ) : (
+        <Image
+          source={ICON_AVATAR}
+          style={styles.avatarImageContent}
+          resizeMode="contain"
+        />
+      )}
     </View>
   </View>
 );
 
-const StarRating = ({rating}: {rating: string}) => (
+const StarRating = ({rating}) => (
   <View style={styles.ratingContainer}>
     <Image source={ICON_STAR} style={styles.starImage} resizeMode="contain" />
     <Text style={styles.ratingText}>{rating}</Text>
@@ -144,24 +106,20 @@ const PetCard = ({
   name,
   species,
   age,
+  ageUnit,
   weight,
-  comportamento,
-  specifications,
+  weightUnit,
+  observations,
   onDelete,
-}: {
-  id: number;
-  imageUrl: string;
-  name: string;
-  species: string;
-  age: string;
-  weight: string;
-  comportamento: string;
-  specifications: string;
-  onDelete: (id: number, name: string) => void;
 }) => (
   <View style={styles.petCard}>
     <View style={styles.petImageContainer}>
-      <Image source={{uri: imageUrl}} style={styles.petImage} />
+      <Image
+        source={{
+          uri: imageUrl || 'https://via.placeholder.com/300x200?text=Sem+Foto',
+        }}
+        style={styles.petImage}
+      />
       <TouchableOpacity
         style={styles.deletePetButton}
         onPress={() => onDelete(id, name)}
@@ -179,31 +137,24 @@ const PetCard = ({
         <Text style={styles.boldText}>Espécie:</Text> {species} 🐾
       </Text>
       <Text style={styles.petDetailText}>
-        <Text style={styles.boldText}>Idade:</Text> {age}
+        <Text style={styles.boldText}>Idade:</Text> {age} {ageUnit}
+        {age > 1 ? 's' : ''}
       </Text>
       <Text style={styles.petDetailText}>
         <Text style={styles.boldText}>Peso:</Text> {weight}
+        {weightUnit}
       </Text>
-      <Text style={styles.petDetailText}>
-        <Text style={styles.boldText}>Comportamento:</Text> {comportamento}
-      </Text>
-      <Text style={styles.specificationsTitle}>Especificações:</Text>
-      <Text style={styles.specificationsText}>{specifications}</Text>
+      {observations && (
+        <>
+          <Text style={styles.specificationsTitle}>Observações:</Text>
+          <Text style={styles.specificationsText}>{observations}</Text>
+        </>
+      )}
     </View>
   </View>
 );
 
-const ActionButton = ({
-  onPress,
-  backgroundColor,
-  iconSource,
-  label,
-}: {
-  onPress: () => void;
-  backgroundColor: string;
-  iconSource: any;
-  label: string;
-}) => (
+const ActionButton = ({onPress, backgroundColor, iconSource, label}) => (
   <View style={styles.actionButtonWrapper}>
     <TouchableOpacity
       style={[styles.actionButton, {backgroundColor}]}
@@ -214,27 +165,33 @@ const ActionButton = ({
   </View>
 );
 
-export default function PerfilTutor({navigation}) {
-  const [pets, setPets] = useState(MOCKED_PETS);
-  // ⭐️ NOVO: Estado para gerenciar o CustomAlert
+type PerfilTutorProps = RootStackScreenProps<'Perfil_Tutor'>;
+
+export default function PerfilTutor({navigation, route}: PerfilTutorProps) {
+  const [usuario, setUsuario] = useState(null);
+  const [pets, setPets] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertData, setAlertData] = useState({
     title: '',
     message: '',
     onConfirm: () => setAlertVisible(false),
     confirmText: 'OK',
-    cancelText: undefined as string | undefined,
+    cancelText: undefined,
     isSuccess: false,
   });
 
+  // 🆕 Pegar o id_usuario dos parâmetros da rota
+  const { id_usuario } = route.params;
+
   // Função genérica para exibir o alerta
   const showAlert = (
-    title: string,
-    message: string,
-    onConfirm?: () => void,
-    confirmText: string = 'OK',
-    cancelText?: string,
-    isSuccess: boolean = false,
+    title,
+    message,
+    onConfirm,
+    confirmText = 'OK',
+    cancelText,
+    isSuccess = false,
   ) => {
     setAlertData({
       title,
@@ -247,70 +204,181 @@ export default function PerfilTutor({navigation}) {
     setAlertVisible(true);
   };
 
-  // ⭐️ MODIFICADO: Função para adicionar um novo pet ao estado
-  const addNewPet = (newPetData: NewPetData) => {
-    const newPet = {
-      id: nextId++,
-      imageUrl: newPetData.fotos?.[0] || 'https://via.placeholder.com/300x200?text=Sem+Foto',
-      name: newPetData.nome,
-      species: newPetData.especie,
-      age: `${newPetData.idade} ${newPetData.idadeUnidade}s`,
-      weight: `${newPetData.peso}${newPetData.unidade}`,
-      comportamento: 'A definir',
-      specifications: newPetData.especificacoes || 'Nenhuma especificação adicional.',
-    };
+  // 🔄 Buscar dados do usuário logado
+  const fetchUsuario = async () => {
+    try {
+      // 🆕 Usar o id_usuario dos parâmetros
+      if (!id_usuario) {
+        showAlert('Erro', 'Usuário não identificado.');
+        navigation.navigate('Login');
+        return;
+      }
 
-    setPets(currentPets => [...currentPets, newPet]);
+      const response = await fetch(`${API_BASE_URL}/usuarios/${id_usuario}`);
+      if (!response.ok) {
+        throw new Error('Erro ao buscar dados do usuário');
+      }
 
-    // ⭐️ NOVO: Usando CustomAlert para sucesso
-    showAlert(
-      'Pet Adicionado!',
-      `${newPet.name} foi adicionado à sua lista de pets com sucesso.`,
-      undefined,
-      'Entendido',
-      undefined,
-      true, // isSuccess = true
-    );
+      const data = await response.json();
+      setUsuario(data);
+      
+      // 🆕 Salvar no AsyncStorage para uso posterior
+      await AsyncStorage.setItem('id_usuario', id_usuario.toString());
+    } catch (error) {
+      console.error('Erro ao buscar usuário:', error);
+      showAlert('Erro', 'Não foi possível carregar os dados do usuário.');
+    }
   };
 
+  // 🐾 Buscar pets do tutor
+  const fetchPets = async () => {
+    try {
+      // 🆕 Usar o id_usuario dos parâmetros
+      if (!id_usuario) return;
+
+      const response = await fetch(`${API_BASE_URL}/pets/tutor/${id_usuario}`);
+      if (!response.ok) {
+        throw new Error('Erro ao buscar pets');
+      }
+
+      const data = await response.json();
+      setPets(data);
+    } catch (error) {
+      console.error('Erro ao buscar pets:', error);
+      showAlert('Erro', 'Não foi possível carregar os pets.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔄 Carregar dados ao montar o componente
+  useEffect(() => {
+    fetchUsuario();
+    fetchPets();
+  }, [id_usuario]); // 🆕 Adicionar id_usuario como dependência
+
+  // 🔄 Recarregar pets quando a tela ganhar foco (após adicionar novo pet)
+  useFocusEffect(
+    useCallback(() => {
+      fetchPets();
+    }, [id_usuario]),
+  );
+
+  // ➕ Adicionar novo pet (callback da tela AdicionarPet)
+  const addNewPet = async newPetData => {
+    try {
+      // 🆕 Usar o id_usuario dos parâmetros
+      if (!id_usuario) {
+        showAlert('Erro', 'Usuário não autenticado.');
+        return;
+      }
+
+      // Preparar dados para enviar à API
+      const petData = {
+        id_tutor: parseInt(id_usuario),
+        nome: newPetData.nome,
+        especie: newPetData.especie,
+        idade: parseInt(newPetData.idade) || null,
+        idade_unidade: newPetData.idadeUnidade || 'ano',
+        peso: parseFloat(newPetData.peso) || null,
+        peso_unidade: newPetData.unidade || 'kg',
+        observacoes: newPetData.especificacoes || null,
+        fotos_urls: newPetData.fotos || [],
+      };
+
+      const response = await fetch(`${API_BASE_URL}/pets/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(petData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao adicionar pet');
+      }
+
+      const novoPet = await response.json();
+
+      // Atualizar lista local
+      setPets(currentPets => [...currentPets, novoPet[0]]);
+
+      showAlert(
+        'Pet Adicionado!',
+        `${novoPet[0].nome} foi adicionado à sua lista de pets com sucesso.`,
+        undefined,
+        'Entendido',
+        undefined,
+        true,
+      );
+    } catch (error) {
+      console.error('Erro ao adicionar pet:', error);
+      showAlert('Erro', 'Não foi possível adicionar o pet. Tente novamente.');
+    }
+  };
+
+  // ➕ Navegar para tela de adicionar pet
   const handleAdd = () => {
     navigation.navigate('AdicionarPet', {
+      id_tutor: id_usuario, // 🆕 Passar o id_tutor
       onAddPet: addNewPet,
     });
   };
 
-  // ⭐️ MODIFICADO: Implementação da função de exclusão com CustomAlert
-  const handleDeletePet = (id: number, name: string) => {
-    const confirmExclusion = () => {
-      setPets(currentPets => currentPets.filter(pet => pet.id !== id));
-      // Exibir alerta de sucesso após a exclusão
-      showAlert(
-        'Excluído! 💔',
-        `${name} foi removido da sua lista.`,
-        undefined,
-        'OK',
-        undefined,
-        false, // Não é um sucesso feliz, mas uma confirmação de ação
-      );
+  // 🗑️ Deletar pet
+  const handleDeletePet = (id, name) => {
+    const confirmExclusion = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/pets/${id}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          throw new Error('Erro ao excluir pet');
+        }
+
+        // Remover da lista local
+        setPets(currentPets => currentPets.filter(pet => pet.id_pet !== id));
+
+        showAlert(
+          'Excluído! 💔',
+          `${name} foi removido da sua lista.`,
+          undefined,
+          'OK',
+          undefined,
+          false,
+        );
+      } catch (error) {
+        console.error('Erro ao excluir pet:', error);
+        showAlert('Erro', 'Não foi possível excluir o pet. Tente novamente.');
+      }
     };
 
-    // Usando CustomAlert como modal de Confirmação (dois botões)
     showAlert(
       'Confirmar Exclusão',
       `Tem certeza que deseja remover ${name} da sua lista de pets? Esta ação é irreversível.`,
-      confirmExclusion, // Função de confirmação
-      'Excluir', // Texto do botão de confirmação
-      'Cancelar', // Texto do botão de cancelamento
+      confirmExclusion,
+      'Excluir',
+      'Cancelar',
     );
   };
 
+  // ✏️ Editar pet (implementar conforme necessário)
   const handleEdit = () => {
     navigation.navigate('EditarPet');
   };
 
   const CornerIconClickable = () => (
     <TouchableOpacity
-      onPress={() => navigation.navigate('Home')}
+      onPress={() => navigation.navigate('Home', { 
+        usuario: {
+          id_usuario: id_usuario,
+          nome: usuario?.nome || '',
+          email: usuario?.email || '',
+          tipo: usuario?.tipo,
+          telefone: usuario?.telefone,
+        }
+      })}
       style={styles.cornerImageContainer}>
       <Image
         source={require('../../../assets/icons/PETLOGO.png')}
@@ -319,6 +387,18 @@ export default function PerfilTutor({navigation}) {
       />
     </TouchableOpacity>
   );
+
+  // 🔄 Tela de carregamento
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#7AB24E" />
+          <Text style={styles.loadingText}>Carregando...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -329,10 +409,12 @@ export default function PerfilTutor({navigation}) {
           <CornerIconClickable />
 
           <View style={styles.profileSection}>
-            <UserAvatar />
+            <UserAvatar fotoUrl={usuario?.foto_perfil_url} />
             <View style={styles.profileInfo}>
               <Text>Bem vindo(a), Tutor</Text>
-              <Text style={styles.greeting}>Ellen Rodrigues Magueta Newerkla</Text>
+              <Text style={styles.greeting}>
+                {usuario?.nome || 'Carregando...'}
+              </Text>
               <View style={styles.divider} />
               <Text style={styles.Text}>Suas Avaliações</Text>
             </View>
@@ -344,20 +426,32 @@ export default function PerfilTutor({navigation}) {
           <View style={styles.petsSection}>
             <Text style={styles.sectionTitle}>Seus amados Pets</Text>
 
-            {pets.map(pet => (
-              <PetCard
-                key={pet.id}
-                id={pet.id}
-                imageUrl={pet.imageUrl}
-                name={pet.name}
-                species={pet.species}
-                age={pet.age}
-                weight={pet.weight}
-                comportamento={pet.comportamento}
-                specifications={pet.specifications}
-                onDelete={handleDeletePet}
-              />
-            ))}
+            {pets.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>
+                  Você ainda não cadastrou nenhum pet.
+                </Text>
+                <Text style={styles.emptySubText}>
+                  Clique em "Adicionar" para cadastrar seu primeiro pet! 🐾
+                </Text>
+              </View>
+            ) : (
+              pets.map(pet => (
+                <PetCard
+                  key={pet.id_pet}
+                  id={pet.id_pet}
+                  imageUrl={pet.fotos_urls?.[0]}
+                  name={pet.nome}
+                  species={pet.especie}
+                  age={pet.idade}
+                  ageUnit={pet.idade_unidade}
+                  weight={pet.peso}
+                  weightUnit={pet.peso_unidade}
+                  observations={pet.observacoes}
+                  onDelete={handleDeletePet}
+                />
+              ))
+            )}
 
             <View style={styles.actionButtonsContainer}>
               <ActionButton
@@ -380,7 +474,6 @@ export default function PerfilTutor({navigation}) {
         </View>
       </ScrollView>
 
-      {/* ⭐️ NOVO: Renderização do CustomAlert */}
       <CustomAlert
         visible={alertVisible}
         title={alertData.title}
@@ -396,6 +489,7 @@ export default function PerfilTutor({navigation}) {
 }
 
 const styles = StyleSheet.create({
+  // ... (mantenha todos os estilos existentes)
   container: {
     flex: 1,
     backgroundColor: '#B3D18C',
@@ -414,8 +508,34 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     position: 'relative',
   },
-
-  //LOGO DO PET
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#556A44',
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#556A44',
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  emptySubText: {
+    fontSize: 14,
+    color: '#7AB24E',
+    textAlign: 'center',
+  },
   cornerImageContainer: {
     alignItems: 'center',
     marginTop: 30,
@@ -428,11 +548,10 @@ const styles = StyleSheet.create({
     height: 55,
     marginBottom: 3,
   },
-
-  // ESTILOS DE IMAGEM E ÍCONES
   avatarImageContent: {
-    width: '80%',
-    height: '80%',
+    width: '100%',
+    height: '100%',
+    borderRadius: 60,
   },
   starImage: {
     width: 22,
@@ -445,8 +564,6 @@ const styles = StyleSheet.create({
     height: 20,
     tintColor: '#FFFFFF',
   },
-
-  // SEÇÃO PERFIL DO TUTOR
   profileSection: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -466,8 +583,8 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
-
   profileInfo: {
     flex: 1,
     paddingTop: 8,
@@ -495,7 +612,6 @@ const styles = StyleSheet.create({
     bottom: 34,
     zIndex: 5,
   },
-
   profileRating: {
     marginTop: 40,
     zIndex: 10,
@@ -512,13 +628,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '700',
   },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: '#B3D18C',
-    marginVertical: 20,
-  },
-
-  // SEÇÃO PETS
   petsSection: {
     marginBottom: 30,
   },
@@ -552,8 +661,6 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
-
-  // ESTILOS DE EXCLUSÃO
   deletePetButton: {
     position: 'absolute',
     top: 5,
@@ -572,7 +679,6 @@ const styles = StyleSheet.create({
     height: 15,
     tintColor: '#FFFFFF',
   },
-
   petDetails: {
     flex: 1,
     paddingTop: 5,
@@ -608,8 +714,6 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     fontStyle: 'italic',
   },
-
-  // SEÇÃO BOTÕES DE AÇÃO
   actionButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -637,8 +741,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     marginTop: 2,
   },
-
-  // RODAPÉ
   footer: {
     alignItems: 'center',
     paddingVertical: 15,
@@ -651,8 +753,6 @@ const styles = StyleSheet.create({
     bottom: 20,
     marginBottom: 10,
   },
-
-  // ⭐️ NOVOS ESTILOS DO CUSTOM ALERT ⭐️
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -660,10 +760,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContainer: {
-    width: '85%', // Ligeiramente maior que o original para melhor visualização
+    width: '85%',
     backgroundColor: '#FFF6E2',
     borderRadius: 20,
-    paddingVertical: 30, // Mais padding vertical
+    paddingVertical: 30,
     paddingHorizontal: 25,
     borderWidth: 3,
     borderColor: '#B3D18C',
@@ -673,12 +773,12 @@ const styles = StyleSheet.create({
   modalIcon: {
     width: 40,
     height: 40,
-    tintColor: '#7AB24E', // Cor verde para o check
+    tintColor: '#7AB24E',
     marginBottom: 10,
   },
   modalTitle: {
-    fontSize: 22, // Maior
-    fontWeight: '800', // Mais forte
+    fontSize: 22,
+    fontWeight: '800',
     color: '#556A44',
     marginBottom: 10,
     textAlign: 'center',
@@ -705,7 +805,7 @@ const styles = StyleSheet.create({
   },
   modalSingleButton: {
     backgroundColor: '#85B65E',
-    minWidth: 150, // Botão único é mais largo
+    minWidth: 150,
   },
   modalConfirmButton: {
     backgroundColor: '#85B65E',
@@ -718,7 +818,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   modalDeleteButton: {
-    backgroundColor: '#FF6347', // Cor vermelha para exclusão
+    backgroundColor: '#FF6347',
   },
   modalButtonText: {
     color: '#FFF6E2',

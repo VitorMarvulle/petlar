@@ -1,3 +1,4 @@
+// AppPet\src\screens\Home.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
@@ -265,7 +266,7 @@ export default function Home() {
               style={styles.navButton}
               onPress={() => {
                 if (item === 'favoritos') navigation.navigate('Favoritos');
-                if (item === 'conta') navigation.navigate('Perfil_Tutor');
+                if (item === 'conta') navigation.navigate('Perfil_Tutor', { id_usuario: usuario.id_usuario });
                 if (item === 'Reservas') navigation.navigate('Reserva_Tutor');
                 if (item === 'config') navigation.navigate('Configuracoes');
               }}

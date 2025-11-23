@@ -14,7 +14,7 @@ export type RootStackParamList = {
     telefone?: string | null;  
   }};
   Filtros: undefined;
-  Perfil_Tutor: undefined;
+  Perfil_Tutor: { id_usuario: number };
   Perfil_Host: { host: HostCardProps };
   Card_Host: { host: HostCardProps };
   Favoritos: undefined;
