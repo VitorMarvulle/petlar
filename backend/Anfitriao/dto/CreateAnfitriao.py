@@ -9,7 +9,7 @@ class AnfitriaoCreate(BaseModel):
     especie: Optional[List[str]] = None 
     tamanho_pet: Optional[str] = None 
     preco: Optional[float] = None  
-    status: Optional[str] = "pendente"
+    status: Optional[str] = "ativo"
     fotos_urls: Optional[List[str]] = []  
 
 class AnfitriaoUpdate(BaseModel):
