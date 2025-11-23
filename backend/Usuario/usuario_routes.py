@@ -183,3 +183,92 @@ async def upload_foto_perfil(id: int, arquivo: UploadFile = File(...)):
 
     # 6. Retornar a URL da foto
     return {"foto_perfil_url": foto_perfil_url}
+
+
+@usuario_router.get("/{id}/favoritos", status_code=HTTP_200_OK)
+def get_favoritos_usuario(id: int):
+    """Retorna a lista de anfitriões favoritos de um usuário"""
+    url = f"{SUPABASE_URL}/rest/v1/usuarios?id_usuario=eq.{id}&select=anfitrioes_favoritos"
+    response = requests.get(url, headers=HEADERS)
+    
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+    
+    data = response.json()
+    if not data:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    favoritos = data[0].get('anfitrioes_favoritos', [])
+    return {"anfitrioes_favoritos": favoritos if favoritos else []}
+
+
+@usuario_router.post("/{id}/favoritos/{id_anfitriao}", status_code=HTTP_200_OK)
+def add_favorito(id: int, id_anfitriao: int):
+    """Adiciona um anfitrião aos favoritos do usuário"""
+    # Buscar favoritos atuais
+    url_get = f"{SUPABASE_URL}/rest/v1/usuarios?id_usuario=eq.{id}&select=anfitrioes_favoritos"
+    response_get = requests.get(url_get, headers=HEADERS)
+    
+    if response_get.status_code != 200:
+        raise HTTPException(status_code=response_get.status_code, detail=response_get.text)
+    
+    data = response_get.json()
+    if not data:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    favoritos = data[0].get('anfitrioes_favoritos', [])
+    if favoritos is None:
+        favoritos = []
+    
+    # Verificar se já está nos favoritos
+    if id_anfitriao in favoritos:
+        return {"message": "Anfitrião já está nos favoritos", "anfitrioes_favoritos": favoritos}
+    
+    # Adicionar novo favorito
+    favoritos.append(id_anfitriao)
+    
+    # Atualizar no banco
+    url_update = f"{SUPABASE_URL}/rest/v1/usuarios?id_usuario=eq.{id}"
+    update_data = {"anfitrioes_favoritos": favoritos}
+    response_update = requests.patch(url_update, json=update_data, headers=HEADERS)
+    
+    if response_update.status_code not in (200, 204):
+        raise HTTPException(status_code=response_update.status_code, detail=response_update.text)
+    
+    return {"message": "Anfitrião adicionado aos favoritos", "anfitrioes_favoritos": favoritos}
+
+
+@usuario_router.delete("/{id}/favoritos/{id_anfitriao}", status_code=HTTP_200_OK)
+def remove_favorito(id: int, id_anfitriao: int):
+    """Remove um anfitrião dos favoritos do usuário"""
+    # Buscar favoritos atuais
+    url_get = f"{SUPABASE_URL}/rest/v1/usuarios?id_usuario=eq.{id}&select=anfitrioes_favoritos"
+    response_get = requests.get(url_get, headers=HEADERS)
+    
+    if response_get.status_code != 200:
+        raise HTTPException(status_code=response_get.status_code, detail=response_get.text)
+    
+    data = response_get.json()
+    if not data:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    favoritos = data[0].get('anfitrioes_favoritos', [])
+    if favoritos is None:
+        favoritos = []
+    
+    # Verificar se está nos favoritos
+    if id_anfitriao not in favoritos:
+        return {"message": "Anfitrião não está nos favoritos", "anfitrioes_favoritos": favoritos}
+    
+    # Remover favorito
+    favoritos.remove(id_anfitriao)
+    
+    # Atualizar no banco
+    url_update = f"{SUPABASE_URL}/rest/v1/usuarios?id_usuario=eq.{id}"
+    update_data = {"anfitrioes_favoritos": favoritos}
+    response_update = requests.patch(url_update, json=update_data, headers=HEADERS)
+    
+    if response_update.status_code not in (200, 204):
+        raise HTTPException(status_code=response_update.status_code, detail=response_update.text)
+    
+    return {"message": "Anfitrião removido dos favoritos", "anfitrioes_favoritos": favoritos}

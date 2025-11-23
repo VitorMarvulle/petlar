@@ -69,24 +69,61 @@ interface AvaliacaoFromApi {
   nota: number;
   comentario?: string;
   data_avaliacao?: string;
-  avaliador?: UsuarioFromApi; // join com usuário avaliador
+  avaliador?: UsuarioFromApi;
 }
 
 type CardHostRouteProp = RouteProp<RootStackParamList, 'Card_Host'>;
 type CardHostNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Card_Host'>;
 
-// Componentes auxiliares
-const FavoritarButton = ({ hostId }: { hostId: number }) => {
-  const [isFavorito, setIsFavorito] = useState(false);
+// Componente de Favoritar atualizado
+interface FavoritarButtonProps {
+  hostId: number;
+  userId: number;
+  initialFavorito: boolean;
+}
 
-  const toggleFavorito = () => {
-    const newState = !isFavorito;
-    setIsFavorito(newState);
+const FavoritarButton = ({ hostId, userId, initialFavorito }: FavoritarButtonProps) => {
+  const [isFavorito, setIsFavorito] = useState(initialFavorito);
+  const [loading, setLoading] = useState(false);
 
-    if (newState) {
-      console.log(`Anfitrião ${hostId} ADICIONADO aos favoritos!`);
-    } else {
-      console.log(`Anfitrião ${hostId} REMOVIDO dos favoritos.`);
+  const toggleFavorito = async () => {
+    try {
+      setLoading(true);
+      
+      if (isFavorito) {
+        // Remover dos favoritos
+        const response = await fetch(`${API_BASE_URL}/usuarios/${userId}/favoritos/${hostId}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          throw new Error('Erro ao remover favorito');
+        }
+
+        const data = await response.json();
+        console.log('Favorito removido:', data);
+        setIsFavorito(false);
+        Alert.alert('Sucesso', 'Anfitrião removido dos favoritos!');
+      } else {
+        // Adicionar aos favoritos
+        const response = await fetch(`${API_BASE_URL}/usuarios/${userId}/favoritos/${hostId}`, {
+          method: 'POST',
+        });
+
+        if (!response.ok) {
+          throw new Error('Erro ao adicionar favorito');
+        }
+
+        const data = await response.json();
+        console.log('Favorito adicionado:', data);
+        setIsFavorito(true);
+        Alert.alert('Sucesso', 'Anfitrião adicionado aos favoritos!');
+      }
+    } catch (error: any) {
+      console.error('Erro ao favoritar:', error);
+      Alert.alert('Erro', 'Não foi possível atualizar os favoritos. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -94,8 +131,12 @@ const FavoritarButton = ({ hostId }: { hostId: number }) => {
 
   return (
     <View>
-      <TouchableOpacity onPress={toggleFavorito}>
-        <Image source={imageSource} style={styles.fav} resizeMode="contain" />
+      <TouchableOpacity onPress={toggleFavorito} disabled={loading}>
+        {loading ? (
+          <ActivityIndicator color="#556A44" size="small" style={styles.fav} />
+        ) : (
+          <Image source={imageSource} style={styles.fav} resizeMode="contain" />
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -126,16 +167,17 @@ export default function PerfilHost() {
   const route = useRoute<CardHostRouteProp>();
   const navigation = useNavigation<CardHostNavigationProp>();
 
-  const { host } = route.params;
+  const { host, usuario } = route.params;
 
   const [anfitriao, setAnfitriao] = useState<AnfitriaoFromApi | null>(null);
   const [avaliacoes, setAvaliacoes] = useState<AvaliacaoFromApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isFavorito, setIsFavorito] = useState(false);
 
-  // Buscar dados do anfitrião
+  // Buscar dados do anfitrião e verificar se está nos favoritos
   useEffect(() => {
-    const fetchAnfitriao = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
 
@@ -158,6 +200,18 @@ export default function PerfilHost() {
           const avaliacoesData: AvaliacaoFromApi[] = await avaliacoesResponse.json();
           setAvaliacoes(avaliacoesData);
         }
+
+        // Verificar se está nos favoritos do usuário logado
+        if (usuario?.id_usuario) {
+          const favoritosUrl = `${API_BASE_URL}/usuarios/${usuario.id_usuario}/favoritos`;
+          const favoritosResponse = await fetch(favoritosUrl);
+
+          if (favoritosResponse.ok) {
+            const favoritosData = await favoritosResponse.json();
+            const favoritos = favoritosData.anfitrioes_favoritos || [];
+            setIsFavorito(favoritos.includes(host.id_anfitriao));
+          }
+        }
       } catch (error: any) {
         console.error('Erro ao carregar dados:', error);
         Alert.alert('Erro', 'Não foi possível carregar os dados do anfitrião.');
@@ -166,8 +220,8 @@ export default function PerfilHost() {
       }
     };
 
-    fetchAnfitriao();
-  }, [host.id_anfitriao]);
+    fetchData();
+  }, [host.id_anfitriao, usuario?.id_usuario]);
 
   if (loading) {
     return (
@@ -251,7 +305,14 @@ export default function PerfilHost() {
             </View>
           </View>
 
-          <FavoritarButton hostId={anfitriao.id_anfitriao} />
+          {/* Botão de Favoritar */}
+          {usuario?.id_usuario && (
+            <FavoritarButton
+              hostId={anfitriao.id_anfitriao}
+              userId={usuario.id_usuario}
+              initialFavorito={isFavorito}
+            />
+          )}
 
           {/* Rating */}
           <View style={styles.ratingSectionNew}>

@@ -16,11 +16,20 @@ export type RootStackParamList = {
   Filtros: undefined;
   Perfil_Tutor: { id_usuario: number };
   Perfil_Host: { host: HostCardProps };
-  Card_Host: { host: HostCardProps };
+  Card_Host: { 
+    host: HostCardProps;
+    usuario?: {
+      id_usuario: number;
+      nome: string;
+      email: string;
+      tipo?: string | null;
+      telefone?: string | null;
+    };
+  };
   Favoritos: undefined;
   InfoAdc: { id_usuario: number };
   AdicionarPet: { 
-    id_tutor: number; // ADICIONAR
+    id_tutor: number;
     onAddPet: (newPet: Pet) => void 
   };
   Reserva: undefined;
@@ -35,7 +44,6 @@ export type RootStackParamList = {
   Alterar_email: undefined;
   FAQ_Tutor: undefined;
   FAQ_Host: undefined;
-  // Criar_anuncio: {  id_usuario: number;  };
   InfoHost: { id_usuario: number; hostCriado?: any; fotoPerfilUrl?: string };  
   CriarAnuncioDetalhes: { id_usuario: number; fotoPerfilUrl: string };
 };

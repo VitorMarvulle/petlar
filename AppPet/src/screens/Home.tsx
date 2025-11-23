@@ -300,7 +300,7 @@ export default function Home() {
               <HostCard
                 key={host.id_anfitriao}
                 {...host}
-                onPress={() => navigation.navigate('Card_Host', { host: host.rawData || host })}
+                onPress={() => navigation.navigate('Card_Host', { host: host.rawData || host, usuario: usuario })}
               />
             ))}
 

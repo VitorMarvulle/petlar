@@ -1,6 +1,6 @@
 # backend\Usuario\dto\CreateUsuario.py
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 
 class UsuarioCreate(BaseModel):
     nome: str
@@ -17,6 +17,7 @@ class UsuarioCreate(BaseModel):
     cep: Optional[str]
     complemento: Optional[str]
     foto_perfil_url: Optional[str] = None
+    anfitrioes_favoritos: Optional[List[int]] = []
 
 class UsuarioUpdate(BaseModel):  
     nome: Optional[str] = None  
@@ -32,3 +33,4 @@ class UsuarioUpdate(BaseModel):
     cep: Optional[str] = None  
     complemento: Optional[str] = None  
     foto_perfil_url: Optional[str] = None
+    anfitrioes_favoritos: Optional[List[int]] = []
