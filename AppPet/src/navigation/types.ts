@@ -26,11 +26,19 @@ export type RootStackParamList = {
       telefone?: string | null;
     };
   };
-  Favoritos: undefined;
+  Favoritos: {
+    usuario: {
+      id_usuario: number;
+      nome: string;
+      email: string;
+      tipo?: string | null;
+      telefone?: string | null;
+    };
+  };
   InfoAdc: { id_usuario: number };
   AdicionarPet: { 
     id_tutor: number;
-    onAddPet: (newPet: Pet) => void 
+    onAddPet: (newPet: Pet) => void;
   };
   Reserva: undefined;
   Reserva_Lista: undefined;

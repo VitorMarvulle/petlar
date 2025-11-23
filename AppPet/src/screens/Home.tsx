@@ -265,7 +265,7 @@ export default function Home() {
               key={i}
               style={styles.navButton}
               onPress={() => {
-                if (item === 'favoritos') navigation.navigate('Favoritos');
+                if (item === 'favoritos') navigation.navigate('Favoritos', { usuario });
                 if (item === 'conta') navigation.navigate('Perfil_Tutor', { id_usuario: usuario.id_usuario });
                 if (item === 'Reservas') navigation.navigate('Reserva_Tutor');
                 if (item === 'config') navigation.navigate('Configuracoes');
