@@ -1,11 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   View, Text, ScrollView, StyleSheet, TouchableOpacity, 
-  Image, TextInput, Platform, Modal 
+  Image, Platform, Modal, ActivityIndicator, TextInput 
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types'; 
 import DateTimePicker from '@react-native-community/datetimepicker';
+
+const API_BASE_URL = 'http://localhost:8000';
 
 // --- ALERTA CUSTOMIZADO ---
 const CustomAlert = ({
@@ -33,16 +35,23 @@ const CustomAlert = ({
   </Modal>
 );
 
-const ICON_AVATAR = require('../../assets/icons/user.png');
 const ICON_CHECK = require('../../assets/icons/check.png');
 
-const mockUserPets = [
-  { id: 'p1', imageUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=300&h=200&fit=crop', name: "Nina", species: "Gato", age: "8 anos", weight: "3kg", comportamento: 'Calma', specifications: "Gosta de sachê pela manhã, ODEIA colo, arranha." },
-  { id: 'p2', imageUrl: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=300&h=200&fit=crop', name: "Bolinho Fofo", species: "Gato", age: "3 meses", weight: "0.5kg", comportamento: 'Medrosa', specifications: "Gosta de sachê pela manhã, é bastante falante." },
-  { id: 'p3', imageUrl: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=300&h=200&fit=crop', name: "Thor", species: "Cachorro", age: "5 anos", weight: "20kg", comportamento: 'Brincalhão', specifications: "Precisa de 3 passeios diários, come ração especial." },
-];
-
 const PRICE_PER_DAY_BASE = 65.00;
+
+interface Pet {
+  id_pet: number;
+  id_tutor: number;
+  nome: string;
+  especie: string;
+  raca?: string;
+  idade?: number;
+  idade_unidade?: string;
+  peso?: number;
+  peso_unidade?: string;
+  observacoes?: string;
+  fotos_urls?: string[];
+}
 
 interface FiltroGroupProps {
   title: string;
@@ -62,41 +71,78 @@ const PetSelectionCard = ({
   isSelected,
   onToggleSelect,
 }: {
-  pet: typeof mockUserPets[0];
+  pet: Pet;
   isSelected: boolean;
   onToggleSelect: () => void;
-}) => (
-  <TouchableOpacity style={styles.petSelectionCard} onPress={onToggleSelect} activeOpacity={0.8}>
-    <View style={styles.petImageContainer}>
-      <Image source={{ uri: pet.imageUrl }} style={styles.petImage} resizeMode="cover" />
-      {isSelected && (
-        <View style={styles.checkmarkContainer}>
-          <Image source={ICON_CHECK} style={styles.checkmarkIcon} />
-        </View>
-      )}
-    </View>
-    <View style={styles.petDetails}>
-      <Text style={styles.petName}>{pet.name}</Text>
-      <Text style={styles.petDetailText}><Text style={styles.boldText}>Espécie:</Text> {pet.species}</Text>
-      <Text style={styles.specificationsText} numberOfLines={2}>{pet.specifications}</Text>
-    </View>
-  </TouchableOpacity>
-);
+}) => {
+  // Busca a primeira foto do array ou usa imagem padrão
+  const imageUrl = (pet.fotos_urls && pet.fotos_urls.length > 0) 
+    ? pet.fotos_urls[0] 
+    : 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=300&h=200&fit=crop';
+  
+  // Formata idade e peso
+  const idadeText = pet.idade 
+    ? `${pet.idade} ${pet.idade_unidade || 'ano'}${pet.idade > 1 ? 's' : ''}`
+    : '';
+  const pesoText = pet.peso 
+    ? `${pet.peso}${pet.peso_unidade || 'kg'}`
+    : '';
+  
+  return (
+    <TouchableOpacity style={styles.petSelectionCard} onPress={onToggleSelect} activeOpacity={0.8}>
+      <View style={styles.petImageContainer}>
+        <Image source={{ uri: imageUrl }} style={styles.petImage} resizeMode="cover" />
+        {isSelected && (
+          <View style={styles.checkmarkContainer}>
+            <Image source={ICON_CHECK} style={styles.checkmarkIcon} />
+          </View>
+        )}
+      </View>
+      <View style={styles.petDetails}>
+        <Text style={styles.petName}>{pet.nome}</Text>
+        <Text style={styles.petDetailText}>
+          <Text style={styles.boldText}>Espécie:</Text> {pet.especie}
+        </Text>
+        {pet.raca && (
+          <Text style={styles.petDetailText}>
+            <Text style={styles.boldText}>Raça:</Text> {pet.raca}
+          </Text>
+        )}
+        {(idadeText || pesoText) && (
+          <Text style={styles.petDetailText}>
+            {idadeText && `${idadeText}`}
+            {idadeText && pesoText && ' • '}
+            {pesoText && `${pesoText}`}
+          </Text>
+        )}
+        {pet.observacoes && (
+          <Text style={styles.specificationsText} numberOfLines={2}>
+            {pet.observacoes}
+          </Text>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 const PetSelectionDropdown = ({ 
   selectedPets, 
   setSelectedPets, 
   maxPetsAllowed,
-  showAlert
+  showAlert,
+  userPets,
+  loading
 }: { 
-  selectedPets: string[]; 
-  setSelectedPets: React.Dispatch<React.SetStateAction<string[]>>; 
+  selectedPets: number[]; 
+  setSelectedPets: React.Dispatch<React.SetStateAction<number[]>>; 
   maxPetsAllowed: number;
   showAlert: (title: string, message: string) => void;
+  userPets: Pet[];
+  loading: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   
-  const handleToggleSelect = (petId: string) => {
+  const handleToggleSelect = (petId: number) => {
     setSelectedPets(prev => {
       if (prev.includes(petId)) {
         return prev.filter(id => id !== petId);
@@ -120,6 +166,7 @@ const PetSelectionDropdown = ({
         style={[styles.dropdownButton, isOpen && styles.dropdownButtonOpen]}
         onPress={() => setIsOpen(!isOpen)}
         activeOpacity={0.7}
+        disabled={loading}
       >
         <Text style={styles.dropdownLabel}>{displayLabel}</Text>
         <Text style={styles.dropdownLimit}>Máx: {maxPetsAllowed}</Text>
@@ -127,16 +174,19 @@ const PetSelectionDropdown = ({
 
       {isOpen && (
         <View style={styles.dropdownContent}>
-          {mockUserPets.map((pet) => (
-            <PetSelectionCard
-              key={pet.id}
-              pet={pet}
-              isSelected={selectedPets.includes(pet.id)}
-              onToggleSelect={() => handleToggleSelect(pet.id)}
-            />
-          ))}
-          {mockUserPets.length === 0 && (
+          {loading ? (
+            <ActivityIndicator size="small" color="#556A44" style={{ padding: 20 }} />
+          ) : userPets.length === 0 ? (
             <Text style={styles.noPetsText}>Você ainda não possui pets cadastrados.</Text>
+          ) : (
+            userPets.map((pet) => (
+              <PetSelectionCard
+                key={pet.id_pet}
+                pet={pet}
+                isSelected={selectedPets.includes(pet.id_pet)}
+                onToggleSelect={() => handleToggleSelect(pet.id_pet)}
+              />
+            ))
           )}
         </View>
       )}
@@ -181,20 +231,137 @@ const PriceSummaryCard = ({ daysCount, petsCount, pricePerDayBase }: {
   );
 };
 
+// --- COMPONENTE DE DATE PICKER MULTIPLATAFORMA ---
+interface DatePickerProps {
+  label: string;
+  date: Date | null;
+  onDateChange: (date: Date) => void;
+  minimumDate?: Date;
+}
+
+const DatePickerComponent = ({ label, date, onDateChange, minimumDate }: DatePickerProps) => {
+  const [showPicker, setShowPicker] = useState(false);
+  const [tempDate, setTempDate] = useState(date || new Date());
+
+  const formatDate = (d: Date | null) =>
+    d ? d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Escolha uma data...';
+
+  const handleWebDateChange = (e: any) => {
+    const selectedDate = new Date(e.target.value + 'T00:00:00');
+    onDateChange(selectedDate);
+  };
+
+  const handleMobileDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowPicker(false);
+    }
+    
+    if (event.type === 'set' && selectedDate) {
+      setTempDate(selectedDate);
+      if (Platform.OS === 'android') {
+        onDateChange(selectedDate);
+      }
+    } else if (event.type === 'dismissed') {
+      setShowPicker(false);
+    }
+  };
+
+  const handleIOSConfirm = () => {
+    onDateChange(tempDate);
+    setShowPicker(false);
+  };
+
+  if (Platform.OS === 'web') {
+    const dateValue = date ? date.toISOString().split('T')[0] : '';
+    const minDateValue = minimumDate ? minimumDate.toISOString().split('T')[0] : '';
+
+    return (
+      <View style={styles.datePickerWrapper}>
+        <Text style={styles.dateLabel}>{label}</Text>
+        <input
+          type="date"
+          value={dateValue}
+          min={minDateValue}
+          onChange={handleWebDateChange}
+          style={{
+            width: '100%',
+            height: 45,
+            backgroundColor: date ? '#85B65E' : '#FFF6E2',
+            borderRadius: 10,
+            border: date ? '3px solid #B3D18C' : '2px solid #B3D18C',
+            paddingLeft: 12,
+            paddingRight: 12,
+            fontSize: 16,
+            fontWeight: '500',
+            color: date ? '#FFF6E2' : '#596350',
+            fontFamily: 'Inter, sans-serif',
+            cursor: 'pointer',
+          }}
+        />
+      </View>
+    );
+  }
+
+  // Mobile (iOS/Android)
+  return (
+    <View style={styles.datePickerWrapper}>
+      <Text style={styles.dateLabel}>{label}</Text>
+      <TouchableOpacity
+        onPress={() => setShowPicker(true)}
+        style={[styles.dateOptionButton, !!date && styles.dateOptionButtonSelected]}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.optionText, !!date && styles.optionTextSelected]}>
+          {formatDate(date)}
+        </Text>
+      </TouchableOpacity>
+
+      {showPicker && (
+        <Modal transparent visible={showPicker} animationType="slide">
+          <View style={styles.modalPickerOverlay}>
+            <View style={styles.modalPickerContainer}>
+              {Platform.OS === 'ios' && (
+                <View style={styles.pickerHeader}>
+                  <TouchableOpacity onPress={() => setShowPicker(false)}>
+                    <Text style={styles.pickerCancelButton}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={handleIOSConfirm}>
+                    <Text style={styles.pickerConfirmButton}>Confirmar</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              <DateTimePicker
+                value={tempDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={handleMobileDateChange}
+                minimumDate={minimumDate}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+    </View>
+  );
+};
+
 // --------------------------------------------------------------
 // --------------------- TELA PRINCIPAL --------------------------
 // --------------------------------------------------------------
 type ReservaScreenProps = NativeStackScreenProps<RootStackParamList, 'Reserva'>;
 
-export default function Reserva({ navigation }: ReservaScreenProps) {
-  const [selectedPets, setSelectedPets] = useState<string[]>([]);
+export default function Reserva({ navigation, route }: ReservaScreenProps) {
+  const { id_usuario, id_anfitriao, preco_diaria } = route.params;
+  
+  const [selectedPets, setSelectedPets] = useState<number[]>([]);
+  const [userPets, setUserPets] = useState<Pet[]>([]);
+  const [loadingPets, setLoadingPets] = useState(true);
   const [dataEntrada, setDataEntrada] = useState<Date | null>(null);
   const [dataSaida, setDataSaida] = useState<Date | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
-  const [dateField, setDateField] = useState<'entrada' | 'saida' | null>(null);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [submitting, setSubmitting] = useState(false);
 
   const MAX_PETS_ALLOWED = 3;
+  const PRICE_PER_DAY = preco_diaria || PRICE_PER_DAY_BASE;
 
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertData, setAlertData] = useState({ title: '', message: '' });
@@ -202,6 +369,33 @@ export default function Reserva({ navigation }: ReservaScreenProps) {
     setAlertData({ title, message });
     setAlertVisible(true);
   };
+
+  // Buscar pets do usuário
+  useEffect(() => {
+    const fetchUserPets = async () => {
+      try {
+        setLoadingPets(true);
+        const response = await fetch(`${API_BASE_URL}/pets/tutor/${id_usuario}`);
+        
+        if (!response.ok) {
+          throw new Error('Erro ao buscar pets');
+        }
+
+        const data = await response.json();
+        console.log('Pets carregados:', data);
+        setUserPets(data);
+      } catch (error) {
+        console.error('Erro ao buscar pets:', error);
+        showAlert('Erro', 'Não foi possível carregar seus pets. Tente novamente.');
+      } finally {
+        setLoadingPets(false);
+      }
+    };
+
+    if (id_usuario) {
+      fetchUserPets();
+    }
+  }, [id_usuario]);
 
   const calculateDays = (entrada: Date | null, saida: Date | null): number => {
     if (!entrada || !saida) return 0;
@@ -213,7 +407,7 @@ export default function Reserva({ navigation }: ReservaScreenProps) {
   const daysCount = useMemo(() => calculateDays(dataEntrada, dataSaida), [dataEntrada, dataSaida]);
   const petsCount = selectedPets.length;
 
-  const handleApplyFilters = () => {
+  const handleApplyFilters = async () => {
     if (petsCount === 0) {
       showAlert("Erro", "Selecione pelo menos um pet para a reserva.");
       return;
@@ -222,48 +416,76 @@ export default function Reserva({ navigation }: ReservaScreenProps) {
       showAlert("Erro", "Selecione as datas de entrada e saída válidas.");
       return;
     }
-    showAlert("Reserva Solicitada", `Total: R$ ${(daysCount * petsCount * PRICE_PER_DAY_BASE).toFixed(2).replace('.', ',')}`);
-  };
-
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false);
-    if (event.type === 'set' || Platform.OS === 'ios') {
-      const dateToSet = selectedDate || currentDate;
-      if (dateField === 'entrada') setDataEntrada(dateToSet);
-      else if (dateField === 'saida') setDataSaida(dateToSet);
-      setCurrentDate(dateToSet);
+    if (!dataEntrada || !dataSaida) {
+      showAlert("Erro", "Selecione as datas de entrada e saída.");
+      return;
     }
-    setDateField(null);
-  };
+    if (dataEntrada >= dataSaida) {
+      showAlert("Erro", "A data de saída deve ser posterior à data de entrada.");
+      return;
+    }
 
-  const handleOpenDatePicker = (field: 'entrada' | 'saida', initialDate: Date | null) => {
-    setDateField(field);
-    setCurrentDate(initialDate || new Date());
-    setShowDatePicker(true);
-  };
+    try {
+      setSubmitting(true);
 
-  const formatDate = (date: Date | null) =>
-    date ? date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Escolha uma opção...';
+      const reservaData = {
+        id_tutor: id_usuario,
+        id_anfitriao: id_anfitriao,
+        data_inicio: dataEntrada.toISOString().split('T')[0],
+        data_fim: dataSaida.toISOString().split('T')[0],
+        status: "pendente",
+        pets_tutor: selectedPets
+      };
+
+      console.log('Enviando reserva:', reservaData);
+
+      const response = await fetch(`${API_BASE_URL}/reservas/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(reservaData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Erro ao criar reserva');
+      }
+
+      const result = await response.json();
+      console.log('Reserva criada:', result);
+      
+      const totalValue = (daysCount * petsCount * PRICE_PER_DAY).toFixed(2).replace('.', ',');
+      
+      showAlert(
+        "Reserva Criada com Sucesso!", 
+        `Sua reserva foi registrada!\nTotal: R$ ${totalValue}\n\nAguarde a confirmação do anfitrião.`
+      );
+
+      // Limpar formulário após sucesso
+      setTimeout(() => {
+        setSelectedPets([]);
+        setDataEntrada(null);
+        setDataSaida(null);
+        navigation.goBack();
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('Erro ao criar reserva:', error);
+      showAlert("Erro", error.message || "Não foi possível criar a reserva. Tente novamente.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const CornerIconClickable = () => (
-    <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.cornerImageContainer}>
+    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.cornerImageContainer}>
       <Image source={require('../../assets/icons/LogoPATA.png')} style={styles.cornerImage} resizeMode="contain" />
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      {showDatePicker && (
-        <DateTimePicker
-          testID="dateTimePicker"
-          value={currentDate}
-          mode={'date'}
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleDateChange}
-          minimumDate={new Date()}
-        />
-      )}
-
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.innerContainer}>
           <CornerIconClickable />
@@ -275,37 +497,27 @@ export default function Reserva({ navigation }: ReservaScreenProps) {
               setSelectedPets={setSelectedPets}
               maxPetsAllowed={MAX_PETS_ALLOWED}
               showAlert={showAlert}
+              userPets={userPets}
+              loading={loadingPets}
             />
           </FiltroGroup>
 
           <View style={styles.groupContainer}>
             <Text style={styles.groupTitle}>Datas da Hospedagem:</Text>
             <View style={styles.datesRowContainer}>
-              <View style={styles.datePickerWrapper}>
-                <Text style={styles.dateLabel}>Entrada</Text>
-                <TouchableOpacity
-                  onPress={() => handleOpenDatePicker('entrada', dataEntrada)}
-                  style={[styles.dateOptionButton, !!dataEntrada && styles.dateOptionButtonSelected]}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.optionText, !!dataEntrada && styles.optionTextSelected]}>
-                    {formatDate(dataEntrada)}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <DatePickerComponent
+                label="Entrada"
+                date={dataEntrada}
+                onDateChange={setDataEntrada}
+                minimumDate={new Date()}
+              />
 
-              <View style={styles.datePickerWrapper}>
-                <Text style={styles.dateLabel}>Saída</Text>
-                <TouchableOpacity
-                  onPress={() => handleOpenDatePicker('saida', dataSaida)}
-                  style={[styles.dateOptionButton, !!dataSaida && styles.dateOptionButtonSelected]}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.optionText, !!dataSaida && styles.optionTextSelected]}>
-                    {formatDate(dataSaida)}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <DatePickerComponent
+                label="Saída"
+                date={dataSaida}
+                onDateChange={setDataSaida}
+                minimumDate={dataEntrada || new Date()}
+              />
             </View>
           </View>
 
@@ -313,12 +525,20 @@ export default function Reserva({ navigation }: ReservaScreenProps) {
             <PriceSummaryCard
               daysCount={daysCount}
               petsCount={petsCount}
-              pricePerDayBase={PRICE_PER_DAY_BASE}
+              pricePerDayBase={PRICE_PER_DAY}
             />
           )}
 
-          <TouchableOpacity style={styles.applyButton} onPress={handleApplyFilters}>
-            <Text style={styles.applyButtonText}>Reservar</Text>
+          <TouchableOpacity 
+            style={[styles.applyButton, submitting && styles.applyButtonDisabled]} 
+            onPress={handleApplyFilters}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#FFF6E2" />
+            ) : (
+              <Text style={styles.applyButtonText}>Reservar</Text>
+            )}
           </TouchableOpacity>
 
           <Image
@@ -339,7 +559,6 @@ export default function Reserva({ navigation }: ReservaScreenProps) {
   );
 }
 
-
 // -------------------------------------------------------------------
 // ----------------------------- STYLES ------------------------------
 // -------------------------------------------------------------------
@@ -356,7 +575,7 @@ const styles = StyleSheet.create({
     innerContainer: {
         flex: 1,
         marginHorizontal: 12,
-        marginTop: 30,         
+        marginTop: 30,         
         marginBottom: 45,
         backgroundColor: '#FFFFFF',
         borderRadius: 40,
@@ -449,7 +668,7 @@ const styles = StyleSheet.create({
     
     // --- Estilo do Botão Aplicar (Agora Reservar) ---
     applyButton: {
-        marginTop: 20, // Ajuste para o novo layout
+        marginTop: 20,
         marginBottom: -30,
         width: 150,
         padding: 12,
@@ -459,6 +678,9 @@ const styles = StyleSheet.create({
         borderColor: '#B3D18C',
         alignItems: 'center',
         alignSelf: 'center',
+    },
+    applyButtonDisabled: {
+        opacity: 0.6,
     },
     applyButtonText: {
         fontSize: 20,
@@ -506,7 +728,7 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     dropdownContent: {
-        backgroundColor: '#E0EFD3', // Cor suave para o conteúdo do dropdown
+        backgroundColor: '#E0EFD3',
         borderWidth: 2,
         borderColor: '#B3D18C',
         borderTopWidth: 0,
@@ -551,7 +773,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(133, 182, 94, 0.7)', // Verde semi-transparente
+        backgroundColor: 'rgba(133, 182, 94, 0.7)',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -573,6 +795,7 @@ const styles = StyleSheet.create({
     petDetailText: {
         fontSize: 13,
         color: '#556A44',
+        marginBottom: 2,
     },
     boldText: {
         fontWeight: 'bold',
@@ -581,11 +804,12 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#556A44',
         fontStyle: 'italic',
+        marginTop: 2,
     },
 
     // --- NOVOS ESTILOS DO CARD DE RESUMO DE PREÇO ---
     priceSummaryCard: {
-        backgroundColor: '#E0EFD3', // Cor de fundo suave
+        backgroundColor: '#E0EFD3',
         borderRadius: 15,
         borderWidth: 2,
         borderColor: '#B3D18C',
@@ -673,6 +897,36 @@ const styles = StyleSheet.create({
   modalButtonText: {
     color: '#FFF6E2',
     fontSize: 18,
+    fontWeight: '700',
+  },
+  // --- ESTILOS DO DATE PICKER MODAL (MOBILE) ---
+  modalPickerOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  modalPickerContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 20,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#B3D18C',
+  },
+  pickerCancelButton: {
+    fontSize: 16,
+    color: '#556A44',
+    fontWeight: '500',
+  },
+  pickerConfirmButton: {
+    fontSize: 16,
+    color: '#85B65E',
     fontWeight: '700',
   },
 });

@@ -223,6 +223,28 @@ export default function PerfilHost() {
     fetchData();
   }, [host.id_anfitriao, usuario?.id_usuario]);
 
+  const handleReservaPress = () => {
+    if (!usuario?.id_usuario) {
+      Alert.alert('Erro', 'Você precisa estar logado para fazer uma reserva.');
+      return;
+    }
+
+    if (!anfitriao) {
+      Alert.alert('Erro', 'Dados do anfitrião não disponíveis.');
+      return;
+    }
+
+    const precoNumber = typeof anfitriao.preco === 'string' 
+      ? parseFloat(anfitriao.preco) 
+      : anfitriao.preco ?? 65.00;
+
+    navigation.navigate('Reserva', {
+      id_usuario: usuario.id_usuario,
+      id_anfitriao: anfitriao.id_anfitriao,
+      preco_diaria: precoNumber,
+    });
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -364,7 +386,7 @@ export default function PerfilHost() {
               <TouchableOpacity style={styles.actionButton_FAQ} onPress={() => navigation.navigate('FAQ_Tutor')}>
                 <Text style={styles.actionButtonText}>Perguntas Frequentes</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton_Reserva} onPress={() => navigation.navigate('Reserva')}>
+              <TouchableOpacity style={styles.actionButton_Reserva} onPress={handleReservaPress}>
                 <Text style={styles.actionButtonText}>Reserva</Text>
               </TouchableOpacity>
             </View>

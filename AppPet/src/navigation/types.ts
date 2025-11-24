@@ -40,7 +40,11 @@ export type RootStackParamList = {
     id_tutor: number;
     onAddPet: (newPet: Pet) => void;
   };
-  Reserva: undefined;
+  Reserva: {
+    id_usuario: number;
+    id_anfitriao: number;
+    preco_diaria?: number;
+  };
   Reserva_Lista: undefined;
   Configuracoes: undefined;
   Home_Host: undefined;
