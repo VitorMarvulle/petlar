@@ -52,8 +52,8 @@ def get_avaliacoes_by_reserva(id_reserva: int):
 
 @avaliacao_router.get("/avaliado/{id_avaliado}", status_code=HTTP_200_OK)
 def get_avaliacoes_by_avaliado(id_avaliado: int):
-    """Retorna todas as avaliações recebidas por um usuário"""
-    url = f"{SUPABASE_URL}/rest/v1/avaliacoes?id_avaliado=eq.{id_avaliado}"
+    """Retorna todas as avaliações recebidas por um usuário com dados do avaliador"""
+    url = f"{SUPABASE_URL}/rest/v1/avaliacoes?id_avaliado=eq.{id_avaliado}&select=*,avaliador:usuarios!id_avaliador(id_usuario,nome,email)"
     response = requests.get(url, headers=HEADERS)
     
     if response.status_code != 200:

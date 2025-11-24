@@ -19,7 +19,7 @@ services:
         "--reload",
       ] #permite o hot-reload!!
 
-  # Serviço do Frontend (React App)
+  # Serviço do Frontend Web (React App)
   frontend:
     build:
       context: ./frontend
@@ -31,21 +31,37 @@ services:
       - /app/node_modules # Garante que a node_modules de dentro do contêiner não seja sobrescrita
     environment:
       - CHOKIDAR_USEPOLLING=true # Ajuda o hot-reload a funcionar de forma mais confiável no Docker
-    stdin_open: true  
-    tty: true         
-  
-  # Serviço do Banco de Dados (PostgreSQL)
-  db:
-    image: postgres:15-alpine # Usa a imagem oficial do PostgreSQL
-    environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=lardocet_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data # Garante que os dados do banco não se percam
-    ports:
-      - "5432:5432" # Expõe a porta do PostgreSQL para sua máquina (útil para debugar)
+    stdin_open: true
+    tty: true
+    depends_on:
+      - backend
 
-# Define um volume nomeado para persistir os dados do banco
-volumes:
-  postgres_data:
+  # Serviço do AppPet (React Native/Expo - Web)
+  apppet:
+    build:
+      context: ./AppPet
+      dockerfile: Dockerfile
+    ports:
+      - "19000:19000" # Expo bundler
+      - "19001:19001" # Expo DevTools
+      - "8081:8081" # Metro bundler fallback
+    volumes:
+      - ./AppPet:/app # Espelha o código local para dentro do contêiner
+      - /app/node_modules # Garante que a node_modules de dentro do contêiner não seja sobrescrita
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Ajuda o hot-reload a funcionar
+      - EXPO_DEBUG=true
+    stdin_open: true
+    tty: true
+    depends_on:
+      - backend
+
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "8501:8501" # Mapeia a porta 8000 do contêiner para a 8000 da sua máquina
+    volumes:
+      - ./dashboard:/app # Espelha o código local para dentro do contêiner
+    command: ["streamlit", "run", "app.py"]
+    depends_on:
+      - backend
