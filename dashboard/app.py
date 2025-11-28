@@ -4,6 +4,7 @@ from pandasql import sqldf
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import requests
+import os
 
 # -------------------------------------------------------
 # ⚙️ Configuração da página
@@ -11,11 +12,14 @@ import requests
 st.set_page_config(page_title="🐾 Painel Completo - PetHost", layout="wide")
 st.title("🐾 Dashboard Completo do Sistema PetHost")
 
-API_BASE_URL = "http://localhost:8000"
+API_BASE_URL = os.getenv("API_BASE_URL")
+print(f"API_BASE_URL: {API_BASE_URL}")
 
 # -------------------------------------------------------
 # 🔌 Função de conexão e carregamento
 # -------------------------------------------------------
+
+
 @st.cache_data
 def carregar_tabela(nome_tabela):
     endpoints = {
@@ -37,7 +41,8 @@ def carregar_tabela(nome_tabela):
         return pd.DataFrame(data)
 
     except Exception as e:
-        st.warning(f"⚠️ Erro ao conectar à API ({nome_tabela}): {e}. Usando dados simulados.")
+        st.warning(
+            f"⚠️ Erro ao conectar à API ({nome_tabela}): {e}. Usando dados simulados.")
         # --- Dados simulados ---
         if nome_tabela == "usuarios":
             return pd.DataFrame({
@@ -80,6 +85,7 @@ def carregar_tabela(nome_tabela):
         else:
             return pd.DataFrame()
 
+
 # -------------------------------------------------------
 # 🧩 Sidebar - seleção da tabela
 # -------------------------------------------------------
@@ -103,7 +109,8 @@ if tabela_escolhida == "pets" and not df.empty:
     # =====================================================
     # 🔧 Pré-processamento
     # =====================================================
-    df["especie"] = df["especie"].astype(str).str.title().fillna("Não Informado")
+    df["especie"] = df["especie"].astype(
+        str).str.title().fillna("Não Informado")
     df["raca"] = df["raca"].astype(str).str.title().fillna("Não Informado")
 
     # =====================================================
@@ -144,14 +151,16 @@ if tabela_escolhida == "pets" and not df.empty:
         st.pyplot(fig)
     else:
         especie_unica = especies_count.index[0]
-        st.info(f"🔹 Apenas **{especie_unica}** registrado(a) — gráfico de pizza não exibido.")
-        
+        st.info(
+            f"🔹 Apenas **{especie_unica}** registrado(a) — gráfico de pizza não exibido.")
+
 
 elif tabela_escolhida == "avaliacoes" and not df.empty:
     st.markdown("### 📊 Avaliações - Distribuição de Notas")
 
     fig, ax = plt.subplots(figsize=(6, 4))
-    ax.hist(df["nota"], bins=range(1, 7), color='orange', edgecolor='black', rwidth=0.8)
+    ax.hist(df["nota"], bins=range(1, 7), color='orange',
+            edgecolor='black', rwidth=0.8)
     ax.set_title("Distribuição de Notas")
     ax.set_xlabel("Nota")
     ax.set_ylabel("Frequência")
@@ -162,7 +171,8 @@ elif tabela_escolhida == "reservas" and not df.empty:
 
     status_count = df["status"].value_counts()
     fig, ax = plt.subplots(figsize=(6, 4))
-    ax.bar(status_count.index, status_count.values, color=['#ff9999','#66b3ff','#99ff99'])
+    ax.bar(status_count.index, status_count.values,
+           color=['#ff9999', '#66b3ff', '#99ff99'])
     ax.set_title("Quantidade de Reservas por Status")
     ax.set_xlabel("Status")
     ax.set_ylabel("Quantidade")
@@ -194,16 +204,19 @@ elif tabela_escolhida == "usuarios" and not df.empty:
 
     # --- Gráfico de Linhas ---
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(df_sql['DIA'], df_sql['usuarios'], marker='o', linewidth=2, markersize=8, color='steelblue')
+    ax.plot(df_sql['DIA'], df_sql['usuarios'], marker='o',
+            linewidth=2, markersize=8, color='steelblue')
 
     # Adiciona os valores arredondados sobre os pontos
     for x, y in zip(df_sql['DIA'], df_sql['usuarios']):
-        ax.text(x, y + 0.1, str(int(round(y))), ha='center', va='bottom', fontsize=10, fontweight='bold')
+        ax.text(x, y + 0.1, str(int(round(y))), ha='center',
+                va='bottom', fontsize=10, fontweight='bold')
 
     # Títulos e rótulos
     ax.set_xlabel('Data', fontsize=10)
     ax.set_ylabel('Quantidade de Usuários', fontsize=12)
-    ax.set_title('Quantidade de Usuários por Dia', fontsize=12, fontweight='bold', pad=24)
+    ax.set_title('Quantidade de Usuários por Dia',
+                 fontsize=12, fontweight='bold', pad=24)
 
     # Força eixo Y inteiro
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
@@ -239,7 +252,6 @@ elif tabela_escolhida == "usuarios" and not df.empty:
 
         # 🔤 Padroniza os valores de UF (corrige variações como 'rs', 'Rs', etc.)
         df["uf"] = df["uf"].astype(str).str.strip().str.upper()
-
 
         # Conta e plota os 10 estados mais frequentes
         uf_count = df["uf"].value_counts().head(10)
