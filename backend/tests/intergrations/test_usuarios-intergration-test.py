@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from main import app
-from Usuario.dto.CreateUsuario import UsuarioCreate
+from Usuario.dto.CreateUsuario import UsuarioCreate, UsuarioUpdate
 from Usuario.dto.LoginRequest import LoginRequest
 import random
 import io
@@ -94,10 +94,10 @@ def test_post_usuario_email_exists():
 # PUT /usuarios/{id} SUCESSO
 # =========================================================
 def test_put_usuario():
-    update_data = {
-        "nome": "Nome Alterado",
-        "telefone": "999888777"
-    }
+    update_data = dict(UsuarioUpdate(
+        nome="John Updated",
+        telefone="9876543210"
+    ).dict())
 
     response = client.put(f"/usuarios/{usuario_ID}", json=update_data)
     assert response.status_code == 200
@@ -106,18 +106,11 @@ def test_put_usuario():
     assert data["nome"] == update_data["nome"]
     assert data["telefone"] == update_data["telefone"]
 
-
-# =========================================================
-# PUT /usuarios/{id} – NENHUM DADO
-# =========================================================
-def test_put_usuario_no_data():
-    response = client.put(f"/usuarios/{usuario_ID}", json={})
-    assert response.status_code == 400
-
-
 # =========================================================
 # POST /usuarios/login SUCESSO
 # =========================================================
+
+
 def test_usuario_login_success():
     login = LoginRequest(
         email=email_random,

@@ -2,6 +2,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 
+
 class UsuarioCreate(BaseModel):
     nome: str
     email: EmailStr
@@ -19,18 +20,19 @@ class UsuarioCreate(BaseModel):
     foto_perfil_url: Optional[str] = None
     anfitrioes_favoritos: Optional[List[int]] = []
 
-class UsuarioUpdate(BaseModel):  
-    nome: Optional[str] = None  
-    email: Optional[EmailStr] = None  
-    telefone: Optional[str] = None  
-    tipo: Optional[str] = None  
-    data_cadastro: Optional[str] = None  
-    logradouro: Optional[str] = None  
-    numero: Optional[str] = None  
-    bairro: Optional[str] = None  
-    cidade: Optional[str] = None  
-    uf: Optional[str] = None  
-    cep: Optional[str] = None  
-    complemento: Optional[str] = None  
+
+class UsuarioUpdate(BaseModel):
+    nome: Optional[str] = None
+    email: Optional[EmailStr] = None
+    telefone: Optional[str] = None
+    tipo: Optional[str] = None
+    data_cadastro: Optional[str] = None
+    logradouro: Optional[str] = None
+    numero: Optional[str] = None
+    bairro: Optional[str] = None
+    cidade: Optional[str] = None
+    uf: Optional[str] = None
+    cep: Optional[str] = None
+    complemento: Optional[str] = None
     foto_perfil_url: Optional[str] = None
     anfitrioes_favoritos: Optional[List[int]] = []
