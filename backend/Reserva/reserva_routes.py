@@ -64,7 +64,7 @@ def get_reservas_by_anfitriao(id_anfitriao: int):
 
 @reserva_router.get("/status/{status}", status_code=HTTP_200_OK)
 def get_reservas_by_status(status: str):
-    """Retorna reservas filtradas por status (pendente, confirmada, concluida, cancelada)"""
+    """Retorna reservas filtradas por status (pendente, confirmada, concluida, cancelada, em_andamento)"""
     url = f"{SUPABASE_URL}/rest/v1/reservas?status=eq.{status}"
     response = requests.get(url, headers=HEADERS)
     

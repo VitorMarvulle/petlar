@@ -267,7 +267,7 @@ export default function Home() {
               onPress={() => {
                 if (item === 'favoritos') navigation.navigate('Favoritos', { usuario });
                 if (item === 'conta') navigation.navigate('Perfil_Tutor', { id_usuario: usuario.id_usuario });
-                if (item === 'Reservas') navigation.navigate('Reserva_Tutor');
+                if (item === 'Reservas') navigation.navigate('Reserva_Tutor', { usuario});
                 if (item === 'config') navigation.navigate('Configuracoes');
               }}
             >

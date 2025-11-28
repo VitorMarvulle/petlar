@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Query
 import requests  
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT  
 from typing import List, Optional  
-import uuid  
+import uuid
 from utils.config import SUPABASE_URL, SUPABASE_KEY, bcrypt_context  
 from Anfitriao.dto.CreateAnfitriao import AnfitriaoCreate, AnfitriaoUpdate
 
