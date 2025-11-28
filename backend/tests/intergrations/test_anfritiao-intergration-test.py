@@ -9,7 +9,6 @@ client = TestClient(app)
 anfitriao_ID = 0
 
 
-
 # ------------------------
 # GET /anfitrioes
 # ------------------------
@@ -19,7 +18,6 @@ def test_get_anfitrioes():
 
     body = response.json()
     assert isinstance(body, list), "GET /anfitrioes deve retornar lista"
-
 
 
 # ------------------------
@@ -35,7 +33,7 @@ def test_post_anfitrioes():
         tamanho_pet="médio",
         preco=49.90,
         status="pendente",
-        foto_url="http://example.com/foto.jpg"
+        fotos_urls=["http://example.com/foto.jpg"]
     ))
 
     response = client.post("/anfitrioes", json=anfitriao)
@@ -53,11 +51,9 @@ def test_post_anfitrioes():
     assert data["tamanho_pet"] == anfitriao["tamanho_pet"]
     assert data["preco"] == anfitriao["preco"]
     assert data["status"] == anfitriao["status"]
-    assert data["foto_url"] == anfitriao["foto_url"]
 
     global anfitriao_ID
     anfitriao_ID = data["id_anfitriao"]
-
 
 
 # ------------------------
@@ -72,7 +68,6 @@ def test_get_anfitrioes_by_id():
     assert data["id_anfitriao"] == anfitriao_ID
 
 
-
 # ------------------------
 # GET /anfitrioes/status/{status}
 # ------------------------
@@ -81,8 +76,8 @@ def test_get_anfitrioes_by_status():
     assert response.status_code == 200
 
     body = response.json()
-    assert isinstance(body, list), "GET /anfitrioes/status/{status} deve retornar lista"
-
+    assert isinstance(
+        body, list), "GET /anfitrioes/status/{status} deve retornar lista"
 
 
 # ------------------------
@@ -109,14 +104,13 @@ def test_put_anfitrioes():
     assert data["status"] == update_data["status"]
 
 
-
 # ------------------------
 # DELETE /anfitrioes/{id}
 # ------------------------
 def test_delete_anfitriao_by_id():
     response = client.delete(f"/anfitrioes/{anfitriao_ID}")
-    assert response.status_code in (200, 204), "DELETE deve retornar 200 ou 204"
-
+    assert response.status_code in (
+        200, 204), "DELETE deve retornar 200 ou 204"
 
 
 # ------------------------
@@ -126,7 +120,6 @@ def test_delete_anfitriao_by_id_not_found():
     response = client.delete(f"/anfitrioes/{anfitriao_ID}")
     # Supabase retorna 204 mesmo que já não exista
     assert response.status_code in (200, 204)
-
 
 
 # ------------------------
