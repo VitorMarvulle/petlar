@@ -7,8 +7,6 @@ from Anfitriao.anfitriao_routes import anfitriao_router
 from Pet.pet_routes import pet_router
 from Reserva.reserva_routes import reserva_router
 from Pergunta.pergunta_routes import pergunta_router
-from Upload.upload_routes import upload_router
-
 
 app = FastAPI(title="Lar Doce Pet API")
 
@@ -19,7 +17,8 @@ origins = [
     "http://localhost:5173",
     "http://localhost:8081",
     "http://localhost",        # genérico
-    "*",                       # durante desenvolvimento, pode deixar * (não é recomendado em produção)
+    # durante desenvolvimento, pode deixar * (não é recomendado em produção)
+    "*",
 ]
 
 app.add_middleware(
@@ -31,10 +30,9 @@ app.add_middleware(
     allow_headers=["*"],            # Headers customizados
 )
 
-app.include_router(usuario_router)  
-app.include_router(pet_router)  
-app.include_router(anfitriao_router)  
-app.include_router(reserva_router)  
+app.include_router(usuario_router)
+app.include_router(pet_router)
+app.include_router(anfitriao_router)
+app.include_router(reserva_router)
 app.include_router(avaliacao_router)
 app.include_router(pergunta_router)
-app.include_router(upload_router)
