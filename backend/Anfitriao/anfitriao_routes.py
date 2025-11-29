@@ -19,7 +19,7 @@ HEADERS = {
 @anfitriao_router.get("/", status_code=HTTP_200_OK)  
 def get_anfitrioes():  
     """Retorna todos os anfitriões com dados do usuário"""  
-    url = f"{SUPABASE_URL}/rest/v1/anfitrioes?select=*,usuarios(id_usuario,nome,email,telefone,cidade,bairro,cep,logradouro,numero,uf,complemento)"  
+    url = f"{SUPABASE_URL}/rest/v1/anfitrioes?select=*,usuarios(id_usuario,nome,email,telefone,cidade,bairro,cep,logradouro,numero,uf,complemento, foto_perfil_url)"  
     response = requests.get(url, headers=HEADERS)  
   
     if response.status_code != 200:  
@@ -44,7 +44,7 @@ def get_anfitrioes_ativos(
     url = (  
         f"{SUPABASE_URL}/rest/v1/anfitrioes"  
         f"?status=eq.ativo"  
-        f"&select=*,usuarios(id_usuario,nome,email,telefone,cidade,bairro,cep,logradouro,numero,uf,complemento)"  
+        f"&select=*,usuarios(id_usuario,nome,email,telefone,cidade,bairro,cep,logradouro,numero,uf,complemento, foto_perfil_url)"  
         f"&limit={limit}&offset={offset}"  
     )  
   
@@ -70,7 +70,7 @@ def get_anfitrioes_ativos(
 @anfitriao_router.get("/status/{status}", status_code=HTTP_200_OK)  
 def get_anfitrioes_by_status(status: str):  
     """Retorna anfitriões filtrados por status (pendente, ativo, inativo, banido) com dados do usuário"""  
-    url = f"{SUPABASE_URL}/rest/v1/anfitrioes?status=eq.{status}&select=*,usuarios(id_usuario,nome,email,telefone,cidade,bairro,cep,logradouro,numero,uf,complemento)"  
+    url = f"{SUPABASE_URL}/rest/v1/anfitrioes?status=eq.{status}&select=*,usuarios(id_usuario,nome,email,telefone,cidade,bairro,cep,logradouro,numero,uf,complemento, foto_perfil_url)"  
     response = requests.get(url, headers=HEADERS)  
       
     if response.status_code != 200:  
@@ -82,7 +82,7 @@ def get_anfitrioes_by_status(status: str):
 @anfitriao_router.get("/{id}", status_code=HTTP_200_OK)  
 def get_anfitriao_by_id(id: int):  
     """Retorna um anfitrião específico por ID com dados do usuário"""  
-    url = f"{SUPABASE_URL}/rest/v1/anfitrioes?id_anfitriao=eq.{id}&select=*,usuarios(id_usuario,nome,email,telefone,cidade,bairro,cep,logradouro,numero,uf,complemento)"  
+    url = f"{SUPABASE_URL}/rest/v1/anfitrioes?id_anfitriao=eq.{id}&select=*,usuarios(id_usuario,nome,email,telefone,cidade,bairro,cep,logradouro,numero,uf,complemento, foto_perfil_url)"  
     response = requests.get(url, headers=HEADERS)  
       
     if response.status_code != 200:  

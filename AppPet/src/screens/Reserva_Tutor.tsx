@@ -88,6 +88,7 @@ const ReservaCard = ({ reserva, navigation }: {
     navigation: RootStackScreenProps<'Reserva_Tutor'>['navigation'];
 }) => {
     const isConcluida = reserva.status === 'concluida';
+    const podeAvaliar = isConcluida && !reserva.ja_avaliado_host;
 
     return (
         <View style={styles.cardContainer}>
@@ -119,8 +120,8 @@ const ReservaCard = ({ reserva, navigation }: {
             >
                 <Image 
                     source={
-                        reserva.anfitriao.foto_perfil 
-                            ? { uri: reserva.anfitriao.foto_perfil }
+                        reserva.anfitriao.foto_perfil_url 
+                            ? { uri: reserva.anfitriao.foto_perfil_url }
                             : ICON_HOST_AVATAR
                     } 
                     style={styles.hostAvatar} 
@@ -160,13 +161,20 @@ const ReservaCard = ({ reserva, navigation }: {
                 priceTotal={reserva.valor_total_reserva} 
             />
           
-            {/* 5. Botão de Status e Botão de Avaliar */}
+            {/* Botão de Status e Botão de Avaliar */}
             <View style={styles.statusActionsContainer}>
                 <StatusButton status={reserva.status} />
-                {isConcluida && (
+                {podeAvaliar && (
                     <AvaliarButton navigation={navigation} reservaId={reserva.id_reserva} />
                 )}
             </View>
+
+            {/* Indicador de "Já avaliado" (opcional) */}
+            {isConcluida && reserva.ja_avaliado_host && (
+                <View style={styles.avaliadoIndicator}>
+                    <Text style={styles.avaliadoText}>✓ Hospedagem avaliada</Text>
+                </View>
+            )}
         </View>
     );
 };
@@ -614,6 +622,21 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '700',
         color: '#a57d17ff',
+    },
+    avaliadoIndicator: {
+        marginTop: 10,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        backgroundColor: '#d4edda',
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#7AB24E',
+        alignItems: 'center',
+    },
+    avaliadoText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#556A44',
     },
     emptyContainer: {
         alignItems: 'center',

@@ -1,22 +1,13 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, TextInput, Alert, Modal } from 'react-native';
-import type { RootStackScreenProps } from '../../navigation/types'; // Assumindo que 'types' está na mesma pasta ou caminho acessível
+// AppPet\src\screens\Registros\HostAvaliacao.tsx
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, TextInput, Modal, ActivityIndicator } from 'react-native';
+import type { RootStackScreenProps } from '../../navigation/types';
+import { AvaliacaoService } from '../../services/avaliacaoService';
+import { ReservaService } from '../../services/reservaService';
+import { ReservaCompleta } from '../../navigation/reservaTypes';
 
-// --- MOCK DE DADOS E ÍCONES REAPROVEITADOS ---
-// Caminho corrigido para o arquivo de imagem, subindo 3 níveis para chegar à pasta 'assets'
-const ICON_AVATAR = require('../../../assets/icons/user.png'); 
-const ICON_PET_THOR = { uri: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=60&h=60&fit=crop' };
+const ICON_AVATAR = require('../../../assets/icons/user.png');
 
-const mockReservaParaAvaliacao = {
-    id: 'r2',
-    host: { name: 'Maria Silveira', location: 'Boqueirão', avatarUrl: ICON_AVATAR },
-    dataEntrada: '01/10/2025',
-    dataSaida: '02/10/2025', 
-    dias: 1,
-    pets: [{ id: 'p3', name: "Thor", imageUrl: ICON_PET_THOR.uri }],
-};
-
-// --- COMPONENTE PARA AVALIAÇÃO COM ESTRELAS (MOCK de Ícones) ---
 interface RatingProps {
     rating: number;
     maxRating: number;
@@ -27,20 +18,18 @@ const StarRating = ({ rating, maxRating, onRate }: RatingProps) => {
     const stars = Array.from({ length: maxRating }, (_, index) => {
         const starNumber = index + 1;
         const isFilled = starNumber <= rating;
-        
-        // Usamos um emoji ou caractere simples para simular um ícone de estrela
-        const starIcon = isFilled ? '★' : '☆'; 
+        const starIcon = isFilled ? '★' : '☆';
 
         return (
             <TouchableOpacity 
                 key={index} 
                 onPress={() => onRate(starNumber)}
                 activeOpacity={0.7}
-                style={avaliacaoStyles.starButton}
+                style={styles.starButton}
             >
                 <Text style={[
-                    avaliacaoStyles.starIcon, 
-                    isFilled ? avaliacaoStyles.starFilled : avaliacaoStyles.starEmpty
+                    styles.starIcon, 
+                    isFilled ? styles.starFilled : styles.starEmpty
                 ]}>
                     {starIcon}
                 </Text>
@@ -48,125 +37,181 @@ const StarRating = ({ rating, maxRating, onRate }: RatingProps) => {
         );
     });
 
-    return <View style={avaliacaoStyles.starContainer}>{stars}</View>;
+    return <View style={styles.starContainer}>{stars}</View>;
 };
 
-// --- NOVO COMPONENTE: ALERTA CUSTOMIZADO ---
 const CustomAlert = ({
-  visible,
-  title,
-  message,
-  onClose,
+  visible,
+  title,
+  message,
+  onClose,
 }: {
-  visible: boolean;
-  title: string;
-  message: string;
-  onClose: () => void;
+  visible: boolean;
+  title: string;
+  message: string;
+  onClose: () => void;
 }) => (
-  <Modal transparent visible={visible} animationType="fade">
-    <View style={avaliacaoStyles.modalOverlay}>
-      <View style={avaliacaoStyles.modalContainer}>
-        <Text style={avaliacaoStyles.modalTitle}>{title}</Text>
-        <Text style={avaliacaoStyles.modalMessage}>{message}</Text>
-
-        <TouchableOpacity style={avaliacaoStyles.modalButton} onPress={onClose}>
-          <Text style={avaliacaoStyles.modalButtonText}>OK</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </Modal>
+  <Modal transparent visible={visible} animationType="fade">
+    <View style={styles.modalOverlay}>
+      <View style={styles.modalContainer}>
+        <Text style={styles.modalTitle}>{title}</Text>
+        <Text style={styles.modalMessage}>{message}</Text>
+        <TouchableOpacity style={styles.modalButton} onPress={onClose}>
+          <Text style={styles.modalButtonText}>OK</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
 );
 
-// -------------------------------------------------------------------
-// ------------------------- TELA PRINCIPAL --------------------------
-// -------------------------------------------------------------------
-
-// Adaptação da tipagem para a tela de avaliação, assumindo que ela recebe o ID da reserva
-// Esta tipagem real seria definida no seu arquivo 'types.ts'
 type AvaliarHospedagemProps = RootStackScreenProps<'HostAvaliacao'>;
 
 export default function AvaliarHospedagem({ navigation, route }: AvaliarHospedagemProps) {
-    // A reserva real viria de uma chamada de API usando route.params.reservaId
-    const reserva = mockReservaParaAvaliacao; // Usando mock para demonstração
-
+    const { reservaId } = route.params;
+    
+    const [reserva, setReserva] = useState<ReservaCompleta | null>(null);
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isFetchingReserva, setIsFetchingReserva] = useState(true);
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertData, setAlertData] = useState({ title: '', message: '', action: () => {} });
 
-    
-    // --- NOVO ESTADO DO MODAL ---
-    const [alertVisible, setAlertVisible] = useState(false);
-    const [alertData, setAlertData] = useState({ title: '', message: '', action: () => {} });
-    
-    // Função para mostrar o modal
-    const showAlert = (title: string, message: string, action: () => void = () => {}) => {
-        setAlertData({ title, message, action });
-        setAlertVisible(true);
-    };
+    // Busca os dados da reserva
+    useEffect(() => {
+        const fetchReserva = async () => {
+            try {
+                setIsFetchingReserva(true);
+                const reservaCompleta = await ReservaService.getReservaCompletaById(parseInt(reservaId));
+                setReserva(reservaCompleta);
+            } catch (error) {
+                console.error('Erro ao buscar reserva:', error);
+                showAlert(
+                    "Erro", 
+                    "Não foi possível carregar os dados da reserva.",
+                    () => navigation.goBack()
+                );
+            } finally {
+                setIsFetchingReserva(false);
+            }
+        };
 
-    // Função para fechar o modal e executar a ação
-    const handleAlertClose = () => {
-        setAlertVisible(false);
-        alertData.action();
-    };
-    
-    // Simula o processo de envio
-    const handleSubmit = async () => {
-        if (rating === 0) {
-            showAlert("Atenção", "Por favor, avalie o Host com pelo menos uma estrela.");
-            return;
-        }
+        fetchReserva();
+    }, [reservaId]);
+
+    const showAlert = (title: string, message: string, action: () => void = () => {}) => {
+        setAlertData({ title, message, action });
+        setAlertVisible(true);
+    };
+
+    const handleAlertClose = () => {
+        setAlertVisible(false);
+        alertData.action();
+    };
+
+    const handleSubmit = async () => {
+        if (rating === 0) {
+            showAlert("Atenção", "Por favor, avalie o Host com pelo menos uma estrela.");
+            return;
+        }
+
+        if (!reserva) {
+            showAlert("Erro", "Dados da reserva não disponíveis.");
+            return;
+        }
 
         setIsLoading(true);
 
-        // --- Simulação de Envio de Dados para a API ---
-        const reviewData = {
-            reservaId: reserva.id,
-            hostId: 'host-123', // ID do host
-            rating: rating,
-            comment: comment.trim(),
-            timestamp: new Date().toISOString(),
-        };
+        try {
+            // Dados da avaliação
+            const avaliacaoData = {
+                id_reserva: parseInt(reservaId),
+                id_avaliador: reserva.id_tutor, // ID do tutor (quem está avaliando)
+                id_avaliado: reserva.anfitriao.id_anfitriao, // ID do host (quem está sendo avaliado)
+                nota: rating,
+                comentario: comment.trim() || undefined,
+            };
 
-        console.log("Dados de Avaliação Enviados:", reviewData);
-        
-        // Simulação de delay de rede
-        await new Promise(resolve => setTimeout(resolve, 1500)); 
-        // ---------------------------------------------
+            // Envia para o backend
+            await AvaliacaoService.createAvaliacao(avaliacaoData);
 
-        setIsLoading(false);
-        
-        showAlert(
-          "Avaliação Concluída!", 
-          `Obrigado por avaliar ${reserva.host.name}. Sua nota de ${rating} estrela(s) foi enviada com sucesso!`,
-          () => navigation.goBack() // Ação: voltar para a tela anterior
-        );
-    };
+            await ReservaService.marcarComoAvaliadoHost(parseInt(reservaId));
+
+            showAlert(
+                "Avaliação Concluída!", 
+                `Obrigado por avaliar ${reserva.anfitriao.nome}. Sua nota de ${rating} estrela(s) foi enviada com sucesso!`,
+                () => navigation.goBack()
+            );
+
+        } catch (error: any) {
+            console.error('Erro ao enviar avaliação:', error);
+            showAlert(
+                "Erro",
+                error.message || "Não foi possível enviar sua avaliação. Tente novamente."
+            );
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    if (isFetchingReserva) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#556A44" />
+                    <Text style={styles.loadingText}>Carregando dados...</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (!reserva) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.loadingContainer}>
+                    <Text style={styles.errorText}>Reserva não encontrada</Text>
+                    <TouchableOpacity 
+                        style={styles.backButton}
+                        onPress={() => navigation.goBack()}
+                    >
+                        <Text style={styles.backButtonText}>Voltar</Text>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     return (
-        <SafeAreaView style={avaliacaoStyles.container}>
-            <ScrollView contentContainerStyle={avaliacaoStyles.scrollContainer} showsVerticalScrollIndicator={false}>
-                <View style={avaliacaoStyles.innerContainer}>
+        <SafeAreaView style={styles.container}>
+            <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+                <View style={styles.innerContainer}>
 
-                    <Text style={avaliacaoStyles.mainTitle}>Avalie sua Hospedagem</Text>
+                    <Text style={styles.mainTitle}>Avalie sua Hospedagem</Text>
                     
-                    {/* HOST CARD */}
-                    <View style={avaliacaoStyles.hostCard}>
-                        <Image source={reserva.host.avatarUrl} style={avaliacaoStyles.hostAvatar} />
-                        <View style={avaliacaoStyles.hostInfo}>
-                            <Text style={avaliacaoStyles.hostName}>{reserva.host.name}</Text>
-                            <Text style={avaliacaoStyles.hostLocation}>Período: {reserva.dataEntrada} a {reserva.dataSaida}</Text>
+                    <View style={styles.hostCard}>
+                        <Image 
+                            source={
+                                reserva.anfitriao.foto_perfil_url 
+                                    ? { uri: reserva.anfitriao.foto_perfil_url }
+                                    : ICON_AVATAR
+                            } 
+                            style={styles.hostAvatar} 
+                        />
+                        <View style={styles.hostInfo}>
+                            <Text style={styles.hostName}>{reserva.anfitriao.nome}</Text>
+                            <Text style={styles.hostLocation}>
+                                Período: {reserva.data_inicio} a {reserva.data_fim}
+                            </Text>
                         </View>
                     </View>
 
-                    {/* SEÇÃO DE AVALIAÇÃO */}
-                    <View style={avaliacaoStyles.sectionContainer}>
-                        <Text style={avaliacaoStyles.sectionTitle}>
+                    <View style={styles.sectionContainer}>
+                        <Text style={styles.sectionTitle}>
                             Sua experiência com o Host
                         </Text>
                         
-                        <Text style={avaliacaoStyles.sectionSubtitle}>
-                            De 1 a 5 estrelas, como você avalia o cuidado de {reserva.host.name}?
+                        <Text style={styles.sectionSubtitle}>
+                            De 1 a 5 estrelas, como você avalia o cuidado de {reserva.anfitriao.nome}?
                         </Text>
                         
                         <StarRating 
@@ -175,13 +220,12 @@ export default function AvaliarHospedagem({ navigation, route }: AvaliarHospedag
                             onRate={setRating}
                         />
                         
-                        {/* COMENTÁRIO */}
-                        <Text style={[avaliacaoStyles.sectionTitle, { marginTop: 20 }]}>
+                        <Text style={[styles.sectionTitle, { marginTop: 20 }]}>
                             Deixe seu Comentário (Opcional)
                         </Text>
                         <TextInput
-                            style={avaliacaoStyles.commentInput}
-                            placeholder={`Conte-nos sobre a estadia de ${reserva.pets.map(p => p.name).join(' e ')}...`}
+                            style={styles.commentInput}
+                            placeholder={`Conte-nos sobre a estadia...`}
                             placeholderTextColor="#A9A9A9"
                             multiline
                             numberOfLines={4}
@@ -189,26 +233,25 @@ export default function AvaliarHospedagem({ navigation, route }: AvaliarHospedag
                             onChangeText={setComment}
                             maxLength={500}
                         />
-                         <Text style={avaliacaoStyles.charCount}>{comment.length}/500</Text>
+                         <Text style={styles.charCount}>{comment.length}/500</Text>
                     </View>
 
-                    {/* BOTÃO DE ENVIO */}
                     <TouchableOpacity
-                        style={[avaliacaoStyles.submitButton, isLoading && { opacity: 0.6 }]}
+                        style={[styles.submitButton, (isLoading || rating === 0) && { opacity: 0.6 }]}
                         onPress={handleSubmit}
                         disabled={isLoading || rating === 0}
                     >
-                        <Text style={avaliacaoStyles.submitButtonText}>
+                        <Text style={styles.submitButtonText}>
                             {isLoading ? 'Enviando...' : 'Finalizar Avaliação'}
                         </Text>
                     </TouchableOpacity>
                     
                     <TouchableOpacity
-                        style={avaliacaoStyles.backButton}
+                        style={styles.backButton}
                         onPress={() => navigation.goBack()}
                         disabled={isLoading}
                     >
-                        <Text style={avaliacaoStyles.backButtonText}>
+                        <Text style={styles.backButtonText}>
                             Voltar
                         </Text>
                     </TouchableOpacity>
@@ -217,18 +260,14 @@ export default function AvaliarHospedagem({ navigation, route }: AvaliarHospedag
             </ScrollView>
 
             <CustomAlert
-                visible={alertVisible}
-                title={alertData.title}
-                message={alertData.message}
-                onClose={handleAlertClose} // Chama a função que executa a ação e fecha
-            />
+                visible={alertVisible}
+                title={alertData.title}
+                message={alertData.message}
+                onClose={handleAlertClose}
+            />
         </SafeAreaView>
     );
 }
-
-// -------------------------------------------------------------------
-// ----------------------------- STYLES ------------------------------
-// -------------------------------------------------------------------
 
 const GREEN_DARK = '#556A44';
 const GREEN_MEDIUM = '#7AB24E';
@@ -236,8 +275,7 @@ const GREEN_LIGHT = '#B3D18C';
 const YELLOW_STAR = '#FFC700';
 const BG_INNER = '#FFF6E2';
 
-const avaliacaoStyles = StyleSheet.create({
-    // --- Estrutura Geral (Reaproveitado da Lista) ---
+const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: GREEN_LIGHT,
@@ -250,11 +288,11 @@ const avaliacaoStyles = StyleSheet.create({
         flex: 1,
         marginHorizontal: 12,
         marginTop: 25,       
-        backgroundColor: '#FFFFFF', // Mudança para branco para contraste
+        backgroundColor: '#FFFFFF',
         borderRadius: 40,
         paddingHorizontal: 20, 
         paddingVertical: 30,
-        borderWidth: 5, // Borda verde forte
+        borderWidth: 5,
         borderColor: GREEN_LIGHT,
     },
     mainTitle: { 
@@ -264,30 +302,6 @@ const avaliacaoStyles = StyleSheet.create({
         marginBottom: 25, 
         textAlign: 'center',
     },
-
-    // --- LOGO DO PET (Reaproveitado) ---
-    cornerImageContainer: {
-        position: 'absolute',
-        top: 29, 
-        right: 220, 
-        width: 60, 
-        height: 60,
-        zIndex: 10, 
-    },
-    cornerImage: {
-        width: '100%', 
-        height: '100%', 
-        resizeMode: 'contain',
-    },
-    LogoText: {
-      top: 60,
-      left: 165,
-      fontSize: 20,
-      fontWeight: '700',
-      color: '#ffffff',
-    },
-
-    // --- HOST CARD (Adaptação do Card da Lista) ---
     hostCard: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -304,7 +318,6 @@ const avaliacaoStyles = StyleSheet.create({
         borderRadius: 30,
         backgroundColor: GREEN_MEDIUM,
         marginRight: 15,
-        tintColor: BG_INNER,
     },
     hostInfo: {
         flex: 1,
@@ -319,8 +332,6 @@ const avaliacaoStyles = StyleSheet.create({
         color: GREEN_DARK,
         marginTop: 4,
     },
-
-    // --- SEÇÃO DE AVALIAÇÃO ---
     sectionContainer: {
         padding: 15,
         backgroundColor: '#FFFFFF',
@@ -340,8 +351,6 @@ const avaliacaoStyles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 15,
     },
-
-    // --- ESTRELAS ---
     starContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
@@ -349,7 +358,6 @@ const avaliacaoStyles = StyleSheet.create({
     },
     starButton: {
         paddingHorizontal: 5,
-        // Garante que a área de toque é grande
     },
     starIcon: {
         fontSize: 45,
@@ -360,8 +368,6 @@ const avaliacaoStyles = StyleSheet.create({
     starEmpty: {
         color: '#D0D0D0',
     },
-
-    // --- INPUT DE COMENTÁRIO ---
     commentInput: {
         height: 120,
         borderColor: GREEN_LIGHT,
@@ -380,8 +386,6 @@ const avaliacaoStyles = StyleSheet.create({
         marginTop: 5,
         marginBottom: 15,
     },
-
-    // --- BOTÕES DE AÇÃO ---
     submitButton: {
         backgroundColor: GREEN_MEDIUM, 
         paddingVertical: 15,
@@ -411,47 +415,63 @@ const avaliacaoStyles = StyleSheet.create({
         fontWeight: '600',
         color: GREEN_MEDIUM,
     },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalContainer: {
-        width: '80%',
-        backgroundColor: '#FFF6E2',
-        borderRadius: 20,
-        paddingVertical: 25,
-        paddingHorizontal: 20,
-        borderWidth: 3,
-        borderColor: GREEN_LIGHT, // Borda verde clara
-        alignItems: 'center',
-        elevation: 6,
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: GREEN_DARK, // Verde escuro
-        marginBottom: 10,
-        textAlign: 'center',
-    },
-    modalMessage: {
-        fontSize: 16,
-        color: GREEN_DARK,
-        textAlign: 'center',
-        marginBottom: 20,
-    },
-    modalButton: {
-        backgroundColor: GREEN_MEDIUM, // Verde médio
-        borderRadius: 10,
-        paddingHorizontal: 45,
-        paddingVertical: 10,
-        borderWidth: 2,
-        borderColor: GREEN_LIGHT,
-    },
-    modalButtonText: {
-        color: BG_INNER, // Cor de fundo do inner container
-        fontSize: 18,
-        fontWeight: '700',
-    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+        width: '80%',
+        backgroundColor: BG_INNER,
+        borderRadius: 20,
+        paddingVertical: 25,
+        paddingHorizontal: 20,
+        borderWidth: 3,
+        borderColor: GREEN_LIGHT,
+        alignItems: 'center',
+        elevation: 6,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: GREEN_DARK,
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    modalMessage: {
+        fontSize: 16,
+        color: GREEN_DARK,
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    modalButton: {
+        backgroundColor: GREEN_MEDIUM,
+        borderRadius: 10,
+        paddingHorizontal: 45,
+        paddingVertical: 10,
+        borderWidth: 2,
+        borderColor: GREEN_LIGHT,
+    },
+    modalButtonText: {
+        color: BG_INNER,
+        fontSize: 18,
+        fontWeight: '700',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 16,
+        color: GREEN_DARK,
+    },
+    errorText: {
+        fontSize: 16,
+        color: '#d85e38ff',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
 });

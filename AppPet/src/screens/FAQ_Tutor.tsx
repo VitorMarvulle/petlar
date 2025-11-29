@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,35 +7,118 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Alert,
+  ActivityIndicator,
+  Keyboard,
 } from "react-native";
+import { useRoute, RouteProp } from "@react-navigation/native";
+import { RootStackParamList } from "../navigation/types";
+
+// URL base da API
+const API_BASE_URL = 'http://localhost:8000'; // Se estiver no emulador Android, use 'http://10.0.2.2:8000'
+
+// Tipos baseados na resposta da API
+interface RespostaAPI {
+  id_resposta: number;
+  resposta: string;
+}
+
+interface PerguntaAPI {
+  id_pergunta: number;
+  id_tutor: number;
+  id_anfitriao: number;
+  pergunta: string;
+  data_envio: string;
+  resposta?: RespostaAPI | null;
+}
+
+type FAQRouteProp = RouteProp<RootStackParamList, "FAQ_Tutor">;
 
 export default function FAQ() {
-  const [newQuestion, setNewQuestion] = useState("");
-  const [questions, setQuestions] = useState([
-    {
-      id: "1",
-      question: "O host aceita gatos filhotes?",
-      answer: null, // ainda sem resposta
-    },
-    {
-      id: "2",
-      question: "O host passeia com o pet quantas vezes por dia?",
-      answer: "Normalmente 2x ao dia.",
-    },
-  ]);
+  const route = useRoute<FAQRouteProp>();
+  const { id_anfitriao, id_tutor } = route.params;
 
-  const handleSendQuestion = () => {
+  const [newQuestion, setNewQuestion] = useState("");
+  const [questions, setQuestions] = useState<PerguntaAPI[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+
+  // Buscar perguntas ao carregar a tela
+  useEffect(() => {
+    fetchQuestions();
+  }, [id_anfitriao]);
+
+  const fetchQuestions = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE_URL}/perguntas/anfitriao/${id_anfitriao}`);
+      
+      if (!response.ok) {
+        throw new Error("Falha ao buscar perguntas");
+      }
+
+      const data = await response.json();
+      // O endpoint retorna todas as perguntas do anfitrião.
+      // Você pode filtrar aqui se quiser mostrar apenas as perguntas DESTE tutor:
+      // const minhasPerguntas = data.filter((q: PerguntaAPI) => q.id_tutor === id_tutor);
+      // Por enquanto, vou mostrar todas (estilo FAQ público):
+      setQuestions(data);
+    } catch (error) {
+      console.error("Erro ao carregar perguntas:", error);
+      Alert.alert("Erro", "Não foi possível carregar as perguntas.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendQuestion = async () => {
     if (newQuestion.trim().length === 0) return;
 
-    const newItem = {
-      id: Date.now().toString(),
-      question: newQuestion,
-      answer: null,
-    };
+    try {
+      setSending(true);
+      
+      const payload = {
+        id_tutor: id_tutor,
+        id_anfitriao: id_anfitriao,
+        pergunta: newQuestion,
+      };
 
-    setQuestions([newItem, ...questions]);
-    setNewQuestion("");
+      const response = await fetch(`${API_BASE_URL}/perguntas/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao enviar pergunta");
+      }
+
+      const novaPerguntaCriada = await response.json();
+
+      // Atualiza a lista localmente adicionando a nova pergunta ao final
+      // Nota: A API retorna o objeto criado, mas sem a estrutura 'resposta' aninhada ainda,
+      // então garantimos que resposta seja null visualmente.
+      setQuestions([...questions, { ...novaPerguntaCriada, resposta: null }]);
+      
+      setNewQuestion("");
+      Keyboard.dismiss();
+    } catch (error) {
+      console.error("Erro ao enviar:", error);
+      Alert.alert("Erro", "Falha ao enviar sua pergunta. Tente novamente.");
+    } finally {
+      setSending(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color="#556A44" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -50,28 +133,43 @@ export default function FAQ() {
             placeholder="Envie uma pergunta ao host..."
             placeholderTextColor="#8AA17A"
             style={styles.input}
+            multiline
           />
 
-          <TouchableOpacity style={styles.sendButton} onPress={handleSendQuestion}>
-            <Text style={styles.sendButtonText}>Enviar</Text>
+          <TouchableOpacity 
+            style={[styles.sendButton, sending && { opacity: 0.7 }]} 
+            onPress={handleSendQuestion}
+            disabled={sending}
+          >
+            {sending ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <Text style={styles.sendButtonText}>Enviar</Text>
+            )}
           </TouchableOpacity>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 10 }}>
-          {questions.map((item) => (
-            <View key={item.id} style={styles.questionCard}>
-              <Text style={styles.questionText}>{item.question}</Text>
+          {questions.length === 0 ? (
+            <Text style={styles.emptyText}>Nenhuma pergunta encontrada. Seja o primeiro!</Text>
+          ) : (
+            questions.map((item) => (
+              <View key={item.id_pergunta} style={styles.questionCard}>
+                <Text style={styles.questionText}>{item.pergunta}</Text>
 
-              {!item.answer ? (
-                <Text style={styles.waitingText}>Aguardando resposta do host...</Text>
-              ) : (
-                <View style={styles.answerContainer}>
-                  <Text style={styles.answerLabel}>Resposta:</Text>
-                  <Text style={styles.answerText}>{item.answer}</Text>
-                </View>
-              )}
-            </View>
-          ))}
+                {/* Verifica se item.resposta existe e se tem conteúdo dentro */}
+                {!item.resposta ? (
+                  <Text style={styles.waitingText}>Aguardando resposta do host...</Text>
+                ) : (
+                  <View style={styles.answerContainer}>
+                    <Text style={styles.answerLabel}>Resposta:</Text>
+                    {/* Acessa a propriedade .resposta do objeto resposta */}
+                    <Text style={styles.answerText}>{item.resposta.resposta}</Text>
+                  </View>
+                )}
+              </View>
+            ))
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -83,7 +181,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#B3D18C",
   },
-
   innerContainer: {
     flex: 1,
     marginHorizontal: 12,
@@ -94,7 +191,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 25,
   },
-
   title: {
     color: "#556A44",
     fontSize: 24,
@@ -102,7 +198,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 25,
   },
-
   inputContainer: {
     backgroundColor: "#FFF6E2",
     borderWidth: 2,
@@ -110,26 +205,23 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 10,
   },
-
   input: {
     color: "#556A44",
     fontSize: 16,
     marginBottom: 10,
+    maxHeight: 80,
   },
-
   sendButton: {
     backgroundColor: "#85B65E",
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: "center",
   },
-
   sendButtonText: {
     color: "#FFF",
     fontSize: 15,
     fontWeight: "600",
   },
-
   questionCard: {
     backgroundColor: "#FFF6E2",
     borderColor: "#B3D18C",
@@ -138,35 +230,37 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
   },
-
   questionText: {
     color: "#556A44",
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 5,
   },
-
   waitingText: {
     color: "#8AA17A",
     fontSize: 14,
     fontStyle: "italic",
   },
-
   answerContainer: {
     marginTop: 8,
     paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: "#B3D18C",
   },
-
   answerLabel: {
     color: "#556A44",
     fontWeight: "700",
     fontSize: 14,
   },
-
   answerText: {
     color: "#556A44",
     fontSize: 14,
+    marginTop: 2,
   },
+  emptyText: {
+    textAlign: 'center',
+    color: '#556A44',
+    marginTop: 20,
+    fontStyle: 'italic',
+  }
 });

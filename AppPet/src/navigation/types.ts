@@ -60,7 +60,7 @@ export type RootStackParamList = {
   TutorAvaliacao: { reservaId: string };
   Alterar_senha: undefined;
   Alterar_email: undefined;
-  FAQ_Tutor: undefined;
+  FAQ_Tutor: {id_anfitriao: number; id_tutor: number};
   FAQ_Host: undefined;
   InfoHost: { id_usuario: number; hostCriado?: any; fotoPerfilUrl?: string };  
   CriarAnuncioDetalhes: { id_usuario: number; fotoPerfilUrl: string };
