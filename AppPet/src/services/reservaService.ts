@@ -82,6 +82,8 @@ export class ReservaService {
             dias,
             status: reserva.status,
             valor_total_reserva,
+            ja_avaliado_tutor: reserva.ja_avaliado_tutor || false,
+            ja_avaliado_host: reserva.ja_avaliado_host || false,
             anfitriao: {
                 id_anfitriao: anfitriaoData.id_anfitriao,
                 nome: anfitriaoData.usuarios?.nome || 'Anfitrião',
@@ -218,6 +220,30 @@ export class ReservaService {
             return await this.montarReservaCompleta(response.data);
         } catch (error: any) {
             this.handleError(error);
+            throw error;
+        }
+    }
+
+    static async marcarComoAvaliadoTutor(id_reserva: number): Promise<void> {
+        try {
+            await axios.put(`${API_BASE_URL}/reservas/${id_reserva}`, {
+                ja_avaliado_tutor: true,
+                
+            });
+        } catch (error: any) {
+            console.error('Erro ao marcar reserva como avaliada:', error);
+            throw error;
+        }
+    }
+    
+    static async marcarComoAvaliadoHost(id_reserva: number): Promise<void> {
+        try {
+            await axios.put(`${API_BASE_URL}/reservas/${id_reserva}`, {
+                ja_avaliado_host: true,
+                
+            });
+        } catch (error: any) {
+            console.error('Erro ao marcar reserva como avaliada:', error);
             throw error;
         }
     }

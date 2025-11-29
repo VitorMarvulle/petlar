@@ -74,6 +74,8 @@ export interface ReservaBackend {
     status: ReservaStatus;
     pets_tutor: number[]; // Lista de IDs dos pets
     valor_total_reserva?: number;
+    ja_avaliado_tutor?: boolean;
+    ja_avaliado_host?: boolean;
     created_at?: string;
     updated_at?: string;
 }
@@ -88,6 +90,8 @@ export interface ReservaCompleta {
     dias: number;
     status: ReservaStatus;
     valor_total_reserva: number;
+    ja_avaliado_tutor?: boolean;
+    ja_avaliado_host?: boolean;
     anfitriao: {
         id_anfitriao: number;
         nome: string;

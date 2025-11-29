@@ -135,6 +135,8 @@ export default function AvaliarHospedagem({ navigation, route }: AvaliarHospedag
             // Envia para o backend
             await AvaliacaoService.createAvaliacao(avaliacaoData);
 
+            await ReservaService.marcarComoAvaliadoHost(parseInt(reservaId));
+
             showAlert(
                 "Avaliação Concluída!", 
                 `Obrigado por avaliar ${reserva.anfitriao.nome}. Sua nota de ${rating} estrela(s) foi enviada com sucesso!`,

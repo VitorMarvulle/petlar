@@ -13,7 +13,10 @@ class ReservaCreate(BaseModel):
     valor_diaria: float
     qtd_pets: int
     qtd_dias: int
-    valor_total_reserva: float
+    valor_total_reserva: Optional[float]
+    ja_avaliado_host: Optional[bool] = False
+    ja_avaliado_tutor: Optional[bool] = False
+
 
 class ReservaUpdate(BaseModel):
     data_inicio: Optional[date]
@@ -24,3 +27,5 @@ class ReservaUpdate(BaseModel):
     qtd_pets: Optional[int]
     qtd_dias: Optional[int]
     valor_total_reserva:Optional[float] 
+    ja_avaliado_host: Optional[bool] = False
+    ja_avaliado_tutor: Optional[bool] = False
