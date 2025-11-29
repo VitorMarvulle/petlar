@@ -54,6 +54,7 @@ interface AnfitriaoFromApi {
   capacidade_maxima: number;
   especie?: string[];
   tamanho_pet?: string;
+  foto_perfil_url?: string;
   preco?: number | string | null;
   status?: string;
   fotos_urls?: string | string[];
@@ -298,6 +299,23 @@ export default function PerfilHost() {
   const avaliacoesFiltradas = avaliacoes.filter((av) =>
     av.comentario?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  // Dentro do componente PerfilHost:
+
+  const handleFAQPress = () => {
+      if (!usuario?.id_usuario) {
+        Alert.alert('Atenção', 'Você precisa estar logado para ver ou fazer perguntas.');
+        return;
+      }
+
+      if (!anfitriao?.id_anfitriao) {
+        return;
+      }
+
+      navigation.navigate('FAQ_Tutor', {
+        id_anfitriao: anfitriao.id_anfitriao,
+        id_tutor: usuario.id_usuario,
+      });
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -383,8 +401,10 @@ export default function PerfilHost() {
             </View>
 
             <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.actionButton_FAQ} onPress={() => navigation.navigate('FAQ_Tutor')}>
-                <Text style={styles.actionButtonText}>Perguntas Frequentes</Text>
+              <TouchableOpacity 
+                  style={styles.actionButton_FAQ} 
+                  onPress={handleFAQPress} >
+                    <Text style={styles.actionButtonText}>Perguntas Frequentes</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionButton_Reserva} onPress={handleReservaPress}>
                 <Text style={styles.actionButtonText}>Reserva</Text>
