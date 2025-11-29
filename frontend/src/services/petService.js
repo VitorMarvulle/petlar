@@ -54,34 +54,4 @@ export const createPet = async (petData) => {
     }
 };
 
-/**
- * Upload photos for a pet
- * @param {number} petId - Pet ID
- * @param {Array<File>} photos - Array of File objects
- * @returns {Promise<Array<string>>} - Array of photo URLs
- */
-export const uploadFotosPet = async (petId, photos) => {
-    if (!photos || photos.length === 0) return [];
 
-    try {
-        const formData = new FormData();
-        photos.forEach((photo) => {
-            formData.append('arquivos', photo);
-        });
-
-        const response = await fetch(`${API_BASE_URL}/pets/${petId}/fotos`, {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Erro ao enviar fotos');
-        }
-
-        const data = await response.json();
-        return data.fotos_urls;
-    } catch (error) {
-        throw new Error(error.message || 'Erro ao fazer upload das fotos');
-    }
-};

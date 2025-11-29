@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentUser } from '../services/authService';
-import { createPet, uploadFotosPet } from '../services/petService';
+import { createPet } from '../services/petService';
 
 const AddPetPage = () => {
     const navigate = useNavigate();
@@ -17,31 +17,10 @@ const AddPetPage = () => {
         unidade: 'kg',
         especificacoes: '',
     });
-    const [fotos, setFotos] = useState([]);
-    const [previewUrls, setPreviewUrls] = useState([]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setPetData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleFileChange = (e) => {
-        const files = Array.from(e.target.files);
-        if (files.length + fotos.length > 10) {
-            alert('Máximo de 10 fotos permitidas');
-            return;
-        }
-
-        setFotos(prev => [...prev, ...files]);
-
-        // Create preview URLs
-        const newPreviews = files.map(file => URL.createObjectURL(file));
-        setPreviewUrls(prev => [...prev, ...newPreviews]);
-    };
-
-    const removePhoto = (index) => {
-        setFotos(prev => prev.filter((_, i) => i !== index));
-        setPreviewUrls(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = async (e) => {
@@ -58,15 +37,10 @@ const AddPetPage = () => {
             return;
         }
 
-        if (fotos.length < 3) {
-            alert('Adicione pelo menos 3 fotos do seu pet!');
-            return;
-        }
-
         setLoading(true);
         try {
             // 1. Create Pet
-            const newPet = await createPet({
+            await createPet({
                 id_tutor: currentUser.id_usuario || currentUser.id,
                 nome: petData.nome,
                 especie: petData.especie,
@@ -76,11 +50,6 @@ const AddPetPage = () => {
                 peso_unidade: petData.unidade,
                 observacoes: petData.especificacoes || null,
             });
-
-            // 2. Upload Photos
-            if (fotos.length > 0) {
-                await uploadFotosPet(newPet.id_pet, fotos);
-            }
 
             alert('Pet cadastrado com sucesso!');
             navigate('/profile');
@@ -198,54 +167,6 @@ const AddPetPage = () => {
                             rows="4"
                             className="w-full p-4 bg-[#FFF6E2] border-2 border-[#B3D18C] rounded-2xl text-[#556A44] placeholder-[#7AB24E80] focus:outline-none focus:border-[#7AB24E] transition-colors resize-none"
                         />
-                    </div>
-
-                    {/* Fotos */}
-                    <div>
-                        <label className="block text-[#7AB24E] font-semibold mb-2">Galeria de fotos do seu pet</label>
-                        <div className="border-3 border-dashed border-[#B3D18C] bg-[#FFF6E2] rounded-2xl p-4 min-h-[130px] flex flex-col items-center justify-center relative">
-                            <input
-                                type="file"
-                                multiple
-                                accept="image/*"
-                                onChange={handleFileChange}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                            />
-
-                            {previewUrls.length > 0 ? (
-                                <div className="flex gap-2 overflow-x-auto w-full py-2 z-20 pointer-events-none">
-                                    {previewUrls.map((url, index) => (
-                                        <div key={index} className="relative flex-shrink-0 w-24 h-24 pointer-events-auto">
-                                            <img
-                                                src={url}
-                                                alt={`Preview ${index}`}
-                                                className="w-full h-full object-cover rounded-xl border-2 border-[#B3D18C]"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    e.preventDefault();
-                                                    removePhoto(index);
-                                                }}
-                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-md hover:bg-red-600"
-                                            >
-                                                X
-                                            </button>
-                                        </div>
-                                    ))}
-                                    <div className="flex-shrink-0 w-24 h-24 border-2 border-dashed border-[#B3D18C] rounded-xl flex items-center justify-center text-[#7AB24E] bg-white/50">
-                                        +
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="text-center pointer-events-none">
-                                    <span className="text-2xl block mb-1">📸</span>
-                                    <span className="text-[#7AB24E] font-medium">Adicionar fotos</span>
-                                </div>
-                            )}
-                        </div>
-                        <p className="text-xs text-[#7AB24E] mt-1 ml-1">* Mínimo de 3 fotos</p>
                     </div>
 
                     {/* Botão Salvar */}

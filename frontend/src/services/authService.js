@@ -27,6 +27,7 @@ export const signup = async (userData) => {
         uf: userData.uf,
         complemento: userData.complemento,
         tipo: 'tutor', // default type
+        data_cadastro: new Date().toISOString(),
       }),
     });
 

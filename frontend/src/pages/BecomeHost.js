@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
-import { createAnfitriao, uploadImageToS3 } from '../services/becomeHostService';
+import { createAnfitriao } from '../services/becomeHostService';
 import { getCurrentUser } from '../services/authService';
 
 const BecomeHost = () => {
@@ -11,8 +11,6 @@ const BecomeHost = () => {
   const [especie, setEspecie] = useState([]); // Array of selected pet types
   const [tamanho, setTamanho] = useState(''); // Size of space
   const [preco, setPreco] = useState(''); // Daily price
-  const [imagemFile, setImagemFile] = useState(null); // Image file
-  const [imagemPreview, setImagemPreview] = useState(null); // Image preview
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -54,8 +52,8 @@ const BecomeHost = () => {
     setError('');
 
     // Validation
-    if (!descricao || !capacidade || especie.length === 0 || !tamanho || !preco || !imagemFile) {
-      setError('Todos os campos são obrigatórios, incluindo a foto do perfil');
+    if (!descricao || !capacidade || especie.length === 0 || !tamanho || !preco) {
+      setError('Todos os campos são obrigatórios');
       return;
     }
 
@@ -71,12 +69,6 @@ const BecomeHost = () => {
 
     setLoading(true);
     try {
-      // Upload image to S3 first
-      let imagemUrl = null;
-      if (imagemFile) {
-        imagemUrl = await uploadImageToS3(imagemFile);
-      }
-
       // Create anfitriao record with current user ID
       await createAnfitriao({
         id_anfitriao: currentUser.id_usuario,
@@ -85,7 +77,7 @@ const BecomeHost = () => {
         especie: especie, // Array of pet types
         tamanho_pet: tamanho, // Size of pet
         preco: parseFloat(preco), // Daily price
-        imagem_anfitriao: imagemUrl, // S3 image URL
+        imagem_anfitriao: null, // No image upload
       });
 
       alert('Parabéns! Você agora é um host! 🎉');
@@ -104,33 +96,6 @@ const BecomeHost = () => {
         ? prev.filter((p) => p !== petType)
         : [...prev, petType]
     );
-  };
-
-  // Handle image selection
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file type
-      if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
-        setError('Apenas arquivos PNG e JPG são permitidos');
-        return;
-      }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('A imagem não pode ser maior que 5MB');
-        return;
-      }
-
-      setImagemFile(file);
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagemPreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-      setError('');
-    }
   };
 
   if (!currentUser) {
@@ -180,11 +145,10 @@ const BecomeHost = () => {
                 {petOptions.map((option) => (
                   <label
                     key={option.value}
-                    className={`flex items-center p-2 border rounded-md cursor-pointer transition-colors ${
-                      especie.includes(option.value)
+                    className={`flex items-center p-2 border rounded-md cursor-pointer transition-colors ${especie.includes(option.value)
                         ? 'bg-blue-100 border-blue-500'
                         : 'bg-white border-gray-300 hover:border-blue-300'
-                    }`}
+                      }`}
                   >
                     <input
                       type="checkbox"
@@ -231,36 +195,6 @@ const BecomeHost = () => {
               step="0.01"
               placeholder="Ex: 60.00"
             />
-          </div>
-
-          {/* Image Upload */}
-          <div>
-            <label htmlFor="imagem" className="block text-sm font-medium text-gray-700 mb-2">
-              Foto de Perfil (PNG ou JPG, máximo 5MB):
-            </label>
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <input
-                  id="imagem"
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg"
-                  onChange={handleImageChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              {imagemPreview && (
-                <div className="flex-shrink-0">
-                  <img
-                    src={imagemPreview}
-                    alt="Preview"
-                    className="h-20 w-20 object-cover rounded-lg border-2 border-blue-500"
-                  />
-                </div>
-              )}
-            </div>
-            {imagemFile && (
-              <p className="text-sm text-green-600 mt-1">✓ Imagem selecionada: {imagemFile.name}</p>
-            )}
           </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
