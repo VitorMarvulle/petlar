@@ -48,7 +48,13 @@ export type RootStackParamList = {
   Reserva_Lista: undefined;
   Configuracoes: undefined;
   Home_Host: undefined;
-  Reserva_Tutor: undefined;
+  Reserva_Tutor: {usuario?: {
+      id_usuario: number;
+      nome: string;
+      email: string;
+      tipo?: string | null;
+      telefone?: string | null;
+    }};
   Reserva_Host: undefined;
   HostAvaliacao: { reservaId: string };
   TutorAvaliacao: { reservaId: string };

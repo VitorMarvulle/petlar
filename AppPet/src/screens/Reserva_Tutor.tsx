@@ -1,220 +1,176 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image } from 'react-native';
+// petlar\AppPet\src\screens\Reserva_Tutor.tsx
+import React, { useState, useMemo, useCallback } from 'react';
+import { 
+    View, Text, StyleSheet, SafeAreaView, ScrollView, 
+    TouchableOpacity, Image, ActivityIndicator, Alert 
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import type { RootStackScreenProps } from '../navigation/types'; 
+import { 
+    ReservaCompleta, 
+    ReservaStatus, 
+    FilterStatus, 
+    STATUS_DISPLAY_MAP,
+    formatCurrency,
+    formatDate,
+    getStatusColor
+} from '../navigation/reservaTypes';
+import { ReservaService } from '../services/reservaService';
 
-// --- ÍCONES (Reaproveitados ou Mockados) ---
+// --- ÍCONES ---
 const ICON_AVATAR = require('../../assets/icons/user.png'); 
-const ICON_PET_NINA = { uri: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=60&h=60&fit=crop' }; 
-const ICON_PET_BOLINHO = { uri: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=60&h=60&fit=crop' }; 
 const ICON_HOST_AVATAR = ICON_AVATAR; 
-
-// --- MOCK DE DADOS REAPROVEITADOS ---
-const PRICE_PER_DAY_BASE = 65.00; 
-
-const mockPetsParaReserva = [
-    { id: 'p1', name: "Nina", imageUrl: ICON_PET_NINA.uri },
-    { id: 'p2', name: "Bolinho", imageUrl: ICON_PET_BOLINHO.uri },
-];
-
-// --- TIPAGENS PARA O STATUS ---
-type ReservaStatus = 'Pendente' | 'Confirmada' | 'Negada' | 'Em Andamento' | 'Concluida';
-type FilterStatus = ReservaStatus | 'Todos';
-
-// --- MOCK DA LISTA DE RESERVAS ---
-const mockReservas = [
-    {
-        id: 'r1',
-        host: { name: 'Igor Gallo Seabra', location: 'Tupi', avatarUrl: ICON_HOST_AVATAR },
-        dataEntrada: '25/11/2025',
-        dataSaida: '28/11/2025', 
-        dias: 3,
-        pets: mockPetsParaReserva,
-        status: 'Pendente' as ReservaStatus,
-    },
-    {
-        id: 'r2',
-        host: { name: 'Maria Silveira', location: 'Boqueirão', avatarUrl: ICON_HOST_AVATAR },
-        dataEntrada: '01/10/2025',
-        dataSaida: '02/10/2025', 
-        dias: 1,
-        pets: [{ id: 'p3', name: "Thor", imageUrl: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=60&h=60&fit=crop' }],
-        status: 'Concluida' as ReservaStatus,
-    },
-    {
-        id: 'r3',
-        host: { name: 'Pedro Alves', location: 'Guilhermina', avatarUrl: ICON_HOST_AVATAR },
-        dataEntrada: '20/10/2025',
-        dataSaida: '22/10/2025', 
-        dias: 2,
-        pets: mockPetsParaReserva,
-        status: 'Confirmada' as ReservaStatus,
-    },
-    {
-        id: 'r4',
-        host: { name: 'João Carlos', location: 'Aviação', avatarUrl: ICON_HOST_AVATAR },
-        dataEntrada: '10/12/2025',
-        dataSaida: '11/12/2025', 
-        dias: 1, 
-        pets: mockPetsParaReserva,
-        status: 'Negada' as ReservaStatus,
-    },
-    {
-        id: 'r5',
-        host: { name: 'Ana Souza', location: 'Caiçara', avatarUrl: ICON_HOST_AVATAR },
-        dataEntrada: '05/11/2025',
-        dataSaida: '07/11/2025', 
-        dias: 2, 
-        pets: mockPetsParaReserva,
-        status: 'Em Andamento' as ReservaStatus,
-    },
-];
 
 // --- COMPONENTES REUTILIZÁVEIS ---
 
-const formatCurrency = (value: number) => `R$ ${value.toFixed(2).replace('.', ',')}`;
-
-// Componente para o Resumo de Preço (baseado na tela Reserva)
-const PriceSummaryReserva = ({ daysCount, petsCount, pricePerDayBase }: { 
+const PriceSummaryReserva = ({ daysCount, petsCount, priceTotal }: { 
     daysCount: number; 
     petsCount: number; 
-    pricePerDayBase: number; 
+    priceTotal: number; 
 }) => {
-    const dailyPricePerQuantity = petsCount * pricePerDayBase;
-    const totalValue = daysCount * dailyPricePerQuantity;
-    
+    // Calcula o valor base por pet/dia (reverso)
+    const pricePerPetPerDay = (daysCount > 0 && petsCount > 0) 
+        ? (priceTotal / daysCount / petsCount)
+        : 0;
+  
     return (
-        <View style={listaStyles.priceSummaryCard}>
-            {/* ... (Resumo mantido igual) ... */}
-            <View style={listaStyles.priceRow}>
-                <Text style={listaStyles.priceLabel}>Valor Base (1 Pet) por Diária</Text>
-                <Text style={listaStyles.priceValue}>{formatCurrency(pricePerDayBase)}</Text>
+        <View style={styles.priceSummaryCard}>
+            <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Valor Base (1 Pet/Dia)</Text>
+                <Text style={styles.priceValue}>{formatCurrency(pricePerPetPerDay)}</Text>
             </View>
-            <View style={listaStyles.priceRow}>
-                <Text style={listaStyles.priceLabel}>Quantidade de Pets</Text>
-                <Text style={listaStyles.priceValue}>{petsCount}</Text>
+            <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Quantidade de Pets</Text>
+                <Text style={styles.priceValue}>{petsCount}</Text>
             </View>
-            <View style={listaStyles.priceRow}>
-                <Text style={listaStyles.priceLabel}>Diárias Selecionadas</Text>
-                <Text style={listaStyles.priceValue}>{daysCount} dia(s)</Text>
+            <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Diárias</Text>
+                <Text style={styles.priceValue}>{daysCount} dia{daysCount !== 1 ? 's' : ''}</Text>
             </View>
-            <View style={listaStyles.priceDivider} />
-            <View style={[listaStyles.priceRow, listaStyles.priceRowTotal]}>
-                <Text style={listaStyles.priceLabelTotal}>Total da Locação</Text>
-                <Text style={listaStyles.priceValueTotal}>{formatCurrency(totalValue)}</Text>
+            <View style={styles.priceDivider} />
+            <View style={[styles.priceRow, styles.priceRowTotal]}>
+                <Text style={styles.priceLabelTotal}>Total da Locação</Text>
+                <Text style={styles.priceValueTotal}>{formatCurrency(priceTotal)}</Text>
             </View>
         </View>
     );
 };
 
-// Componente para o Botão de Status
 const StatusButton = ({ status }: { status: ReservaStatus }) => {
-    let backgroundColor = '#6C757D';
-    let textColor = '#353535ff';
-
-    switch (status) {
-        case 'Pendente':
-            backgroundColor = '#f3d111ff'; 
-            break;
-        case 'Confirmada':
-            backgroundColor = '#7AB24E'; 
-            break;
-        case 'Negada':
-            backgroundColor = '#d85e38ff'; 
-            break;
-        case 'Em Andamento':
-            backgroundColor = '#007BFF'; 
-            break;
-        case 'Concluida':
-            backgroundColor = '#e49030ff'; 
-            break;
-    }
+    const { backgroundColor, textColor } = getStatusColor(status);
 
     return (
-        <View style={[listaStyles.statusButton, { backgroundColor }]}>
-            <Text style={[listaStyles.statusButtonText, { color: textColor }]}>
-                {status}
+        <View style={[styles.statusButton, { backgroundColor }]}>
+            <Text style={[styles.statusButtonText, { color: textColor }]}>
+                {STATUS_DISPLAY_MAP[status]}
             </Text>
         </View>
     );
 };
 
-// Componente do Botão de Avaliar
 const AvaliarButton = ({ navigation, reservaId }: { 
     navigation: RootStackScreenProps<'Reserva_Tutor'>['navigation']; 
-    reservaId: string;
+    reservaId: number;
 }) => (
     <TouchableOpacity
-        style={listaStyles.avaliarButton}
+        style={styles.avaliarButton}
         onPress={() => {
-            console.log(`Navegando para a tela de avaliação da reserva ${reservaId}`);
-            navigation.navigate('HostAvaliacao', { reservaId });
+            // Navega para a tela de avaliação
+            navigation.navigate('HostAvaliacao', { reservaId: String(reservaId) }); 
         }}
     >
-        <Text style={listaStyles.avaliarButtonText}>Avaliar Host</Text>
+        <Text style={styles.avaliarButtonText}>Avaliar Host</Text>
     </TouchableOpacity>
 );
 
-// Componente Principal do Card de Reserva
 const ReservaCard = ({ reserva, navigation }: { 
-    reserva: typeof mockReservas[0]; 
+    reserva: ReservaCompleta; 
     navigation: RootStackScreenProps<'Reserva_Tutor'>['navigation'];
 }) => {
-    const isConcluida = reserva.status === 'Concluida';
+    const isConcluida = reserva.status === 'concluida';
 
     return (
-        <View style={listaStyles.cardContainer}>
-            {/* 1. Datas de Entrada e Saída (Topo) */}
-            <View style={listaStyles.dateHeader}>
-                <Text style={listaStyles.dateText}>{reserva.dataEntrada}</Text>
-                <Text style={listaStyles.dateDivider}>{' - '}</Text>
-                <Text style={listaStyles.dateText}>{reserva.dataSaida}</Text>
+        <View style={styles.cardContainer}>
+            {/* 1. Datas de Entrada e Saída - CORRIGIDO */}
+            <View style={styles.dateHeader}>
+                <View style={styles.dateBlock}>
+                    <Text style={styles.dateLabel}>Check-in</Text>
+                    <Text style={styles.dateText}>{formatDate(reserva.data_inicio)}</Text>
+                </View>
+                
+                <View style={styles.dateDividerContainer}>
+                    <View style={styles.dateLine} />
+                    <Text style={styles.daysCount}>{reserva.dias} dia{reserva.dias !== 1 ? 's' : ''}</Text>
+                    <View style={styles.dateLine} />
+                </View>
+                
+                <View style={styles.dateBlock}>
+                    <Text style={styles.dateLabel}>Check-out</Text>
+                    <Text style={styles.dateText}>{formatDate(reserva.data_fim)}</Text>
+                </View>
             </View>
 
-            {/* 2. Mini Card do Host (Clicável) */}
+            {/* 2. Mini Card do Host */}
             <TouchableOpacity 
-                style={listaStyles.hostCard} 
-                onPress={() => console.log(`Navegando para o perfil de ${reserva.host.name}`)}
+                style={styles.hostCard} 
+                onPress={() => {
+                     console.log('Ver perfil do host:', reserva.anfitriao.nome);
+                }}
             >
-                <Image source={reserva.host.avatarUrl} style={listaStyles.hostAvatar} />
-                <View style={listaStyles.hostInfo}>
-                    <Text style={listaStyles.hostName}>{reserva.host.name}</Text>
-                    <Text style={listaStyles.hostLocation}>{reserva.host.location}</Text>
+                <Image 
+                    source={
+                        reserva.anfitriao.foto_perfil 
+                            ? { uri: reserva.anfitriao.foto_perfil }
+                            : ICON_HOST_AVATAR
+                    } 
+                    style={styles.hostAvatar} 
+                />
+                <View style={styles.hostInfo}>
+                    <Text style={styles.hostName}>{reserva.anfitriao.nome}</Text>
+                    <Text style={styles.hostLocation}>{reserva.anfitriao.localizacao}</Text>
                 </View>
             </TouchableOpacity>
 
             {/* 3. Pets Selecionados */}
-            <View style={listaStyles.petsSelectedContainer}>
-                <Text style={listaStyles.petsLabel}>Pets:</Text>
-                {reserva.pets.map((pet) => (
-                    <View key={pet.id} style={listaStyles.petAvatarWrapper}>
-                        <Image source={{ uri: pet.imageUrl }} style={listaStyles.smallPetAvatar} />
-                    </View>
-                ))}
-                {reserva.pets.length === 0 && (
-                    <Text style={listaStyles.petsLabel}>Nenhum pet selecionado.</Text>
+            <View style={styles.petsSelectedContainer}>
+                <Text style={styles.petsLabel}>Pets:</Text>
+                {reserva.pets.length > 0 ? (
+                    reserva.pets.map((pet) => (
+                        <View key={pet.id_pet} style={styles.petAvatarWrapper}>
+                            <Image 
+                                source={
+                                    pet.fotos_urls && pet.fotos_urls.length > 0 
+                                        ? { uri: pet.fotos_urls[0] } 
+                                        : ICON_AVATAR
+                                } 
+                                style={styles.smallPetAvatar} 
+                            />
+                            <Text style={styles.petName}>{pet.nome}</Text>
+                        </View>
+                    ))
+                ) : (
+                    <Text style={{ fontStyle: 'italic', color: '#556A44' }}>Pet não identificado</Text>
                 )}
             </View>
 
-            {/* 4. Resumo da Reserva (Calculado) */}
+            {/* 4. Resumo da Reserva */}
             <PriceSummaryReserva 
-                daysCount={reserva.dias}
-                petsCount={reserva.pets.length}
-                pricePerDayBase={PRICE_PER_DAY_BASE} 
+                daysCount={reserva.dias} 
+                petsCount={reserva.pets.length} 
+                priceTotal={reserva.valor_total_reserva} 
             />
-            
+          
             {/* 5. Botão de Status e Botão de Avaliar */}
-            <View style={listaStyles.statusActionsContainer}>
+            <View style={styles.statusActionsContainer}>
                 <StatusButton status={reserva.status} />
                 {isConcluida && (
-                    <AvaliarButton navigation={navigation} reservaId={reserva.id} />
+                    <AvaliarButton navigation={navigation} reservaId={reserva.id_reserva} />
                 )}
             </View>
-
         </View>
     );
 };
 
-// Componente do Filtro de Status
 const StatusFilterOptions = ({ 
     selectedStatus, 
     onSelectStatus 
@@ -222,25 +178,33 @@ const StatusFilterOptions = ({
     selectedStatus: FilterStatus; 
     onSelectStatus: (status: FilterStatus) => void; 
 }) => {
-    const options: FilterStatus[] = ['Todos', 'Pendente', 'Confirmada', 'Em Andamento', 'Concluida', 'Negada'];
+    const options: { value: FilterStatus; label: string }[] = [
+        { value: 'todos', label: 'Todos' },
+        { value: 'pendente', label: 'Pendente' },
+        { value: 'confirmada', label: 'Confirmada' },
+        { value: 'em_andamento', label: 'Andamento' },
+        { value: 'concluida', label: 'Concluída' },
+        { value: 'negada', label: 'Negada' },
+        { value: 'cancelada', label: 'Cancelada' },
+    ];
 
     return (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={listaStyles.filterScroll}>
-            <View style={listaStyles.filterContainer}>
-                {options.map(status => (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+            <View style={styles.filterContainer}>
+                {options.map(option => (
                     <TouchableOpacity
-                        key={status}
+                        key={option.value}
                         style={[
-                            listaStyles.filterOptionButton,
-                            selectedStatus === status && listaStyles.filterOptionSelected,
+                            styles.filterOptionButton,
+                            selectedStatus === option.value && styles.filterOptionSelected,
                         ]}
-                        onPress={() => onSelectStatus(status)}
+                        onPress={() => onSelectStatus(option.value)}
                     >
                         <Text style={[
-                            listaStyles.filterOptionText,
-                            selectedStatus === status && listaStyles.filterOptionTextSelected,
+                            styles.filterOptionText,
+                            selectedStatus === option.value && styles.filterOptionTextSelected,
                         ]}>
-                            {status === 'Em Andamento' ? 'Andamento' : status}
+                            {option.label}
                         </Text>
                     </TouchableOpacity>
                 ))}
@@ -249,63 +213,126 @@ const StatusFilterOptions = ({
     );
 };
 
-
-
 // -------------------------------------------------------------------
 // ------------------------- TELA PRINCIPAL --------------------------
 // -------------------------------------------------------------------
 
+export default function Reserva_Tutor({ navigation, route }: RootStackScreenProps<'Reserva_Tutor'>) {
+    const [selectedStatusFilter, setSelectedStatusFilter] = useState<FilterStatus>('todos');
+    const [reservas, setReservas] = useState<ReservaCompleta[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-export default function Reserva_Lista({ navigation }: RootStackScreenProps<'Reserva_Tutor'>) {
-    const [selectedStatusFilter, setSelectedStatusFilter] = useState<FilterStatus>('Todos');
+    const usuario = route.params?.usuario;
+    const id_tutor = usuario?.id_usuario;
 
-    // Lógica de Filtro
-    const filteredReservas = useMemo(() => {
-        if (selectedStatusFilter === 'Todos') {
-            return mockReservas;
+    const fetchReservas = async () => {
+        if (!id_tutor) {
+            setLoading(false);
+            return;
         }
-        return mockReservas.filter(reserva => reserva.status === selectedStatusFilter);
-    }, [selectedStatusFilter]);
 
-    // --- COMPONENTE DE ÍCONE DO CANTO (Reaproveitado da tela Reserva) ---
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const reservasData = await ReservaService.getReservasByTutor(id_tutor);
+            
+            // Ordena por data (mais recente primeiro)
+            const reservasOrdenadas = reservasData.sort((a, b) => 
+                new Date(b.data_inicio).getTime() - new Date(a.data_inicio).getTime()
+            );
+
+            setReservas(reservasOrdenadas);
+
+        } catch (err: any) {
+            console.error('[Reserva_Tutor] Erro:', err);
+            setError(err.message || 'Erro ao carregar reservas.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchReservas();
+        }, [id_tutor])
+    );
+
+    const filteredReservas = useMemo(() => {
+        if (selectedStatusFilter === 'todos') {
+            return reservas;
+        }
+        return reservas.filter(reserva => reserva.status === selectedStatusFilter);
+    }, [reservas, selectedStatusFilter]);
+
     const CornerIconClickable = () => (
-        <TouchableOpacity onPress={() => navigation.navigate('Home')} style={listaStyles.cornerImageContainer}>
-          <Image
-            source={require('../../assets/icons/LogoBranco.png')} 
-            style={listaStyles.cornerImage}
-            resizeMode="contain"
-          />
+        <TouchableOpacity 
+            onPress={() => navigation.goBack()} 
+            style={styles.cornerImageContainer}
+        >
+            <Image
+                source={require('../../assets/icons/LogoBranco.png')} 
+                style={styles.cornerImage}
+                resizeMode="contain"
+            />
         </TouchableOpacity>
     );
 
+    if (loading && reservas.length === 0) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#556A44" />
+                    <Text style={styles.loadingText}>Buscando suas reservas...</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
     return (
-        <SafeAreaView style={listaStyles.container}>
-            <ScrollView contentContainerStyle={listaStyles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <SafeAreaView style={styles.container}>
+            <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
                 <CornerIconClickable/> 
-                <Text style={listaStyles.LogoText}>Lar Doce Pet</Text>
-                <View style={listaStyles.innerContainer}>
+                <Text style={styles.LogoText}>Lar Doce Pet</Text>
+                <View style={styles.innerContainer}>
 
-                    <Text style={listaStyles.mainTitle}>Minhas Reservas</Text>
+                    <Text style={styles.mainTitle}>Minhas Reservas</Text>
 
-                    {/* NOVO - FILTRO DE STATUS */}
                     <StatusFilterOptions 
                         selectedStatus={selectedStatusFilter}
                         onSelectStatus={setSelectedStatusFilter}
                     />
 
-                    {/* Lista de Reservas Filtrada */}
                     {filteredReservas.map((reserva) => (
                         <ReservaCard 
-                            key={reserva.id}
+                            key={reserva.id_reserva}
                             reserva={reserva}
                             navigation={navigation}
                         />
                     ))}
 
-                    {filteredReservas.length === 0 && (
-                        <Text style={listaStyles.noReservasText}>
-                            Nenhuma reserva encontrada com o status: "{selectedStatusFilter}".
-                        </Text>
+                    {filteredReservas.length === 0 && !error && (
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.noReservasText}>
+                                {selectedStatusFilter === 'todos' 
+                                    ? 'Você ainda não possui reservas.' 
+                                    : `Nenhuma reserva "${STATUS_DISPLAY_MAP[selectedStatusFilter as ReservaStatus]}".`
+                                }
+                            </Text>
+                        </View>
+                    )}
+
+                    {error && (
+                        <View style={styles.errorContainer}>
+                            <Text style={styles.errorText}>{error}</Text>
+                            <TouchableOpacity 
+                                style={styles.retryButton}
+                                onPress={fetchReservas}
+                            >
+                                <Text style={styles.retryButtonText}>Tentar Novamente</Text>
+                            </TouchableOpacity>
+                        </View>
                     )}
 
                 </View>
@@ -318,8 +345,7 @@ export default function Reserva_Lista({ navigation }: RootStackScreenProps<'Rese
 // ----------------------------- STYLES ------------------------------
 // -------------------------------------------------------------------
 
-const listaStyles = StyleSheet.create({
-    // --- Estrutura Geral ---
+const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#B3D18C',
@@ -331,22 +357,21 @@ const listaStyles = StyleSheet.create({
     innerContainer: {
         flex: 1,
         marginHorizontal: 12,
-        marginTop: 70,         
+        marginTop: 70,         
         backgroundColor: '#FFFFFF',
         borderRadius: 40,
         paddingHorizontal: 15, 
         paddingVertical: 10,
+        minHeight: 500,
     },
     mainTitle: { 
         fontSize: 24, 
         fontWeight: '700', 
         color: '#556A44', 
-        marginBottom: 10, // Diminuído para dar espaço ao filtro
+        marginBottom: 10,
         textAlign: 'center',
         marginTop: 40, 
     },
-    
-    // --- LOGO DO PET (Reaproveitado) ---
     cornerImageContainer: {
         position: 'absolute',
         top: 29, 
@@ -361,18 +386,19 @@ const listaStyles = StyleSheet.create({
         resizeMode: 'contain',
     },
     LogoText: {
-      top: 60,
-      left: 165,
-      fontSize: 20,
-      fontWeight: 700,
-      color: '#ffffff',
+        top: 60,
+        left: 165,
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#ffffff',
+        position: 'absolute',
+        zIndex: 5,
     },
-
-    // --- FILTRO DE STATUS ---
     filterScroll: {
-      marginTop: 10,
-      marginBottom: 25,
-      marginHorizontal: -5, // Para compensar o padding do innerContainer
+        marginTop: 10,
+        marginBottom: 25,
+        marginHorizontal: -5,
+        height: 50,
     },
     filterContainer: {
         flexDirection: 'row',
@@ -382,30 +408,28 @@ const listaStyles = StyleSheet.create({
     filterOptionButton: {
         paddingVertical: 8,
         paddingHorizontal: 12,
-        backgroundColor: '#E0EFD3', // Cor suave
+        backgroundColor: '#E0EFD3',
         borderRadius: 20,
         borderWidth: 1,
         borderColor: '#B3D18C',
         minWidth: 90,
         alignItems: 'center',
         marginRight: 8,
+        height: 38,
     },
     filterOptionSelected: {
-        backgroundColor: '#7AB24E', // Verde forte
+        backgroundColor: '#7AB24E',
         borderColor: '#556A44',
     },
     filterOptionText: {
         fontSize: 14,
         fontWeight: '600',
         color: '#556A44',
-        minWidth: 'auto',
         textAlign: 'center',
     },
     filterOptionTextSelected: {
-        color: '#FFF6E2', // Texto branco/claro
+        color: '#FFF6E2',
     },
-
-    // --- Estilos do Card de Reserva ---
     cardContainer: {
         backgroundColor: '#FFF6E2', 
         borderRadius: 15,
@@ -414,29 +438,48 @@ const listaStyles = StyleSheet.create({
         padding: 15,
         marginBottom: 20,
     },
-
-    // --- 1. Datas ---
+    // --- ESTILOS DE DATA CORRIGIDOS ---
     dateHeader: {
         flexDirection: 'row',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 10,
-        paddingBottom: 5,
+        marginBottom: 15,
+        paddingBottom: 12,
         borderBottomWidth: 1,
         borderBottomColor: '#B3D18C',
     },
+    dateBlock: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    dateLabel: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#7AB24E',
+        textTransform: 'uppercase',
+        marginBottom: 4,
+    },
     dateText: {
-        fontSize: 18,
+        fontSize: 15,
         fontWeight: '700',
         color: '#556A44',
     },
-    dateDivider: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#B3D18C',
+    dateDividerContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 8,
     },
-
-    // --- 2. Mini Card do Host (Clicável) ---
+    dateLine: {
+        width: 40,
+        height: 1,
+        backgroundColor: '#B3D18C',
+    },
+    daysCount: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#7AB24E',
+        marginVertical: 4,
+    },
     hostCard: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -451,7 +494,6 @@ const listaStyles = StyleSheet.create({
         borderRadius: 20,
         backgroundColor: '#7AB24E',
         marginRight: 10,
-        tintColor: '#FFF6E2',
     },
     hostInfo: {
         flex: 1,
@@ -465,12 +507,11 @@ const listaStyles = StyleSheet.create({
         fontSize: 13,
         color: '#556A44',
     },
-
-    // --- 3. Pets Selecionados (Horizontal) ---
     petsSelectedContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 15,
+        flexWrap: 'wrap',
     },
     petsLabel: {
         fontSize: 15,
@@ -479,7 +520,7 @@ const listaStyles = StyleSheet.create({
         marginRight: 10,
     },
     petAvatarWrapper: {
-        marginRight: 8,
+        marginRight: 12,
         alignItems: 'center',
     },
     smallPetAvatar: {
@@ -490,8 +531,12 @@ const listaStyles = StyleSheet.create({
         borderColor: '#7AB24E',
         backgroundColor: '#FFF6E2',
     },
-
-    // --- 4. Resumo da Reserva (Reaproveitado) ---
+    petName: {
+        fontSize: 10,
+        fontWeight: '600',
+        color: '#556A44',
+        marginTop: 2,
+    },
     priceSummaryCard: {
         backgroundColor: '#fcfcfcff', 
         borderRadius: 10,
@@ -533,15 +578,12 @@ const listaStyles = StyleSheet.create({
         color: '#4d654bff',
         fontWeight: '800',
     },
-
-    // --- 5. Status e Ações (NOVO CONTAINER) ---
     statusActionsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         marginTop: 10,
     },
-    // Botão de Status (Ajustado)
     statusButton: {
         paddingVertical: 10,
         borderRadius: 17,
@@ -551,39 +593,69 @@ const listaStyles = StyleSheet.create({
         left: 145,
         marginTop: -13,
         borderColor: '#353535ff',
-        
     },
     statusButtonText: {
         fontSize: 15,
         fontWeight: '700',
     },
-    // Botão de Avaliar (NOVO)
     avaliarButton: {
         paddingVertical: 10,
         paddingHorizontal: 10,
-        backgroundColor: '#f7cf3fff', // Um verde sólido para ação
+        backgroundColor: '#f7cf3fff',
         borderRadius: 17,
         borderWidth: 3,
         width: 135,
-        left: - 160,
+        left: -160,
         marginTop: -13,
         borderColor: '#ddab2dff',
         alignItems: 'center',
-        // Ocupa o espaço restante na linha
     },
     avaliarButtonText: {
         fontSize: 15,
         fontWeight: '700',
         color: '#a57d17ff',
     },
-
-    // --- Mensagem de Sem Reservas ---
+    emptyContainer: {
+        alignItems: 'center',
+        marginTop: 50,
+        paddingHorizontal: 20,
+    },
     noReservasText: {
         fontSize: 18,
         color: '#556A44',
         textAlign: 'center',
-        marginTop: 50,
-        paddingHorizontal: 20,
         fontStyle: 'italic',
-    }
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 16,
+        color: '#556A44',
+    },
+    errorContainer: {
+        alignItems: 'center',
+        marginTop: 30,
+        paddingHorizontal: 20,
+    },
+    errorText: {
+        fontSize: 16,
+        color: '#d85e38ff',
+        textAlign: 'center',
+        marginBottom: 15,
+    },
+    retryButton: {
+        backgroundColor: '#7AB24E',
+        paddingVertical: 12,
+        paddingHorizontal: 30,
+        borderRadius: 10,
+    },
+    retryButtonText: {
+        color: '#FFF6E2',
+        fontSize: 16,
+        fontWeight: '700',
+    },
 });
