@@ -4,7 +4,9 @@ from pandasql import sqldf
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import requests
-import os
+from dotenv import load_dotenv
+from os import getenv
+load_dotenv()
 
 # -------------------------------------------------------
 # ⚙️ Configuração da página
