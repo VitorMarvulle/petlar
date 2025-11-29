@@ -14,5 +14,6 @@ COPY . .
 # 5. Expõe a porta do Dashboard
 EXPOSE 8501
 
+
 # 6. Comando para iniciar a aplicação quando o contêiner rodar
-CMD ["streamlit", "run", "app.py"]
+CMD ["streamlit", "run", "app.py" ,"--server.port=8501", "--server.address=0.0.0.0"]
