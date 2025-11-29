@@ -1,9 +1,11 @@
-# backend\Reserva\reserva_routes.py
+# backend/Reserva/reserva_routes.py
+
 from fastapi import APIRouter, HTTPException
 import requests
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 from utils.config import SUPABASE_URL, SUPABASE_KEY
 from Reserva.dto.CreateReserva import ReservaCreate, ReservaUpdate
+from Reserva.reserva_service import ReservaService
 
 reserva_router = APIRouter(prefix='/reservas', tags=['reserva'])
 
@@ -13,6 +15,7 @@ HEADERS = {
     "Content-Type": "application/json",
     "Prefer": "return=representation"
 }
+
 
 @reserva_router.get("/", status_code=HTTP_200_OK)
 def get_reservas():
@@ -24,6 +27,7 @@ def get_reservas():
         raise HTTPException(status_code=response.status_code, detail=response.text)
 
     return response.json()
+
 
 @reserva_router.get("/{id}", status_code=HTTP_200_OK)
 def get_reserva_by_id(id: int):
@@ -40,6 +44,7 @@ def get_reserva_by_id(id: int):
     
     return data[0]
 
+
 @reserva_router.get("/tutor/{id_tutor}", status_code=HTTP_200_OK)
 def get_reservas_by_tutor(id_tutor: int):
     """Retorna todas as reservas de um tutor específico"""
@@ -50,6 +55,7 @@ def get_reservas_by_tutor(id_tutor: int):
         raise HTTPException(status_code=response.status_code, detail=response.text)
 
     return response.json()
+
 
 @reserva_router.get("/anfitriao/{id_anfitriao}", status_code=HTTP_200_OK)
 def get_reservas_by_anfitriao(id_anfitriao: int):
@@ -62,9 +68,10 @@ def get_reservas_by_anfitriao(id_anfitriao: int):
 
     return response.json()
 
+
 @reserva_router.get("/status/{status}", status_code=HTTP_200_OK)
 def get_reservas_by_status(status: str):
-    """Retorna reservas filtradas por status (pendente, confirmada, concluida, cancelada, em_andamento)"""
+    """Retorna reservas filtradas por status"""
     url = f"{SUPABASE_URL}/rest/v1/reservas?status=eq.{status}"
     response = requests.get(url, headers=HEADERS)
     
@@ -73,9 +80,37 @@ def get_reservas_by_status(status: str):
 
     return response.json()
 
+
 @reserva_router.post("/", status_code=HTTP_201_CREATED)
 def create_reserva(reserva: ReservaCreate):
-    """Cria uma nova reserva (RN004: validar disponibilidade de datas)"""
+    """
+    Cria uma nova reserva com validações completas:
+    - Data no passado
+    - Data fim > data início
+    - Status do anfitrião
+    - Capacidade máxima
+    - Espécies aceitas
+    - Conflito de datas (anfitrião e pets)
+    """
+    
+    # Executar todas as validações de regra de negócio
+    validacao = ReservaService.validar_reserva(
+        id_tutor=reserva.id_tutor,
+        id_anfitriao=reserva.id_anfitriao,
+        data_inicio=reserva.data_inicio,
+        data_fim=reserva.data_fim,
+        pets_tutor=reserva.pets_tutor,
+        qtd_pets=reserva.qtd_pets
+    )
+    
+    # Se validação falhou, retorna erro HTTP 400
+    if not validacao.get("valido"):
+        raise HTTPException(
+            status_code=400,
+            detail=validacao.get("mensagem", "Erro na validação da reserva")
+        )
+    
+    # Validações passaram, criar a reserva
     url = f"{SUPABASE_URL}/rest/v1/reservas"
     
     # Converte datas para string no formato ISO
@@ -89,6 +124,7 @@ def create_reserva(reserva: ReservaCreate):
         raise HTTPException(status_code=response.status_code, detail=response.text)
 
     return response.json()
+
 
 @reserva_router.put("/{id}", status_code=HTTP_200_OK)
 def update_reserva(id: int, reserva: ReservaUpdate):
@@ -110,6 +146,7 @@ def update_reserva(id: int, reserva: ReservaUpdate):
         raise HTTPException(status_code=response.status_code, detail=response.text)
 
     return response.json()
+
 
 @reserva_router.delete("/{id}", status_code=HTTP_204_NO_CONTENT)
 def delete_reserva_by_id(id: int):

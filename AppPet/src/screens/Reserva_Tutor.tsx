@@ -1,6 +1,10 @@
-//AppPet\src\screens\Reserva_Tutor.tsx
-import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+// petlar\AppPet\src\screens\Reserva_Tutor.tsx
+import React, { useState, useMemo, useCallback } from 'react';
+import { 
+    View, Text, StyleSheet, SafeAreaView, ScrollView, 
+    TouchableOpacity, Image, ActivityIndicator, Alert 
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import type { RootStackScreenProps } from '../navigation/types'; 
 import { 
     ReservaCompleta, 
@@ -24,21 +28,24 @@ const PriceSummaryReserva = ({ daysCount, petsCount, priceTotal }: {
     petsCount: number; 
     priceTotal: number; 
 }) => {
-    const pricePerDay = petsCount > 0 ? priceTotal / daysCount : 0;
+    // Calcula o valor base por pet/dia (reverso)
+    const pricePerPetPerDay = (daysCount > 0 && petsCount > 0) 
+        ? (priceTotal / daysCount / petsCount)
+        : 0;
   
     return (
         <View style={styles.priceSummaryCard}>
             <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Valor por Diária</Text>
-                <Text style={styles.priceValue}>{formatCurrency(pricePerDay)}</Text>
+                <Text style={styles.priceLabel}>Valor Base (1 Pet/Dia)</Text>
+                <Text style={styles.priceValue}>{formatCurrency(pricePerPetPerDay)}</Text>
             </View>
             <View style={styles.priceRow}>
                 <Text style={styles.priceLabel}>Quantidade de Pets</Text>
                 <Text style={styles.priceValue}>{petsCount}</Text>
             </View>
             <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Diárias Selecionadas</Text>
-                <Text style={styles.priceValue}>{daysCount} dia(s)</Text>
+                <Text style={styles.priceLabel}>Diárias</Text>
+                <Text style={styles.priceValue}>{daysCount} dia{daysCount !== 1 ? 's' : ''}</Text>
             </View>
             <View style={styles.priceDivider} />
             <View style={[styles.priceRow, styles.priceRowTotal]}>
@@ -68,8 +75,8 @@ const AvaliarButton = ({ navigation, reservaId }: {
     <TouchableOpacity
         style={styles.avaliarButton}
         onPress={() => {
-            console.log(`Navegando para a tela de avaliação da reserva ${reservaId}`);
-            navigation.navigate('HostAvaliacao', { reservaId: reservaId.toString() });
+            // Navega para a tela de avaliação
+            navigation.navigate('HostAvaliacao', { reservaId: String(reservaId) }); 
         }}
     >
         <Text style={styles.avaliarButtonText}>Avaliar Host</Text>
@@ -84,17 +91,31 @@ const ReservaCard = ({ reserva, navigation }: {
 
     return (
         <View style={styles.cardContainer}>
-            {/* 1. Datas de Entrada e Saída */}
+            {/* 1. Datas de Entrada e Saída - CORRIGIDO */}
             <View style={styles.dateHeader}>
-                <Text style={styles.dateText}>{formatDate(reserva.data_inicio)}</Text>
-                <Text style={styles.dateDivider}>{' - '}</Text>
-                <Text style={styles.dateText}>{formatDate(reserva.data_fim)}</Text>
+                <View style={styles.dateBlock}>
+                    <Text style={styles.dateLabel}>Check-in</Text>
+                    <Text style={styles.dateText}>{formatDate(reserva.data_inicio)}</Text>
+                </View>
+                
+                <View style={styles.dateDividerContainer}>
+                    <View style={styles.dateLine} />
+                    <Text style={styles.daysCount}>{reserva.dias} dia{reserva.dias !== 1 ? 's' : ''}</Text>
+                    <View style={styles.dateLine} />
+                </View>
+                
+                <View style={styles.dateBlock}>
+                    <Text style={styles.dateLabel}>Check-out</Text>
+                    <Text style={styles.dateText}>{formatDate(reserva.data_fim)}</Text>
+                </View>
             </View>
 
             {/* 2. Mini Card do Host */}
             <TouchableOpacity 
                 style={styles.hostCard} 
-                onPress={() => console.log(`Navegando para o perfil de ${reserva.anfitriao.nome}`)}
+                onPress={() => {
+                     console.log('Ver perfil do host:', reserva.anfitriao.nome);
+                }}
             >
                 <Image 
                     source={
@@ -124,18 +145,19 @@ const ReservaCard = ({ reserva, navigation }: {
                                 } 
                                 style={styles.smallPetAvatar} 
                             />
+                            <Text style={styles.petName}>{pet.nome}</Text>
                         </View>
                     ))
                 ) : (
-                    <Text style={styles.petsLabel}>Nenhum pet</Text>
+                    <Text style={{ fontStyle: 'italic', color: '#556A44' }}>Pet não identificado</Text>
                 )}
             </View>
 
             {/* 4. Resumo da Reserva */}
             <PriceSummaryReserva 
-                daysCount={reserva.qtd_dias}
-                petsCount={reserva.pets.length}
-                priceTotal={reserva.preco_total}
+                daysCount={reserva.dias} 
+                petsCount={reserva.pets.length} 
+                priceTotal={reserva.valor_total_reserva} 
             />
           
             {/* 5. Botão de Status e Botão de Avaliar */}
@@ -201,51 +223,42 @@ export default function Reserva_Tutor({ navigation, route }: RootStackScreenProp
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Pega o id_usuario da navegação (vindo da Home)
     const usuario = route.params?.usuario;
     const id_tutor = usuario?.id_usuario;
 
-    // Buscar reservas do tutor
-    useEffect(() => {
+    const fetchReservas = async () => {
         if (!id_tutor) {
-            setError('ID do tutor não encontrado. Por favor, faça login novamente.');
             setLoading(false);
             return;
         }
 
-        fetchReservas();
-    }, [id_tutor]);
-
-    const fetchReservas = async () => {
-        if (!id_tutor) return;
-
         try {
             setLoading(true);
             setError(null);
-
-            console.log(`[Reserva_Tutor] Buscando reservas do tutor ${id_tutor}...`);
             
             const reservasData = await ReservaService.getReservasByTutor(id_tutor);
             
-            console.log(`[Reserva_Tutor] ${reservasData.length} reservas carregadas`);
-            setReservas(reservasData);
+            // Ordena por data (mais recente primeiro)
+            const reservasOrdenadas = reservasData.sort((a, b) => 
+                new Date(b.data_inicio).getTime() - new Date(a.data_inicio).getTime()
+            );
+
+            setReservas(reservasOrdenadas);
 
         } catch (err: any) {
-            console.error('[Reserva_Tutor] Erro ao buscar reservas:', err);
-            const errorMessage = err.message || 'Erro ao carregar reservas';
-            setError(errorMessage);
-            
-            Alert.alert(
-                'Erro ao Carregar Reservas', 
-                errorMessage + '\n\nVerifique se o backend está rodando e se o IP está correto.',
-                [{ text: 'OK' }]
-            );
+            console.error('[Reserva_Tutor] Erro:', err);
+            setError(err.message || 'Erro ao carregar reservas.');
         } finally {
             setLoading(false);
         }
     };
 
-    // Lógica de Filtro
+    useFocusEffect(
+        useCallback(() => {
+            fetchReservas();
+        }, [id_tutor])
+    );
+
     const filteredReservas = useMemo(() => {
         if (selectedStatusFilter === 'todos') {
             return reservas;
@@ -255,13 +268,7 @@ export default function Reserva_Tutor({ navigation, route }: RootStackScreenProp
 
     const CornerIconClickable = () => (
         <TouchableOpacity 
-            onPress={() => {
-                if (usuario) {
-                    navigation.navigate('Home', { usuario });
-                } else {
-                    navigation.navigate('Login');
-                }
-            }} 
+            onPress={() => navigation.goBack()} 
             style={styles.cornerImageContainer}
         >
             <Image
@@ -272,13 +279,12 @@ export default function Reserva_Tutor({ navigation, route }: RootStackScreenProp
         </TouchableOpacity>
     );
 
-    // Renderização condicional - Loading
-    if (loading) {
+    if (loading && reservas.length === 0) {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#556A44" />
-                    <Text style={styles.loadingText}>Carregando reservas...</Text>
+                    <Text style={styles.loadingText}>Buscando suas reservas...</Text>
                 </View>
             </SafeAreaView>
         );
@@ -293,13 +299,11 @@ export default function Reserva_Tutor({ navigation, route }: RootStackScreenProp
 
                     <Text style={styles.mainTitle}>Minhas Reservas</Text>
 
-                    {/* Filtro de Status */}
                     <StatusFilterOptions 
                         selectedStatus={selectedStatusFilter}
                         onSelectStatus={setSelectedStatusFilter}
                     />
 
-                    {/* Lista de Reservas Filtrada */}
                     {filteredReservas.map((reserva) => (
                         <ReservaCard 
                             key={reserva.id_reserva}
@@ -308,19 +312,17 @@ export default function Reserva_Tutor({ navigation, route }: RootStackScreenProp
                         />
                     ))}
 
-                    {/* Mensagem quando não há reservas */}
                     {filteredReservas.length === 0 && !error && (
                         <View style={styles.emptyContainer}>
                             <Text style={styles.noReservasText}>
                                 {selectedStatusFilter === 'todos' 
                                     ? 'Você ainda não possui reservas.' 
-                                    : `Nenhuma reserva com o status: "${STATUS_DISPLAY_MAP[selectedStatusFilter as ReservaStatus]}".`
+                                    : `Nenhuma reserva "${STATUS_DISPLAY_MAP[selectedStatusFilter as ReservaStatus]}".`
                                 }
                             </Text>
                         </View>
                     )}
 
-                    {/* Mensagem de erro com botão de retry */}
                     {error && (
                         <View style={styles.errorContainer}>
                             <Text style={styles.errorText}>{error}</Text>
@@ -360,6 +362,7 @@ const styles = StyleSheet.create({
         borderRadius: 40,
         paddingHorizontal: 15, 
         paddingVertical: 10,
+        minHeight: 500,
     },
     mainTitle: { 
         fontSize: 24, 
@@ -388,11 +391,14 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: '700',
         color: '#ffffff',
+        position: 'absolute',
+        zIndex: 5,
     },
     filterScroll: {
         marginTop: 10,
         marginBottom: 25,
         marginHorizontal: -5,
+        height: 50,
     },
     filterContainer: {
         flexDirection: 'row',
@@ -409,6 +415,7 @@ const styles = StyleSheet.create({
         minWidth: 90,
         alignItems: 'center',
         marginRight: 8,
+        height: 38,
     },
     filterOptionSelected: {
         backgroundColor: '#7AB24E',
@@ -431,24 +438,47 @@ const styles = StyleSheet.create({
         padding: 15,
         marginBottom: 20,
     },
+    // --- ESTILOS DE DATA CORRIGIDOS ---
     dateHeader: {
         flexDirection: 'row',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 10,
-        paddingBottom: 5,
+        marginBottom: 15,
+        paddingBottom: 12,
         borderBottomWidth: 1,
         borderBottomColor: '#B3D18C',
     },
+    dateBlock: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    dateLabel: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#7AB24E',
+        textTransform: 'uppercase',
+        marginBottom: 4,
+    },
     dateText: {
-        fontSize: 18,
+        fontSize: 15,
         fontWeight: '700',
         color: '#556A44',
     },
-    dateDivider: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#B3D18C',
+    dateDividerContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 8,
+    },
+    dateLine: {
+        width: 40,
+        height: 1,
+        backgroundColor: '#B3D18C',
+    },
+    daysCount: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#7AB24E',
+        marginVertical: 4,
     },
     hostCard: {
         flexDirection: 'row',
@@ -481,6 +511,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 15,
+        flexWrap: 'wrap',
     },
     petsLabel: {
         fontSize: 15,
@@ -489,7 +520,7 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
     petAvatarWrapper: {
-        marginRight: 8,
+        marginRight: 12,
         alignItems: 'center',
     },
     smallPetAvatar: {
@@ -499,6 +530,12 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: '#7AB24E',
         backgroundColor: '#FFF6E2',
+    },
+    petName: {
+        fontSize: 10,
+        fontWeight: '600',
+        color: '#556A44',
+        marginTop: 2,
     },
     priceSummaryCard: {
         backgroundColor: '#fcfcfcff', 
