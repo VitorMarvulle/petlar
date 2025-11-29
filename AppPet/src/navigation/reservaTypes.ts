@@ -91,7 +91,7 @@ export interface ReservaCompleta {
         id_anfitriao: number;
         nome: string;
         localizacao: string;
-        foto_perfil?: string;
+        foto_perfil_url?: string;
         telefone?: string;
     };
     pets: Pet[];
