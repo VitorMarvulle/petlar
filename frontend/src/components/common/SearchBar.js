@@ -158,9 +158,9 @@ const SearchBar = () => {
 
       {/* Pet Type Selection */}
       <div className="relative border-l border-gray-200 pl-4 md:col-span-2">
-        <label htmlFor="pets" className="block text-sm font-medium text-gray-500">
+        <span className="block text-sm font-medium text-gray-500">
           Seu Pet
-        </label>
+        </span>
         <button
           onClick={() => setShowPetOptions(!showPetOptions)}
           className="w-full text-left p-0 hover:text-red-500 transition-colors"

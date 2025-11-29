@@ -32,6 +32,7 @@ const PassaroIconPng = require('../../../assets/icons/animais/passaro.png');
 const TartarugaIconPng = require('../../../assets/icons/animais/tartaruga.png');
 const NaoFavorito = require('../../../assets/icons/GreyFav.png');
 const Favorito = require('../../../assets/icons/GoldFav.png');
+const BackIconPng = require('../../../assets/icons/arrow-left.png');
 
 // Tipos
 interface UsuarioFromApi {
@@ -89,7 +90,7 @@ const FavoritarButton = ({ hostId, userId, initialFavorito }: FavoritarButtonPro
   const toggleFavorito = async () => {
     try {
       setLoading(true);
-      
+
       if (isFavorito) {
         // Remover dos favoritos
         const response = await fetch(`${API_BASE_URL}/usuarios/${userId}/favoritos/${hostId}`, {
@@ -142,9 +143,13 @@ const FavoritarButton = ({ hostId, userId, initialFavorito }: FavoritarButtonPro
   );
 };
 
-const UserAvatar = () => (
+const UserAvatar = ({ url }: { url?: string }) => (
   <View style={styles.profileAvatar}>
-    <Image source={UserIconPng} style={styles.avatarInnerImage} resizeMode="contain" />
+    {url ? (
+      <Image source={{ uri: url }} style={styles.avatarImage} resizeMode="cover" />
+    ) : (
+      <Image source={UserIconPng} style={styles.avatarInnerImage} resizeMode="contain" />
+    )}
   </View>
 );
 
@@ -163,7 +168,7 @@ const PetIcon = ({ petName }: { petName: string }) => {
   return <Image source={source} style={styles.petTypeIcon} />;
 };
 
-export default function PerfilHost() {
+export default function CardHost() {
   const route = useRoute<CardHostRouteProp>();
   const navigation = useNavigation<CardHostNavigationProp>();
 
@@ -234,8 +239,8 @@ export default function PerfilHost() {
       return;
     }
 
-    const precoNumber = typeof anfitriao.preco === 'string' 
-      ? parseFloat(anfitriao.preco) 
+    const precoNumber = typeof anfitriao.preco === 'string'
+      ? parseFloat(anfitriao.preco)
       : anfitriao.preco ?? 65.00;
 
     navigation.navigate('Reserva', {
@@ -301,11 +306,19 @@ export default function PerfilHost() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
+          <Image source={BackIconPng} style={styles.backIcon} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.headerButton}>
+          <Text style={styles.logoutText}>Sair</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.innerContainer}>
         <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           {/* Perfil */}
           <View style={styles.profileSectionNew}>
-            <UserAvatar />
+            <UserAvatar url={anfitriao ? `https://avatar.iran.liara.run/public?username=${anfitriao.id_anfitriao}` : undefined} />
             <View style={styles.profileInfoNew}>
               <View style={styles.nameAndLocationRow}>
                 <Text style={styles.hostNameNew}>{nome}</Text>
@@ -785,5 +798,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 5,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  headerButton: {
+    padding: 5,
+  },
+  backIcon: {
+    width: 24,
+    height: 24,
+    tintColor: '#556A44',
+  },
+  logoutText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#556A44',
+    fontFamily: 'Inter',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 60,
   },
 });
