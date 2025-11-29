@@ -4,7 +4,7 @@ import ReviewCard from '../components/host/ReviewCard';
 import QuestionAnswerCard from '../components/host/QuestionAnswerCard';
 import HireModal from '../components/host/HireModal';
 import { getHostById } from '../services/anfitriaoService';
-import { getPerguntasByAnfitriao, createPergunta } from '../services/perguntasService';
+import { getPerguntasByAnfitriao, createPergunta, createResposta } from '../services/perguntasService';
 import { getAvaliacoesByHost } from '../services/avaliacaoService';
 import { getCurrentUser } from '../services/authService';
 
@@ -122,6 +122,21 @@ const HostPage = () => {
       alert('Erro ao enviar pergunta. Tente novamente.');
     } finally {
       setSubmittingQuestion(false);
+    }
+  };
+
+  const handleAnswerSubmit = async (questionId, answerText) => {
+    try {
+      await createResposta({
+        id_pergunta: questionId,
+        id_anfitriao: host.id_anfitriao,
+        resposta: answerText
+      });
+      await fetchPerguntas(host.id_anfitriao);
+    } catch (error) {
+      console.error('Erro ao enviar resposta:', error);
+      alert('Erro ao enviar resposta. Tente novamente.');
+      throw error;
     }
   };
 
@@ -259,7 +274,7 @@ const HostPage = () => {
                   <h3 className="text-2xl font-bold text-gray-800 mb-4">Perguntas Frequentes</h3>
 
                   {/* Formulário de Nova Pergunta */}
-                  {currentUser && (
+                  {currentUser && (!host || (currentUser.id_usuario !== host.id_anfitriao && currentUser.id !== host.id_anfitriao)) && (
                     <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
                       <h4 className="text-lg font-semibold text-gray-700 mb-2">Faça uma pergunta ao anfitrião</h4>
                       <form onSubmit={handleQuestionSubmit}>
@@ -295,6 +310,8 @@ const HostPage = () => {
                         key={pergunta.id_pergunta}
                         question={pergunta.pergunta}
                         answer={pergunta.resposta?.resposta || ''}
+                        isHost={currentUser && (currentUser.id_usuario === host.id_anfitriao || currentUser.id === host.id_anfitriao)}
+                        onAnswerSubmit={(answerText) => handleAnswerSubmit(pergunta.id_pergunta, answerText)}
                       />
                     ))
                   ) : (

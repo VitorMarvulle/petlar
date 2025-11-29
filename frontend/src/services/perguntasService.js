@@ -85,7 +85,7 @@ export const createPergunta = async (data) => {
  */
 export const createResposta = async (data) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/respostas/`, {
+    const response = await fetch(`${API_BASE_URL}/perguntas/respostas`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
