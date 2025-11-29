@@ -25,7 +25,7 @@ const especieToEmoji = (especie) => {
 const transformAnfitriaoToHostCard = (anfitriao) => {
   // Extract user data (it's nested as an array from Supabase join)
   const usuario = Array.isArray(anfitriao.usuarios) ? anfitriao.usuarios[0] : anfitriao.usuarios;
-  
+
   const nome = usuario?.nome || `Host ${anfitriao.id_anfitriao}`;
   const cidade = usuario?.cidade || 'Localização desconhecida';
   const bairro = usuario?.bairro || '';
@@ -46,8 +46,8 @@ const transformAnfitriaoToHostCard = (anfitriao) => {
     price: anfitriao.preco || 60,
     rating: anfitriao.rating || 5, // TODO: Calculate from reviews
     pets: pets, // Convert especie to emojis
-    tamanhoPet: anfitriao.tamanho_pet || 'medio', 
-    imageUrl: usuario?.imagem_usuario || 'https://placehold.co/80x80/A7D2CB/5C5552?text=Host',
+    tamanhoPet: anfitriao.tamanho_pet || 'medio',
+    imageUrl: usuario?.imagem_usuario || `https://avatar.iran.liara.run/public?username=${anfitriao.id_anfitriao}`,
     capacidade_maxima: anfitriao.capacidade_maxima,
     status: anfitriao.status,
     reviews: anfitriao.reviews || [],
@@ -73,10 +73,10 @@ export const getAllHosts = async () => {
     }
 
     const anfitrioes = await response.json();
-    
+
     // Transform data to HostCard format
     const transformedHosts = anfitrioes.map(transformAnfitriaoToHostCard);
-    
+
     return transformedHosts;
   } catch (error) {
     throw new Error(error.message || 'Erro ao buscar anfitriões');
@@ -102,7 +102,7 @@ export const getHostById = async (id) => {
     }
 
     const anfitriao = await response.json();
-    
+
     // Transform data to HostCard format
     return transformAnfitriaoToHostCard(anfitriao);
   } catch (error) {
@@ -129,10 +129,10 @@ export const getHostsByStatus = async (status) => {
     }
 
     const anfitrioes = await response.json();
-    
+
     // Transform data to HostCard format
     const transformedHosts = anfitrioes.map(transformAnfitriaoToHostCard);
-    
+
     return transformedHosts;
   } catch (error) {
     throw new Error(error.message || 'Erro ao buscar anfitriões por status');
