@@ -11,6 +11,8 @@ import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import HostPage from './pages/HostPage';
 import React, { useEffect } from 'react';
+import ProfilePage from './pages/ProfilePage';
+import AddPetPage from './pages/AddPetPage';
 
 function App() {
   useEffect(() => {
@@ -33,6 +35,8 @@ function App() {
               <Route path="/feed" element={<Feed />} />
               <Route path="/become-host" element={<BecomeHost />} />
               <Route path="/host/:hostId" element={<HostPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/adicionar-pet" element={<AddPetPage />} />
             </Routes>
           </main>
           <Footer />

@@ -4,12 +4,13 @@ import ReviewCard from '../components/host/ReviewCard';
 import QuestionAnswerCard from '../components/host/QuestionAnswerCard';
 import HireModal from '../components/host/HireModal';
 import { getHostById } from '../services/anfitriaoService';
-import { getPerguntasByAnfitriao } from '../services/perguntasService';
-import { getAvaliacoesByHost, getAverageRating } from '../services/avaliacaoService';
+import { getPerguntasByAnfitriao, createPergunta } from '../services/perguntasService';
+import { getAvaliacoesByHost } from '../services/avaliacaoService';
+import { getCurrentUser } from '../services/authService';
 
 const HostPage = () => {
   const { hostId } = useParams();
-  
+
   const [host, setHost] = useState(null);
   const [isHireModalOpen, setHireModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('avaliacoes');
@@ -22,6 +23,11 @@ const HostPage = () => {
   const [loadingHost, setLoadingHost] = useState(true);
   const [errorHost, setErrorHost] = useState('');
 
+  // New Question State
+  const [newQuestion, setNewQuestion] = useState('');
+  const [submittingQuestion, setSubmittingQuestion] = useState(false);
+  const currentUser = getCurrentUser();
+
   // Buscar dados do host e perguntas quando a página carrega
   useEffect(() => {
     const fetchData = async () => {
@@ -30,10 +36,10 @@ const HostPage = () => {
       try {
         const hostData = await getHostById(parseInt(hostId));
         setHost(hostData);
-        
+
         // Buscar perguntas do host
         await fetchPerguntas(hostData.id_anfitriao);
-        
+
         // Buscar avaliações do host (usar id_anfitriao que é id_usuario do host)
         await fetchAvaliacoes(hostData.id_anfitriao);
 
@@ -46,7 +52,7 @@ const HostPage = () => {
         setLoadingHost(false);
       }
     };
-    
+
     if (hostId) {
       fetchData();
     }
@@ -92,6 +98,33 @@ const HostPage = () => {
     }
   };
 
+  const handleQuestionSubmit = async (e) => {
+    e.preventDefault();
+    if (!newQuestion.trim()) return;
+    if (!currentUser) {
+      alert('Você precisa estar logado para fazer uma pergunta.');
+      return;
+    }
+
+    setSubmittingQuestion(true);
+    try {
+      await createPergunta({
+        id_tutor: currentUser.id_usuario || currentUser.id,
+        id_anfitriao: host.id_anfitriao,
+        pergunta: newQuestion
+      });
+
+      setNewQuestion('');
+      await fetchPerguntas(host.id_anfitriao);
+      alert('Pergunta enviada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao enviar pergunta:', error);
+      alert('Erro ao enviar pergunta. Tente novamente.');
+    } finally {
+      setSubmittingQuestion(false);
+    }
+  };
+
   if (loadingHost) {
     return (
       <div className="text-center py-10">
@@ -109,8 +142,8 @@ const HostPage = () => {
   }
 
   // Duplicar avaliações para garantir o scroll
-  const scrollableReviews = avaliacoes && avaliacoes.length > 0 
-    ? [...avaliacoes, ...avaliacoes, ...avaliacoes] 
+  const scrollableReviews = avaliacoes && avaliacoes.length > 0
+    ? [...avaliacoes, ...avaliacoes, ...avaliacoes]
     : [];
 
   return (
@@ -118,7 +151,7 @@ const HostPage = () => {
       <div className="py-8">
         <h2 className="text-3xl font-bold text-gray-800 mb-8">Conheça seu Host:</h2>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 relative">
-          
+
           {/* Coluna Esquerda (Fixa) */}
           <div className="lg:col-span-4">
             <div className="sticky top-24 space-y-6">
@@ -127,7 +160,7 @@ const HostPage = () => {
                 <img src={host.imageUrl} alt={host.name} className="w-24 h-24 rounded-full border-4 border-gray-200 mx-auto" />
                 <h3 className="text-2xl font-bold text-gray-800 mt-4 text-center">{host.name}</h3>
                 <p className="text-sm text-gray-500 text-center">{host.distance} - {host.location}</p>
-                
+
                 {/* Pets */}
                 <div className="mt-4 flex justify-center space-x-2">
                   {host.pets && host.pets.map((pet, index) => (
@@ -153,7 +186,7 @@ const HostPage = () => {
                 </div>
 
                 {/* Botão de Contratar */}
-                <button 
+                <button
                   onClick={() => setHireModalOpen(true)}
                   className="w-full mt-6 bg-red-500 text-white font-bold py-3 px-4 rounded-lg border-2 border-gray-800 hover:bg-red-600 transition-colors"
                 >
@@ -169,31 +202,28 @@ const HostPage = () => {
             <div className="flex space-x-4 mb-6 border-b-2 border-gray-300">
               <button
                 onClick={() => setActiveTab('avaliacoes')}
-                className={`pb-3 px-4 font-semibold text-lg transition-colors ${
-                  activeTab === 'avaliacoes'
-                    ? 'text-red-500 border-b-4 border-red-500'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
+                className={`pb-3 px-4 font-semibold text-lg transition-colors ${activeTab === 'avaliacoes'
+                  ? 'text-red-500 border-b-4 border-red-500'
+                  : 'text-gray-600 hover:text-gray-800'
+                  }`}
               >
                 Avaliações ({avaliacoes?.length || 0})
               </button>
               <button
                 onClick={() => setActiveTab('perguntas')}
-                className={`pb-3 px-4 font-semibold text-lg transition-colors ${
-                  activeTab === 'perguntas'
-                    ? 'text-red-500 border-b-4 border-red-500'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
+                className={`pb-3 px-4 font-semibold text-lg transition-colors ${activeTab === 'perguntas'
+                  ? 'text-red-500 border-b-4 border-red-500'
+                  : 'text-gray-600 hover:text-gray-800'
+                  }`}
               >
                 Perguntas Frequentes ({perguntas.length || 0})
               </button>
               <button
                 onClick={() => setActiveTab('fotos')}
-                className={`pb-3 px-4 font-semibold text-lg transition-colors ${
-                  activeTab === 'fotos'
-                    ? 'text-red-500 border-b-4 border-red-500'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
+                className={`pb-3 px-4 font-semibold text-lg transition-colors ${activeTab === 'fotos'
+                  ? 'text-red-500 border-b-4 border-red-500'
+                  : 'text-gray-600 hover:text-gray-800'
+                  }`}
               >
                 Fotos ({fotos?.length || 0})
               </button>
@@ -205,7 +235,7 @@ const HostPage = () => {
               {activeTab === 'avaliacoes' && (
                 <>
                   <h3 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                    Avaliações 
+                    Avaliações
                     <span className="ml-2 text-yellow-400 flex">
                       {'★'.repeat(host.rating)}
                       {'☆'.repeat(5 - host.rating)}
@@ -227,6 +257,36 @@ const HostPage = () => {
               {activeTab === 'perguntas' && (
                 <>
                   <h3 className="text-2xl font-bold text-gray-800 mb-4">Perguntas Frequentes</h3>
+
+                  {/* Formulário de Nova Pergunta */}
+                  {currentUser && (
+                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
+                      <h4 className="text-lg font-semibold text-gray-700 mb-2">Faça uma pergunta ao anfitrião</h4>
+                      <form onSubmit={handleQuestionSubmit}>
+                        <textarea
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                          rows="3"
+                          placeholder="Escreva sua dúvida aqui..."
+                          value={newQuestion}
+                          onChange={(e) => setNewQuestion(e.target.value)}
+                          disabled={submittingQuestion}
+                        ></textarea>
+                        <div className="flex justify-end mt-2">
+                          <button
+                            type="submit"
+                            disabled={submittingQuestion || !newQuestion.trim()}
+                            className={`px-4 py-2 rounded-lg font-semibold text-white transition-colors ${submittingQuestion || !newQuestion.trim()
+                              ? 'bg-gray-400 cursor-not-allowed'
+                              : 'bg-green-500 hover:bg-green-600'
+                              }`}
+                          >
+                            {submittingQuestion ? 'Enviando...' : 'Enviar Pergunta'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
                   {loadingPerguntas ? (
                     <p className="text-gray-600 text-center py-8">Carregando perguntas...</p>
                   ) : perguntas && perguntas.length > 0 ? (
@@ -253,9 +313,9 @@ const HostPage = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       {fotos.map((foto, index) => (
                         <div key={index} className="rounded-lg overflow-hidden shadow-md border-2 border-gray-200 hover:shadow-lg transition-shadow">
-                          <img 
-                            src={typeof foto === 'string' ? foto : foto.url || foto.foto_url} 
-                            alt={`Foto ${index + 1}`} 
+                          <img
+                            src={typeof foto === 'string' ? foto : foto.url || foto.foto_url}
+                            alt={`Foto ${index + 1}`}
                             className="w-full h-48 object-cover hover:scale-105 transition-transform"
                           />
                         </div>
@@ -270,12 +330,12 @@ const HostPage = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Modal de Contratação */}
-      <HireModal 
-        isOpen={isHireModalOpen} 
-        onClose={() => setHireModalOpen(false)} 
-        host={host} 
+      <HireModal
+        isOpen={isHireModalOpen}
+        onClose={() => setHireModalOpen(false)}
+        host={host}
       />
     </>
   );
