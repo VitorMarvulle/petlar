@@ -22,11 +22,53 @@ const HostPage = () => {
   const [loadingFotos, setLoadingFotos] = useState(false);
   const [loadingHost, setLoadingHost] = useState(true);
   const [errorHost, setErrorHost] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null);
 
   // New Question State
   const [newQuestion, setNewQuestion] = useState('');
   const [submittingQuestion, setSubmittingQuestion] = useState(false);
   const currentUser = getCurrentUser();
+
+  const fetchPerguntas = async (id_anfitriao) => {
+    setLoadingPerguntas(true);
+    try {
+      const data = await getPerguntasByAnfitriao(id_anfitriao);
+      setPerguntas(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar perguntas:', error);
+      setPerguntas([]);
+    } finally {
+      setLoadingPerguntas(false);
+    }
+  };
+
+  const fetchAvaliacoes = async (id_avaliado) => {
+    setLoadingAvaliacoes(true);
+    try {
+      const data = await getAvaliacoesByHost(id_avaliado);
+      setAvaliacoes(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar avaliações:', error);
+      setAvaliacoes([]);
+    } finally {
+      setLoadingAvaliacoes(false);
+      // Removed incorrect setLoadingFotos(false)
+    }
+  };
+
+  const fetchFotos = async (hostData) => {
+    setLoadingFotos(true);
+    try {
+      // Extract fotos from host data
+      const fotosList = hostData.fotos || hostData.foto || hostData.fotos_anfitriao || [];
+      setFotos(Array.isArray(fotosList) ? fotosList : []);
+    } catch (error) {
+      console.error('Erro ao buscar fotos:', error);
+      setFotos([]);
+    } finally {
+      setLoadingFotos(false);
+    }
+  };
 
   // Buscar dados do host e perguntas quando a página carrega
   useEffect(() => {
@@ -57,46 +99,6 @@ const HostPage = () => {
       fetchData();
     }
   }, [hostId]);
-
-  const fetchPerguntas = async (id_anfitriao) => {
-    setLoadingPerguntas(true);
-    try {
-      const data = await getPerguntasByAnfitriao(id_anfitriao);
-      setPerguntas(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar perguntas:', error);
-      setPerguntas([]);
-    } finally {
-      setLoadingPerguntas(false);
-    }
-  };
-
-  const fetchAvaliacoes = async (id_avaliado) => {
-    setLoadingAvaliacoes(true);
-    try {
-      const data = await getAvaliacoesByHost(id_avaliado);
-      setAvaliacoes(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar avaliações:', error);
-      setAvaliacoes([]);
-    } finally {
-      setLoadingAvaliacoes(false);
-    }
-  };
-
-  const fetchFotos = async (hostData) => {
-    setLoadingFotos(true);
-    try {
-      // Extract fotos from host data - checking common field names
-      const fotosList = hostData.fotos || hostData.foto || hostData.fotos_anfitriao || [];
-      setFotos(Array.isArray(fotosList) ? fotosList : []);
-    } catch (error) {
-      console.error('Erro ao buscar fotos:', error);
-      setFotos([]);
-    } finally {
-      setLoadingFotos(false);
-    }
-  };
 
   const handleQuestionSubmit = async (e) => {
     e.preventDefault();
@@ -329,11 +331,15 @@ const HostPage = () => {
                   ) : fotos && fotos.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       {fotos.map((foto, index) => (
-                        <div key={index} className="rounded-lg overflow-hidden shadow-md border-2 border-gray-200 hover:shadow-lg transition-shadow">
+                        <div key={index} className="rounded-lg overflow-hidden shadow-md border-2 border-gray-200 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedImage(foto)}>
                           <img
                             src={typeof foto === 'string' ? foto : foto.url || foto.foto_url}
                             alt={`Foto ${index + 1}`}
                             className="w-full h-48 object-cover hover:scale-105 transition-transform"
+                            onError={(e) => {
+                              console.error('Error loading image:', e.target.src);
+                              e.target.src = 'https://via.placeholder.com/400x300?text=Erro+na+Imagem';
+                            }}
                           />
                         </div>
                       ))}
@@ -354,6 +360,27 @@ const HostPage = () => {
         onClose={() => setHireModalOpen(false)}
         host={host}
       />
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white text-4xl font-bold hover:text-gray-300 z-50"
+            onClick={() => setSelectedImage(null)}
+          >
+            &times;
+          </button>
+          <img
+            src={typeof selectedImage === 'string' ? selectedImage : selectedImage.url || selectedImage.foto_url}
+            alt="Full size"
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </>
   );
 };

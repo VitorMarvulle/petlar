@@ -45,3 +45,35 @@ export const createAnfitriao = async (data) => {
     throw new Error(error.message || 'Erro ao criar perfil de host');
   }
 };
+
+/**
+ * Upload photos of the host's area
+ * @param {number} hostId - Host ID
+ * @param {Array<File>} photos - Array of photo files
+ * @returns {Promise<Array<string>>} - Array of uploaded photo URLs
+ */
+export const uploadHostAreaPhotos = async (hostId, photos) => {
+  if (!photos || photos.length === 0) return [];
+
+  try {
+    const formData = new FormData();
+    photos.forEach((photo) => {
+      formData.append('arquivos', photo);
+    });
+
+    const response = await fetch(`${API_BASE_URL}/anfitrioes/${hostId}/fotos-area`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Erro ao enviar fotos da área');
+    }
+
+    const data = await response.json();
+    return data.fotos_totais;
+  } catch (error) {
+    throw new Error(error.message || 'Erro ao fazer upload das fotos da área');
+  }
+};

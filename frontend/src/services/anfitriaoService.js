@@ -52,6 +52,9 @@ const transformAnfitriaoToHostCard = (anfitriao) => {
     status: anfitriao.status,
     reviews: anfitriao.reviews || [],
     usuario: usuario, // Store user data for detailed view
+    fotos: typeof anfitriao.fotos_urls === 'string'
+      ? JSON.parse(anfitriao.fotos_urls)
+      : (anfitriao.fotos_urls || []),
   };
 };
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
-import { createAnfitriao } from '../services/becomeHostService';
+import { createAnfitriao, uploadHostAreaPhotos } from '../services/becomeHostService';
 import { getCurrentUser } from '../services/authService';
 
 const BecomeHost = () => {
@@ -11,6 +11,8 @@ const BecomeHost = () => {
   const [especie, setEspecie] = useState([]); // Array of selected pet types
   const [tamanho, setTamanho] = useState(''); // Size of space
   const [preco, setPreco] = useState(''); // Daily price
+  const [areaPhotos, setAreaPhotos] = useState([]); // Photos of the area
+  const [previewUrls, setPreviewUrls] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -47,6 +49,26 @@ const BecomeHost = () => {
     setCurrentUser(user);
   }, [navigate]);
 
+  const handlePhotoChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length + areaPhotos.length > 4) {
+      setError('Máximo de 4 fotos permitidas');
+      return;
+    }
+
+    setAreaPhotos(prev => [...prev, ...files]);
+
+    // Create preview URLs
+    const newPreviews = files.map(file => URL.createObjectURL(file));
+    setPreviewUrls(prev => [...prev, ...newPreviews]);
+    setError('');
+  };
+
+  const removePhoto = (index) => {
+    setAreaPhotos(prev => prev.filter((_, i) => i !== index));
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -69,7 +91,7 @@ const BecomeHost = () => {
 
     setLoading(true);
     try {
-      // Create anfitriao record with current user ID
+      // 1. Create anfitriao record
       await createAnfitriao({
         id_anfitriao: currentUser.id_usuario,
         descricao: descricao,
@@ -77,8 +99,13 @@ const BecomeHost = () => {
         especie: especie, // Array of pet types
         tamanho_pet: tamanho, // Size of pet
         preco: parseFloat(preco), // Daily price
-        imagem_anfitriao: null, // No image upload
+        imagem_anfitriao: null, // No profile image upload
       });
+
+      // 2. Upload area photos if any
+      if (areaPhotos.length > 0) {
+        await uploadHostAreaPhotos(currentUser.id_usuario, areaPhotos);
+      }
 
       alert('Parabéns! Você agora é um host! 🎉');
       navigate('/feed');
@@ -195,6 +222,59 @@ const BecomeHost = () => {
               step="0.01"
               placeholder="Ex: 60.00"
             />
+          </div>
+
+          {/* Area Photos Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Fotos do seu espaço (Máx. 4):
+            </label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center relative bg-gray-50 hover:bg-gray-100 transition-colors">
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handlePhotoChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                disabled={areaPhotos.length >= 4}
+              />
+
+              {previewUrls.length > 0 ? (
+                <div className="flex gap-2 overflow-x-auto w-full py-2 z-20 pointer-events-none px-2">
+                  {previewUrls.map((url, index) => (
+                    <div key={index} className="relative flex-shrink-0 w-20 h-20 pointer-events-auto">
+                      <img
+                        src={url}
+                        alt={`Preview ${index}`}
+                        className="w-full h-full object-cover rounded-lg border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          removePhoto(index);
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow-md hover:bg-red-600"
+                      >
+                        X
+                      </button>
+                    </div>
+                  ))}
+                  {areaPhotos.length < 4 && (
+                    <div className="flex-shrink-0 w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 bg-white">
+                      +
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center pointer-events-none py-4">
+                  <span className="text-2xl block mb-1">📸</span>
+                  <span className="text-gray-500 text-sm">Clique para adicionar fotos</span>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Mostre onde os pets ficarão hospedados.</p>
           </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
