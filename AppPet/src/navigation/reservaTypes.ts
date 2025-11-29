@@ -82,6 +82,7 @@ export interface ReservaBackend {
 
 export interface ReservaCompleta {
     id_reserva: number;
+    id_tutor: number;
     data_inicio: string;
     data_fim: string;
     dias: number;

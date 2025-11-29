@@ -76,6 +76,7 @@ export class ReservaService {
         
         return {
             id_reserva: reserva.id_reserva,
+            id_tutor: reserva.id_tutor,
             data_inicio: reserva.data_inicio,
             data_fim: reserva.data_fim,
             dias,
@@ -85,7 +86,7 @@ export class ReservaService {
                 id_anfitriao: anfitriaoData.id_anfitriao,
                 nome: anfitriaoData.usuarios?.nome || 'Anfitrião',
                 localizacao: this.formatarLocalizacao(anfitriaoData.usuarios),
-                foto_perfil: anfitriaoData.usuarios?.foto_perfil_url || undefined,
+                foto_perfil_url: anfitriaoData.usuarios?.foto_perfil_url || undefined, 
                 telefone: anfitriaoData.usuarios?.telefone
             },
             pets: petsData,
@@ -204,5 +205,20 @@ export class ReservaService {
         // Backend retorna mensagens de validação no campo 'detail'
         const msg = error.response?.data?.detail || 'Erro na operação de reserva';
         throw new Error(msg);
+    }
+
+
+    // Adicione este método para reutilizar a lógica:
+    static async getReservaCompletaById(id_reserva: number): Promise<ReservaCompleta> {
+        try {
+            const response = await axios.get<ReservaBackend>(
+                `${API_BASE_URL}/reservas/${id_reserva}`
+            );
+            
+            return await this.montarReservaCompleta(response.data);
+        } catch (error: any) {
+            this.handleError(error);
+            throw error;
+        }
     }
 }

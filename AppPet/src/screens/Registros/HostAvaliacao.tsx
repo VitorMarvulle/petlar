@@ -82,15 +82,8 @@ export default function AvaliarHospedagem({ navigation, route }: AvaliarHospedag
         const fetchReserva = async () => {
             try {
                 setIsFetchingReserva(true);
-                
-                // Ajuste conforme seu método de buscar uma reserva específica
-                // Você pode precisar adicionar um método getReservaById no ReservaService
-                const response = await fetch(`http://localhost:8000/reservas/${reservaId}`);
-                const data = await response.json();
-                
-                // Transformar os dados para o formato ReservaCompleta
-                // (adapte conforme a estrutura do seu backend)
-                setReserva(data);
+                const reservaCompleta = await ReservaService.getReservaCompletaById(parseInt(reservaId));
+                setReserva(reservaCompleta);
             } catch (error) {
                 console.error('Erro ao buscar reserva:', error);
                 showAlert(
@@ -133,7 +126,7 @@ export default function AvaliarHospedagem({ navigation, route }: AvaliarHospedag
             // Dados da avaliação
             const avaliacaoData = {
                 id_reserva: parseInt(reservaId),
-                id_avaliador: reserva.anfitriao.id_anfitriao, // ID do tutor (quem está avaliando)
+                id_avaliador: reserva.id_tutor, // ID do tutor (quem está avaliando)
                 id_avaliado: reserva.anfitriao.id_anfitriao, // ID do host (quem está sendo avaliado)
                 nota: rating,
                 comentario: comment.trim() || undefined,

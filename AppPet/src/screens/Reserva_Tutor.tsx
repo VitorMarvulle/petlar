@@ -119,8 +119,8 @@ const ReservaCard = ({ reserva, navigation }: {
             >
                 <Image 
                     source={
-                        reserva.anfitriao.foto_perfil 
-                            ? { uri: reserva.anfitriao.foto_perfil }
+                        reserva.anfitriao.foto_perfil_url 
+                            ? { uri: reserva.anfitriao.foto_perfil_url }
                             : ICON_HOST_AVATAR
                     } 
                     style={styles.hostAvatar} 
