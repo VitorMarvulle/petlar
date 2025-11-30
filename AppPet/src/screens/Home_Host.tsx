@@ -248,7 +248,7 @@ export default function Home_Host() {
               style={styles.navButton}
               onPress={() => {
                 if (item === 'conta') navigation.navigate('Perfil_Host', { host: myHost || {} as any });
-                if (item === 'Reservas') navigation.navigate('Reserva_Host');
+                if (item === 'Reservas') navigation.navigate('Reserva_Host', { usuario: usuario });
                 if (item === 'config') navigation.navigate('Configuracoes');
               }}>
               <HomeIcon name={item} />

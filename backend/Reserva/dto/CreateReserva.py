@@ -19,13 +19,15 @@ class ReservaCreate(BaseModel):
 
 
 class ReservaUpdate(BaseModel):
-    data_inicio: Optional[date]
-    data_fim: Optional[date]
-    status: Optional[str]
-    pets_tutor: Optional[List[int]] = []
-    valor_diaria: Optional[float]
-    qtd_pets: Optional[int]
-    qtd_dias: Optional[int]
-    valor_total_reserva:Optional[float] 
-    ja_avaliado_host: Optional[bool] = False
-    ja_avaliado_tutor: Optional[bool] = False
+    id_tutor: Optional[int] = None
+    id_anfitriao: Optional[int] = None
+    data_inicio: Optional[date] = None
+    data_fim: Optional[date] = None
+    status: Optional[str] = None       
+    pets_tutor: Optional[list[int]] = None
+    valor_diaria: Optional[float] = None
+    qtd_pets: Optional[int] = None
+    qtd_dias: Optional[int] = None
+    valor_total_reserva: Optional[float] = None
+    ja_avaliado_host: Optional[bool] = None
+    ja_avaliado_tutor: Optional[bool] = None
