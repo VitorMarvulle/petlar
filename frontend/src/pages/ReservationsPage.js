@@ -1,32 +1,102 @@
 import React, { useState, useEffect } from 'react';
-import { getCurrentUser } from '../services/authService';
-import { getReservasByTutor } from '../services/reservationService';
+import { getCurrentUser, getAllUsers } from '../services/authService';
+import { getReservasByTutor, getReservasByHost, updateReservaStatus, getAllReservations } from '../services/reservationService';
 import { Link } from 'react-router-dom';
 
 const ReservationsPage = () => {
     const currentUser = getCurrentUser();
     const [reservations, setReservations] = useState([]);
+    const [hostReservations, setHostReservations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [activeTab, setActiveTab] = useState('tutor'); // 'tutor' or 'host'
+    const [isHost, setIsHost] = useState(false);
+    const [userMap, setUserMap] = useState({});
 
     useEffect(() => {
-        const fetchReservations = async () => {
+        if (currentUser && currentUser.tipo === 'anfitriao') {
+            setIsHost(true);
+        }
+    }, [currentUser]);
+
+    useEffect(() => {
+        const fetchData = async () => {
             if (!currentUser) return;
+            setLoading(true);
+            setError('');
             try {
-                const data = await getReservasByTutor(currentUser.id_usuario || currentUser.id);
-                // Sort by date (newest first)
-                const sortedData = Array.isArray(data) ? data.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio)) : [];
-                setReservations(sortedData);
+                // Fetch users for name lookup
+                const users = await getAllUsers();
+                const map = {};
+                users.forEach(u => {
+                    map[u.id_usuario || u.id] = u;
+                });
+                setUserMap(map);
+
+                if (activeTab === 'tutor') {
+                    const data = await getReservasByTutor(currentUser.id_usuario || currentUser.id);
+                    const sortedData = Array.isArray(data) ? data.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio)) : [];
+                    setReservations(sortedData);
+                } else if (activeTab === 'host' && isHost) {
+                    // Fetch all reservations and filter locally to ensure we catch them
+                    // This acts as a fallback if the specific endpoint has issues
+                    try {
+                        const allReservations = await getAllReservations();
+                        const hostId = currentUser.id_usuario || currentUser.id;
+                        const data = allReservations.filter(r =>
+                            r.id_anfitriao === hostId ||
+                            r.id_anfitriao === Number(hostId) ||
+                            String(r.id_anfitriao) === String(hostId)
+                        );
+                        const sortedData = Array.isArray(data) ? data.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio)) : [];
+                        setHostReservations(sortedData);
+                    } catch (fallbackError) {
+                        console.error('Fallback fetch failed, trying direct endpoint:', fallbackError);
+                        const data = await getReservasByHost(currentUser.id_usuario || currentUser.id);
+                        const sortedData = Array.isArray(data) ? data.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio)) : [];
+                        setHostReservations(sortedData);
+                    }
+                }
             } catch (err) {
-                console.error('Erro ao buscar reservas:', err);
-                setError('Não foi possível carregar suas reservas.');
+                console.error('Erro ao buscar dados:', err);
+                setError('Não foi possível carregar as reservas.');
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchReservations();
-    }, [currentUser]);
+        fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentUser?.id_usuario, currentUser?.id, activeTab, isHost]);
+
+    const handleApprove = async (reservaId) => {
+        if (!window.confirm('Deseja aprovar esta reserva?')) return;
+
+        try {
+            await updateReservaStatus(reservaId, 'confirmada');
+            // Refresh list
+            // Re-fetch logic similar to useEffect, but simplified for just the list
+            try {
+                const allReservations = await getAllReservations();
+                const hostId = currentUser.id_usuario || currentUser.id;
+                const data = allReservations.filter(r =>
+                    r.id_anfitriao === hostId ||
+                    r.id_anfitriao === Number(hostId) ||
+                    String(r.id_anfitriao) === String(hostId)
+                );
+                const sortedData = Array.isArray(data) ? data.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio)) : [];
+                setHostReservations(sortedData);
+            } catch (e) {
+                const data = await getReservasByHost(currentUser.id_usuario || currentUser.id);
+                const sortedData = Array.isArray(data) ? data.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio)) : [];
+                setHostReservations(sortedData);
+            }
+            alert('Reserva aprovada com sucesso!');
+        } catch (err) {
+            console.error('Erro ao aprovar reserva:', err);
+            alert('Erro ao aprovar reserva.');
+        }
+    };
 
     const getStatusColor = (status) => {
         switch (status?.toLowerCase()) {
@@ -55,10 +125,35 @@ const ReservationsPage = () => {
         );
     }
 
+    const displayedReservations = activeTab === 'tutor' ? reservations : hostReservations;
+
     return (
         <div className="py-10 max-w-5xl mx-auto">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Minhas Reservas</h1>
-            <p className="text-gray-600 mb-8">Acompanhe o status das suas solicitações de hospedagem.</p>
+            <h1 className="text-3xl font-bold text-gray-800 mb-6">Reservas</h1>
+
+            {/* Tabs */}
+            <div className="flex space-x-4 mb-8 border-b border-gray-200">
+                <button
+                    onClick={() => setActiveTab('tutor')}
+                    className={`pb-2 px-4 font-semibold transition-colors ${activeTab === 'tutor'
+                        ? 'text-green-600 border-b-2 border-green-600'
+                        : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                >
+                    Minhas Reservas (Tutor)
+                </button>
+                {isHost && (
+                    <button
+                        onClick={() => setActiveTab('host')}
+                        className={`pb-2 px-4 font-semibold transition-colors ${activeTab === 'host'
+                            ? 'text-green-600 border-b-2 border-green-600'
+                            : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                    >
+                        Solicitações Recebidas (Host)
+                    </button>
+                )}
+            </div>
 
             {loading ? (
                 <div className="text-center py-12">
@@ -69,18 +164,24 @@ const ReservationsPage = () => {
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-center">
                     {error}
                 </div>
-            ) : reservations.length === 0 ? (
+            ) : displayedReservations.length === 0 ? (
                 <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-200">
                     <span className="text-4xl mb-4 block">📅</span>
                     <h3 className="text-xl font-semibold text-gray-800 mb-2">Nenhuma reserva encontrada</h3>
-                    <p className="text-gray-500 mb-6">Você ainda não fez nenhuma reserva.</p>
-                    <Link to="/feed" className="bg-green-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-600 transition-colors">
-                        Encontrar um Anfitrião
-                    </Link>
+                    <p className="text-gray-500 mb-6">
+                        {activeTab === 'tutor'
+                            ? 'Você ainda não fez nenhuma reserva.'
+                            : 'Você não tem solicitações de reserva no momento.'}
+                    </p>
+                    {activeTab === 'tutor' && (
+                        <Link to="/feed" className="bg-green-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-600 transition-colors">
+                            Encontrar um Anfitrião
+                        </Link>
+                    )}
                 </div>
             ) : (
                 <div className="grid gap-6">
-                    {reservations.map((reserva) => (
+                    {displayedReservations.map((reserva) => (
                         <div key={reserva.id_reserva} className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
                             <div className="p-6">
                                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
@@ -92,9 +193,19 @@ const ReservationsPage = () => {
                                             Solicitado em: {formatDate(reserva.created_at || new Date().toISOString())}
                                         </p>
                                     </div>
-                                    <span className={`px-4 py-1 rounded-full text-sm font-bold border ${getStatusColor(reserva.status)}`}>
-                                        {reserva.status?.toUpperCase() || 'PENDENTE'}
-                                    </span>
+                                    <div className="flex items-center space-x-3">
+                                        <span className={`px-4 py-1 rounded-full text-sm font-bold border ${getStatusColor(reserva.status)}`}>
+                                            {reserva.status?.toUpperCase() || 'PENDENTE'}
+                                        </span>
+                                        {activeTab === 'host' && reserva.status === 'pendente' && (
+                                            <button
+                                                onClick={() => handleApprove(reserva.id_reserva)}
+                                                className="bg-green-500 text-white px-4 py-1 rounded-full text-sm font-bold hover:bg-green-600 transition-colors shadow-sm"
+                                            >
+                                                Aprovar
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
@@ -124,8 +235,14 @@ const ReservationsPage = () => {
                                     </div>
                                 </div>
 
-                                {/* Host Info (If available in the join, otherwise might need another fetch or just show ID) */}
-                                {/* Assuming the backend returns some host info or we just show generic info for now */}
+                                {/* User/Host Info */}
+                                <div className="mt-4 pt-4 border-t border-gray-100 text-sm text-gray-600">
+                                    {activeTab === 'host' ? (
+                                        <p><strong>Solicitado por:</strong> {userMap[reserva.id_tutor]?.nome || `Tutor #${reserva.id_tutor}`}</p>
+                                    ) : (
+                                        <p><strong>Anfitrião:</strong> {userMap[reserva.id_anfitriao]?.nome || `Anfitrião #${reserva.id_anfitriao}`}</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}

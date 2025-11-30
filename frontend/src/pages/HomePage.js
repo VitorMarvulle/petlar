@@ -1,4 +1,5 @@
 import SearchBar from '../components/common/SearchBar';
+import { MapPin, PawPrint, CalendarCheck } from 'lucide-react';
 
 const HomePage = () => {
   return (
@@ -15,11 +16,13 @@ const HomePage = () => {
             data-aos="flip-left"
             data-aos-easing="ease-out-cubic"
             data-aos-duration="1600"
-            data-aos-delay="200"            
+            data-aos-delay="200"
             className="bg-[#addb8a] w-64 h-80 rounded-2xl shadow-lg border-2 border-gray-300 p-6 flex flex-col justify-between"
           >
             <div>
-              <h3 className="text-3xl mb-3 -mt-4">📍</h3>
+              <div className="flex justify-center mb-3 -mt-4">
+                <MapPin size={48} className="text-gray-800" />
+              </div>
               <h3 className="text-xl font-bold text-gray-800 mb-3">Encontre o anfitrião ideal</h3>
               <p className="mt-8 text-gray-700 text-sm leading-tight">
                 Busque anfitriões próximos a você filtrando por data, espécie e tamanho do seu pet!
@@ -51,7 +54,9 @@ const HomePage = () => {
             className="bg-[#addb8a] w-64 h-80 rounded-2xl shadow-lg border-2 border-gray-300 p-6 flex flex-col justify-between"
           >
             <div>
-              <h3 className="text-3xl mb-3 -mt-4">🐕</h3>
+              <div className="flex justify-center mb-3 -mt-4">
+                <PawPrint size={48} className="text-gray-800" />
+              </div>
               <h3 className="text-xl font-bold text-gray-800 mb-3">Avalie o perfil</h3>
               <p className="text-gray-700 text-sm leading-tight">
                 Veja avaliações de outros tutores, fotos reais do ambiente,
@@ -82,11 +87,13 @@ const HomePage = () => {
             data-aos="flip-left"
             data-aos-easing="ease-out-cubic"
             data-aos-duration="2000"
-            data-aos-delay="600"            
+            data-aos-delay="600"
             className="bg-[#addb8a] w-64 h-80 rounded-2xl shadow-lg border-2 border-gray-300 p-6 flex flex-col justify-between"
           >
             <div>
-              <h3 className="text-3xl mb-3 -mt-4">🗓️</h3>
+              <div className="flex justify-center mb-3 -mt-4">
+                <CalendarCheck size={48} className="text-gray-800" />
+              </div>
               <h3 className="text-xl font-bold text-gray-800 mb-3">Reserve com segurança</h3>
               <p className="text-gray-700 text-sm leading-tight">
                 Escolha as datas, confirme a disponibilidade e finalize sua reserva.

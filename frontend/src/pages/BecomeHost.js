@@ -107,6 +107,11 @@ const BecomeHost = () => {
         await uploadHostAreaPhotos(currentUser.id_usuario, areaPhotos);
       }
 
+      // Update local storage and state to reflect new host status
+      const updatedUser = { ...currentUser, tipo: 'anfitriao' };
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      setCurrentUser(updatedUser);
+
       alert('Parabéns! Você agora é um host! 🎉');
       navigate('/feed');
     } catch (err) {
@@ -173,8 +178,8 @@ const BecomeHost = () => {
                   <label
                     key={option.value}
                     className={`flex items-center p-2 border rounded-md cursor-pointer transition-colors ${especie.includes(option.value)
-                        ? 'bg-blue-100 border-blue-500'
-                        : 'bg-white border-gray-300 hover:border-blue-300'
+                      ? 'bg-blue-100 border-blue-500'
+                      : 'bg-white border-gray-300 hover:border-blue-300'
                       }`}
                   >
                     <input
