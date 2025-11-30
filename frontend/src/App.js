@@ -13,6 +13,7 @@ import HostPage from './pages/HostPage';
 import React, { useEffect } from 'react';
 import ProfilePage from './pages/ProfilePage';
 import AddPetPage from './pages/AddPetPage';
+import ReservationsPage from './pages/ReservationsPage';
 
 function App() {
   useEffect(() => {
@@ -37,6 +38,7 @@ function App() {
               <Route path="/host/:hostId" element={<HostPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/adicionar-pet" element={<AddPetPage />} />
+              <Route path="/reservas" element={<ReservationsPage />} />
             </Routes>
           </main>
           <Footer />

@@ -62,17 +62,22 @@ const Header = () => {
               // User greeting with logout
               <div className="flex items-center space-x-4">
                 {shouldShowGreeting && (
-                  <Link to="/profile" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-                    <div className="w-10 h-10 bg-gradient-to-br from-[#addb8a] to-[#95c872] rounded-full flex items-center justify-center text-white font-bold text-sm">
-                      {currentUser.nome?.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="text-gray-800 font-medium hidden sm:inline">
-                      Bem vindo, <span className="font-bold text-red-500">{currentUser.nome}</span>! 😊
-                    </span>
-                    <span className="text-gray-800 font-medium sm:hidden">
-                      Olá, <span className="font-bold text-red-500">{currentUser.nome?.split(' ')[0]}</span>!
-                    </span>
-                  </Link>
+                  <>
+                    <Link to="/reservas" className="text-gray-600 hover:text-green-600 font-semibold mr-4 transition-colors">
+                      Minhas Reservas
+                    </Link>
+                    <Link to="/profile" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+                      <div className="w-10 h-10 bg-gradient-to-br from-[#addb8a] to-[#95c872] rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        {currentUser.nome?.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-gray-800 font-medium hidden sm:inline">
+                        Bem vindo, <span className="font-bold text-red-500">{currentUser.nome}</span>! 😊
+                      </span>
+                      <span className="text-gray-800 font-medium sm:hidden">
+                        Olá, <span className="font-bold text-red-500">{currentUser.nome?.split(' ')[0]}</span>!
+                      </span>
+                    </Link>
+                  </>
                 )}
 
                 {/* Logout Button */}
