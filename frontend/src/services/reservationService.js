@@ -105,7 +105,7 @@ export const getReservasByHost = async (hostId) => {
  */
 export const updateReservaStatus = async (reservaId, status) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/reservas/${reservaId}/status`, {
+        const response = await fetch(`${API_BASE_URL}/reservas/${reservaId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

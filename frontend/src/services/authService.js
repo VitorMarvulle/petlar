@@ -76,6 +76,26 @@ export const login = async (email, senha_hash) => {
       throw new Error('Email ou senha inválidos');
     }
 
+    // Check if user is also an anfitriao
+    try {
+      const hostsResponse = await fetch(`${API_BASE_URL}/anfitrioes/`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (hostsResponse.ok) {
+        const hosts = await hostsResponse.json();
+        const isHost = hosts.some(h => h.id_anfitriao === usuario.id_usuario || h.id_anfitriao === usuario.id);
+
+        if (isHost) {
+          usuario.tipo = 'anfitriao';
+        }
+      }
+    } catch (err) {
+      console.error('Error checking host status:', err);
+      // Continue login even if host check fails, defaulting to existing type
+    }
+
     // Store user data in localStorage (exclude password)
     const { senha_hash, ...userData } = usuario;
     localStorage.setItem('currentUser', JSON.stringify(userData));

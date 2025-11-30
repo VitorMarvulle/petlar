@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getCurrentUser } from '../services/authService';
-import { getReservasByTutor, getReservasByHost, updateReservaStatus } from '../services/reservationService';
+import { getReservasByTutor, getReservasByHost, updateReservaStatus, getAllReservations } from '../services/reservationService';
 import { Link } from 'react-router-dom';
 
 const ReservationsPage = () => {
@@ -29,12 +29,24 @@ const ReservationsPage = () => {
                     const sortedData = Array.isArray(data) ? data.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio)) : [];
                     setReservations(sortedData);
                 } else if (activeTab === 'host' && isHost) {
-                    // Assuming the user ID is also the host ID, or we need to fetch the host ID first.
-                    // For now, using user ID as host ID based on typical simple auth structures, 
-                    // but might need adjustment if host ID is separate.
-                    const data = await getReservasByHost(currentUser.id_usuario || currentUser.id);
-                    const sortedData = Array.isArray(data) ? data.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio)) : [];
-                    setHostReservations(sortedData);
+                    // Fetch all reservations and filter locally to ensure we catch them
+                    // This acts as a fallback if the specific endpoint has issues
+                    try {
+                        const allReservations = await getAllReservations();
+                        const hostId = currentUser.id_usuario || currentUser.id;
+                        const data = allReservations.filter(r =>
+                            r.id_anfitriao === hostId ||
+                            r.id_anfitriao === Number(hostId) ||
+                            String(r.id_anfitriao) === String(hostId)
+                        );
+                        const sortedData = Array.isArray(data) ? data.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio)) : [];
+                        setHostReservations(sortedData);
+                    } catch (fallbackError) {
+                        console.error('Fallback fetch failed, trying direct endpoint:', fallbackError);
+                        const data = await getReservasByHost(currentUser.id_usuario || currentUser.id);
+                        const sortedData = Array.isArray(data) ? data.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio)) : [];
+                        setHostReservations(sortedData);
+                    }
                 }
             } catch (err) {
                 console.error('Erro ao buscar reservas:', err);
