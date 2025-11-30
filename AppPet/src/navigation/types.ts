@@ -6,6 +6,7 @@ import { Pet } from '../screens/Registros/AdicionarPet';
 export type RootStackParamList = {
   Login: undefined;
   Cadastro: undefined;
+  Endereco: {id_usuario: number};
   Home: { usuario: {  
     id_usuario: number;  
     nome: string;  

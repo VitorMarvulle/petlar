@@ -192,7 +192,7 @@ export default function InfoHostScreen({
 
     navigation.navigate('Endereco', {
       id_usuario,
-      id_anfitriao: hostPreview.id_anfitriao,
+      // id_anfitriao: hostPreview.id_anfitriao,
     });
   };
 
