@@ -96,3 +96,30 @@ export const getReservasByHost = async (hostId) => {
         throw new Error(error.message || 'Erro ao buscar reservas do anfitrião');
     }
 };
+
+/**
+ * Update reservation status
+ * @param {number} reservaId - Reservation ID
+ * @param {string} status - New status (e.g., 'confirmada', 'cancelada')
+ * @returns {Promise<Object>} - Updated reservation
+ */
+export const updateReservaStatus = async (reservaId, status) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/reservas/${reservaId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Erro ao atualizar status da reserva');
+        }
+
+        return await response.json();
+    } catch (error) {
+        throw new Error(error.message || 'Erro ao atualizar status da reserva');
+    }
+};
