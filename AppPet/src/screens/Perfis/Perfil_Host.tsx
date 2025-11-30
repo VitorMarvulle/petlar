@@ -1,12 +1,24 @@
-// AppPet\src\screens\Perfil_Host.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Dimensions, Modal, ActivityIndicator } from 'react-native';
+import { 
+    View, 
+    Text, 
+    StyleSheet, 
+    SafeAreaView, 
+    ScrollView, 
+    TouchableOpacity, 
+    Image, 
+    Dimensions, 
+    Modal, 
+    ActivityIndicator,
+    Alert 
+} from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { RootStackScreenProps } from '../../navigation/types';
 
 const { width } = Dimensions.get('window');
-const API_BASE_URL = 'http://localhost:8000'; // Ajuste o IP conforme necessário
+const API_BASE_URL = 'http://localhost:8000'; 
 
-// --- ÍCONES (Mantidos) ---
+// --- ÍCONES ---
 const ICON_STAR = require('../../../assets/icons/starFilled.png');
 const ICON_AVATAR = require('../../../assets/icons/user.png');
 const ICON_DELETE = require('../../../assets/icons/delete.png');
@@ -22,7 +34,6 @@ interface RatingResponse {
     total_avaliacoes: number;
 }
 
-// Interface para os dados vindos da Home (Simplificado)
 interface HostDataParam {
     id_anfitriao?: number;
     name: string;
@@ -30,32 +41,40 @@ interface HostDataParam {
     price: string;
     imageUri: string;
     petsAccepted: string[];
-    rating?: string; // vindo da Home
-    rawData?: any;   // Objeto completo do backend vindo da Home
+    rating?: string; 
+    rawData?: any;   // Objeto completo do backend
 }
 
-// --- COMPONENTES VISUAIS (Mantidos com ajustes leves) ---
+// --- COMPONENTES VISUAIS ---
+
 const PetIconItem = ({ petName }: { petName: string }) => {
+    // Mapeamento para garantir que nomes do banco (minúsculos/sem acento) achem o ícone
     const icons: Record<string, any> = {
-        cachorro: require('../../../assets/icons/animais/cachorro.png'),
-        gato: require('../../../assets/icons/animais/gato.png'),
-        passaro: require('../../../assets/icons/animais/passaro.png'),
-        tartaruga: require('../../../assets/icons/animais/tartaruga.png'),
+        'cachorro': require('../../../assets/icons/animais/cachorro.png'),
+        'gato': require('../../../assets/icons/animais/gato.png'),
+        'passaro': require('../../../assets/icons/animais/passaro.png'),
+        'pássaro': require('../../../assets/icons/animais/passaro.png'), // fallback
+        'tartaruga': require('../../../assets/icons/animais/tartaruga.png'),
+        'reptil': require('../../../assets/icons/animais/tartaruga.png'), // usa tartaruga como genérico réptil/silvestre se não tiver outro
+        'silvestre': require('../../../assets/icons/animais/tartaruga.png'),
     };
-    const source = icons[petName.toLowerCase()];
+    
+    // Normaliza a string para buscar no mapa (lowercase)
+    const normalizedName = petName.toLowerCase();
+    const source = icons[normalizedName];
+    
     if (!source) return null;
     return <Image source={source} style={hostCardStyles.petIconImage} resizeMode="contain" />;
 };
 
 const PetIcons = ({ petsAccepted }: { petsAccepted: string[] }) => (
     <View style={hostCardStyles.petIconsContainer}>
-        {petsAccepted.map((pet, i) => <PetIconItem key={i} petName={pet} />)}
+        {petsAccepted && petsAccepted.map((pet, i) => <PetIconItem key={i} petName={pet} />)}
     </View>
 );
 
 const StarIcon = () => <Image source={ICON_STAR} style={hostCardStyles.starIconImage} resizeMode="contain" />;
 
-// Card estilizado para a tela de Perfil
 const HostCardHomeStyle = ({
     name, location, rating, price, imageUri, petsAccepted, onPress
 }: HostDataParam & { onPress: () => void }) => (
@@ -88,25 +107,19 @@ const CreateListingButton = ({ onPress }: { onPress: () => void }) => (
     </TouchableOpacity>
 );
 
-// Avatar Dinâmico
 const UserAvatar = ({ url }: { url?: string }) => (
     <View style={styles.avatarContainer}>
         <View style={styles.avatarIcon}>
             {url && url.startsWith('http') ? (
                 <Image source={{ uri: url }} style={{ width: '100%', height: '100%', borderRadius: 60 }} resizeMode="cover" />
             ) : (
-                <Image
-                    source={ICON_AVATAR}
-                    style={styles.avatarImageContent}
-                    resizeMode="contain"
-                    tintColor="#FFF6E2"
-                />
+                <Image source={ICON_AVATAR} style={styles.avatarImageContent} resizeMode="contain" tintColor="#FFF6E2" />
             )}
         </View>
     </View>
 );
 
-const ActionButton = ({ onPress, backgroundColor, iconSource, label, }: { onPress: () => void; backgroundColor: string; iconSource: any; label: string; }) => (
+const ActionButton = ({ onPress, backgroundColor, iconSource, label }: any) => (
     <View style={styles.actionButtonWrapper}>
         <TouchableOpacity style={[styles.actionButton, { backgroundColor }]} onPress={onPress}>
             <Image source={iconSource} style={styles.actionIcon} resizeMode="contain" />
@@ -124,11 +137,7 @@ const LogoLarDocePet = () => (
     </>
 );
 
-const CustomAlert = ({
-    visible, title, message, onConfirm, onCancel, confirmText, cancelText
-}: {
-    visible: boolean; title: string; message: string; onConfirm: () => void; onCancel: () => void; confirmText: string; cancelText: string;
-}) => (
+const CustomAlert = ({ visible, title, message, onConfirm, onCancel, confirmText, cancelText }: any) => (
     <Modal transparent visible={visible} animationType="fade">
         <View style={alertStyles.modalOverlay}>
             <View style={alertStyles.modalContainer}>
@@ -148,33 +157,23 @@ const CustomAlert = ({
 );
 
 // --- TELA PRINCIPAL DO HOST ---
-export default function PerfilHost({ navigation }: { navigation: any }) {
-    const route = useRoute();
-    // Recebe 'host' da Home ou dados de novo anúncio
-    const params = route.params as { 
-        host?: HostDataParam; 
-        listingCreated?: boolean; 
-        newListingData?: any 
-    } | undefined;
-
-    // Se veio da Home, usamos o objeto host. 
+export default function PerfilHost({ navigation, route }: RootStackScreenProps<'Perfil_Host'>) {
+    
+    // Params pode vir da Home (com 'host') ou da Edição/Criação (com 'newListingData')
+    const params = route.params;
     const initialListing = params?.host || null;
 
     const [currentListing, setCurrentListing] = useState<HostDataParam | null>(initialListing);
     const [ratingData, setRatingData] = useState<RatingResponse | null>(null);
     const [loadingRating, setLoadingRating] = useState(false);
     const [alertVisible, setAlertVisible] = useState(false);
+    const [loadingDelete, setLoadingDelete] = useState(false);
 
-    // --- BUSCAR MÉDIA DE AVALIAÇÕES ---
+    // --- 1. BUSCAR AVALIAÇÕES ---
     const fetchRating = useCallback(async () => {
-        // Precisamos do ID do usuário (não do anfitrião) para buscar a média
-        // O ID do usuário geralmente está dentro de rawData.usuarios.id_usuario
         const userId = currentListing?.rawData?.usuarios?.id_usuario;
 
-        if (!userId) {
-            console.log("ID do usuário não encontrado para buscar avaliações");
-            return;
-        }
+        if (!userId) return;
 
         try {
             setLoadingRating(true);
@@ -195,55 +194,94 @@ export default function PerfilHost({ navigation }: { navigation: any }) {
         fetchRating();
     }, [fetchRating]);
 
-    // --- EFEITO PARA CAPTURAR NOVO ANÚNCIO (Mantido da sua lógica) ---
+    // --- 2. EFEITO PARA ATUALIZAR DADOS APÓS EDIÇÃO/CRIAÇÃO ---
+    // Esta é a parte crítica para corrigir o erro de ID não encontrado
     useEffect(() => {
         if (params?.listingCreated && params.newListingData) {
-            const newListing: HostDataParam = {
-                name: params.newListingData.name || 'Você',
+            
+            // Tenta pegar o objeto 'usuarios' que mandamos de volta no EditarAnuncio
+            // Se não vier (caso raro), tenta pegar do estado anterior
+            const userData = params.newListingData.usuarios || currentListing?.rawData?.usuarios;
+
+            if (!userData) {
+                console.warn("ALERTA: Dados do usuário perdidos na navegação.");
+            }
+
+            const updatedListing: HostDataParam = {
+                name: userData?.nome || 'Host',
                 location: params.newListingData.location,
-                price: params.newListingData.price.replace(',', '.'), 
+                price: params.newListingData.price, 
                 petsAccepted: params.newListingData.petsAccepted,
                 imageUri: params.newListingData.imageUri,
-                rating: 'Novo', // Anúncio novo não tem nota ainda
-                rawData: { usuarios: { nome: 'Você', id_usuario: 0 } } // Mock temporário
+                rating: ratingData?.media ? ratingData.media.toFixed(1).replace('.', ',') : (currentListing?.rating || "Novo"),
+                
+                // RECONSTRÓI O RAW DATA COM O USUÁRIO DENTRO
+                rawData: { 
+                    ...params.newListingData, 
+                    usuarios: userData 
+                } 
             };
-            setCurrentListing(newListing);
-            navigation.setParams({ listingCreated: undefined, newListingData: undefined });
+            
+            setCurrentListing(updatedListing);
+            
+            // Limpa os parametros para evitar loops
+            navigation.setParams({ listingCreated: undefined, newListingData: undefined } as any);
         }
-    }, [params?.listingCreated, params?.newListingData]);
+    }, [params, currentListing, ratingData, navigation]);
 
 
-    // Handlers
+    // --- HANDLERS ---
+
     const handleViewRequests = () => navigation.navigate('Reserva_Host');
-    const handleEditListing = () => console.log('Navegar para Editar Locação');
-    const handleCreateListing = () => navigation.navigate('Criar_anuncio');
+    
+    const handleEditListing = () => {
+        if (currentListing && currentListing.rawData) {
+            navigation.navigate('EditarAnuncio', {
+                hostData: currentListing.rawData,
+                id_usuario: currentListing.rawData.id_anfitriao // Ou id_usuario, dependendo do seu DB
+            });
+        } else {
+            Alert.alert("Erro", "Dados do anúncio não carregados corretamente.");
+        }
+    };
+    
+    const handleCreateListing = () => navigation.navigate('CriarAnuncioDetalhes'); // Sua rota de fluxo inicial de criação
     
     const handleDeleteListing = () => setAlertVisible(true);
-    const confirmDeleteListing = () => {
-        setAlertVisible(false);
-        setCurrentListing(null);
-        // Aqui você chamaria a API DELETE /anfitrioes/{id}
+    
+    const confirmDeleteListing = async () => {
+        if (!currentListing?.rawData?.id_anfitriao) return;
+
+        try {
+            setLoadingDelete(true);
+            const id = currentListing.rawData.id_anfitriao;
+            
+            const response = await fetch(`${API_BASE_URL}/anfitrioes/${id}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok || response.status === 204) {
+                setCurrentListing(null);
+                setAlertVisible(false);
+                Alert.alert("Sucesso", "Anúncio excluído.");
+            } else {
+                Alert.alert("Erro", "Não foi possível excluir o anúncio.");
+            }
+        } catch (error) {
+            console.error(error);
+            Alert.alert("Erro", "Falha na comunicação com o servidor.");
+        } finally {
+            setLoadingDelete(false);
+        }
     };
+    
     const cancelDeleteListing = () => setAlertVisible(false);
 
-    // Preparar dados para navegação de detalhes
-    const getListingDetails = () => {
-        if (!currentListing) return null;
-        return {
-            ...currentListing,
-            imageUrl: currentListing.imageUri,
-            address: currentListing.location,
-            price: `R$ ${currentListing.price} / diária`,
-            capacity: 'Consulte detalhes',
-            available: true,
-        };
-    };
-
-    // Dados de exibição do Perfil
-    const profileName = currentListing?.name || currentListing?.rawData?.usuarios?.nome || "Host";
+    // --- DADOS PARA DISPLAY ---
+    const profileName = currentListing?.rawData?.usuarios?.nome || currentListing?.name || "Host";
     const profileImage = currentListing?.rawData?.usuarios?.foto_perfil_url;
 
-    // Renderização da Avaliação
+    // --- RENDERIZAÇÃO DA NOTA ---
     const renderRating = () => {
         if (loadingRating) return <ActivityIndicator size="small" color="#556A44" />;
         
@@ -300,7 +338,6 @@ export default function PerfilHost({ navigation }: { navigation: any }) {
                             <>
                                 <HostCardHomeStyle
                                     {...currentListing}
-                                    // Atualiza a nota visualmente no card se tivermos dados reais
                                     rating={ratingData?.media ? ratingData.media.toFixed(1).replace('.', ',') : (currentListing.rating || "Novo")}
                                     onPress={() => navigation.navigate('Card_Host', { host: currentListing })}
                                 />
@@ -344,7 +381,7 @@ export default function PerfilHost({ navigation }: { navigation: any }) {
             <CustomAlert
                 visible={alertVisible}
                 title="Confirmar Exclusão"
-                message="Tem certeza que deseja excluir seu anúncio? Esta ação é irreversível."
+                message={loadingDelete ? "Excluindo..." : "Tem certeza que deseja excluir seu anúncio? Esta ação é irreversível."}
                 onConfirm={confirmDeleteListing}
                 onCancel={cancelDeleteListing}
                 confirmText="Excluir"
@@ -415,7 +452,7 @@ const styles = StyleSheet.create({
     footerText: { fontSize: 17, fontWeight: '700', color: '#556A44', fontFamily: 'Inter', bottom: 20, marginBottom: 10 },
 });
 
-// Estilos do Host Card (Mantidos iguais à Home)
+// Estilos do Host Card
 const hostCardStyles = StyleSheet.create({
     hostCard: { width: width - (12 * 2 + 20 * 2), height: 172, borderRadius: 15, borderWidth: 2, borderColor: '#B3D18C', backgroundColor: '#FFF6E2', marginBottom: 15, overflow: 'hidden', position: 'relative', alignSelf: 'center' },
     hostImage: { width: '100%', height: '150%', position: 'absolute', top: -40 },
