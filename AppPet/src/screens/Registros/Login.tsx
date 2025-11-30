@@ -49,15 +49,32 @@ export default function Login({ navigation }: RootStackScreenProps<'Login'>) {
       // Login bem-sucedido
       console.log('Login realizado:', data);
       
-      navigation.navigate('Home', {  
-        usuario: {  
-        id_usuario: data.id_usuario,  
-        nome: data.nome,  
-        email: data.email,  
-        tipo: data.tipo,  
-        telefone: data.telefone,  
-        },  
-      });
+      if (data.tipo === 'tutor') {
+                navigation.navigate('Home',  {usuario: {  
+                                            id_usuario: data.id_usuario,  
+                                            nome: data.nome,  
+                                            email: data.email,  
+                                            tipo: data.tipo,  
+                                            telefone: data.telefone,  
+                                            },}  );
+      } else if (data.tipo === 'anfitriao') {
+                navigation.navigate('Home_Host', {usuario: {  
+                                            id_usuario: data.id_usuario,  
+                                            nome: data.nome,  
+                                            email: data.email,  
+                                            tipo: data.tipo,  
+                                            telefone: data.telefone,  
+                                            },});
+      }
+      // navigation.navigate('Home', {  
+      //   usuario: {  
+      //   id_usuario: data.id_usuario,  
+      //   nome: data.nome,  
+      //   email: data.email,  
+      //   tipo: data.tipo,  
+      //   telefone: data.telefone,  
+      //   },  
+      // });
       // Aqui você pode salvar os dados do usuário
       // Exemplo com AsyncStorage:
       // await AsyncStorage.setItem('usuario', JSON.stringify(data));

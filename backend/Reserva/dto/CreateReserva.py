@@ -33,10 +33,12 @@ class ReservaCreate(BaseModel):
 
 
 class ReservaUpdate(BaseModel):
+    id_tutor: Optional[int] = None
+    id_anfitriao: Optional[int] = None
     data_inicio: Optional[date] = None
     data_fim: Optional[date] = None
-    status: Optional[str] = None
-    pets_tutor: Optional[List[int]] = None
+    status: Optional[str] = None       
+    pets_tutor: Optional[list[int]] = None
     valor_diaria: Optional[float] = None
     qtd_pets: Optional[int] = None
     qtd_dias: Optional[int] = None

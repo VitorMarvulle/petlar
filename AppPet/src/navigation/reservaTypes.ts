@@ -92,8 +92,18 @@ export interface ReservaCompleta {
     valor_total_reserva: number;
     ja_avaliado_tutor?: boolean;
     ja_avaliado_host?: boolean;
+    // Dados para quem vê a reserva (Tutor vê Host)
     anfitriao: {
         id_anfitriao: number;
+        nome: string;
+        localizacao: string;
+        foto_perfil_url?: string;
+        telefone?: string;
+    };
+
+    // Dados para quem vê a reserva (Host vê Tutor)
+    tutor?: {
+        id_usuario: number;
         nome: string;
         localizacao: string;
         foto_perfil_url?: string;

@@ -1,218 +1,194 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image } from 'react-native';
-// Certifique-se de que '@react-navigation/native' está instalado e configurado
-import { useNavigation } from '@react-navigation/native';
+// AppPet\src\screens\Reserva_Host.tsx
 
-// --- TIPAGENS PARA O STATUS ---
-type ReservaStatus = 'Pendente' | 'Confirmada' | 'Negada' | 'Em Andamento' | 'Concluida';
-type FilterStatus = ReservaStatus | 'Todos';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { 
+    View, Text, StyleSheet, SafeAreaView, ScrollView, 
+    TouchableOpacity, Image, ActivityIndicator, Alert 
+} from 'react-native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
+import axios from 'axios';
 
-// --- ÍCONES REUTILIZADOS ---
-const ICON_AVATAR = require('../../assets/icons/user.png'); 
-const ICON_LOGO_BRANCO = require('../../assets/icons/LogoBranco.png'); 
-const ICON_CONFIRM = require('../../assets/icons/check.png'); 
-const ICON_DENY = require('../../assets/icons/delete.png'); 
-// Ícone para Avaliação (mockado ou ajuste real)
-const ICON_STAR = require('../../assets/icons/star.png'); 
+// Imports dos seus tipos e services
+import { ReservaService } from '../services/reservaService';
+import { 
+    ReservaCompleta, 
+    ReservaStatus,
+    STATUS_DISPLAY_MAP, 
+    formatCurrency, 
+    formatDate, 
+    getStatusColor 
+} from '../navigation/reservaTypes';
 
+// Ajuste o IP conforme necessário
+const API_BASE_URL = 'http://localhost:8000'; 
 
-// --- MOCK DE DADOS PARA DEMONSTRAÇÃO (AGORA COM STATUS) ---
-const MOCK_REQUEST_BASE = {
-    tutor: { name: 'Ellen Rodrigues Magueta', location: 'Aviação', avatarUrl: ICON_AVATAR }, 
-    dataEntrada: '01/12/2025',
-    dataSaida: '05/12/2025', 
-    dias: 4,
-    pets: [
-        { id: 'p1', name: "Nina", imageUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=60&h=60&fit=crop' },
-        { id: 'p2', name: "Bolinho", imageUrl: 'https://images.unsplash-com/photo-1592194996308-7b43878e84a6?w=60&h=60&fit=crop' },
-    ],
-    totalValue: 'R$ 600,00', 
-};
+// Ícones
+const ICON_AVATAR = require('../../assets/icons/user.png');
+const ICON_STAR = require('../../assets/icons/star.png');
+const ICON_LOGO = require('../../assets/icons/LogoBranco.png');
 
-// Nova lista de MOCK com diferentes status
-const MOCK_REQUESTS_WITH_STATUS: (typeof MOCK_REQUEST_BASE & { id: string; status: ReservaStatus; })[] = [
-    { ...MOCK_REQUEST_BASE, id: 'req1', status: 'Pendente' },
-    { ...MOCK_REQUEST_BASE, id: 'req2', status: 'Confirmada', tutor: { name: 'Carlos Pereira', location: 'Tupi', avatarUrl: ICON_AVATAR }, dias: 2, totalValue: 'R$ 300,00' },
-    { ...MOCK_REQUEST_BASE, id: 'req3', status: 'Em Andamento', tutor: { name: 'Ana Souza', location: 'Caiçara', avatarUrl: ICON_AVATAR }, dias: 2, totalValue: 'R$ 300,00' },
-    { ...MOCK_REQUEST_BASE, id: 'req4', status: 'Concluida', tutor: { name: 'João Carlos', location: 'Guilhermina', avatarUrl: ICON_AVATAR }, dias: 5, totalValue: 'R$ 750,00' },
-    { ...MOCK_REQUEST_BASE, id: 'req5', status: 'Negada', tutor: { name: 'Pedro Alves', location: 'Aviação', avatarUrl: ICON_AVATAR }, dias: 1, totalValue: 'R$ 150,00' },
-];
+// --- 1. COMPONENTES VISUAIS AUXILIARES ---
 
-
-// --- COMPONENTE DE CABEÇALHO ---
-
-
-
-// --- COMPONENTES DO CARD DE SOLICITAÇÃO (Adaptados) ---
-
-const TutorMiniCard = ({ name, location, avatarUrl }: { name: string; location: string; avatarUrl: any }) => (
+const TutorMiniCard = ({ tutor }: { tutor: NonNullable<ReservaCompleta['tutor']> }) => (
     <View style={hostStyles.tutorCard}>
-        <Image source={avatarUrl} style={hostStyles.tutorAvatar} tintColor="#FFF6E2" />
+        <Image 
+            source={tutor.foto_perfil_url ? { uri: tutor.foto_perfil_url } : ICON_AVATAR} 
+            style={hostStyles.tutorAvatar} 
+        />
         <View style={hostStyles.tutorInfo}>
-            <Text style={hostStyles.tutorName}>Tutor(a): {name}</Text>
-            <Text style={hostStyles.tutorLocation}>{location}</Text>
+            <Text style={hostStyles.tutorName}>{tutor.nome}</Text>
+            <Text style={hostStyles.tutorLocation}>{tutor.localizacao}</Text>
         </View>
     </View>
 );
 
-const PetsInRequest = ({ pets }: { pets: typeof MOCK_REQUEST_BASE.pets }) => (
-    <View style={hostStyles.petsSelectedContainer}>
-        <Text style={hostStyles.petsLabel}>Pets Solicitados:</Text>
-        {pets.map((pet, index) => (
-            <View key={index} style={hostStyles.petAvatarWrapper}>
-                <Image source={{ uri: pet.imageUrl }} style={hostStyles.smallPetAvatar} />
-            </View>
-        ))}
-        {pets.length === 0 && (
-            <Text style={hostStyles.petsLabel}>Nenhum pet informado.</Text>
-        )}
-    </View>
-);
-
-const RequestDetails = ({ dataEntrada, dataSaida, dias, totalValue }: typeof MOCK_REQUEST_BASE) => (
+const RequestDetails = ({ dataInicio, dataFim, dias, totalValue }: { dataInicio: string, dataFim: string, dias: number, totalValue: number }) => {
+    // Segurança: garante que é número antes de formatar
+    const safeTotal = Number(totalValue) || 0;
     
-    <View style={hostStyles.detailsContainer}>
-        <View style={hostStyles.dateHeader}>
-            <Text style={hostStyles.dateText}>{dataEntrada}</Text>
-            <Text style={hostStyles.dateDivider}>{' - '}</Text>
-            <Text style={hostStyles.dateText}>{dataSaida}</Text>
-        </View>
-        <Text style={hostStyles.detailRow}>
-            <Text style={hostStyles.boldDetail}>Diárias:</Text> {dias} dia(s)
-        </Text>
-        <Text style={hostStyles.detailRow}>
-            <Text style={hostStyles.boldDetail}>Valor Total:</Text> <Text style={hostStyles.totalValue}>{totalValue}</Text>
-        </Text>
-    </View>
-);
-
-// Componente para o Botão de Status (Reaproveitado/Adaptado do Tutor)
-const StatusButton = ({ status }: { status: ReservaStatus }) => {
-    let backgroundColor = '#6C757D';
-    let textColor = '#353535ff';
-
-    switch (status) {
-        case 'Pendente':
-            backgroundColor = '#b8b8b8ff';
-            break;
-        case 'Confirmada':
-            backgroundColor = '#85bb5cff'; // Verde
-            break;
-        case 'Negada':
-            backgroundColor = '#cb6e52ff'; // Vermelho
-            break;
-        case 'Em Andamento':
-            backgroundColor = '#496d92ff'; // Azul
-            textColor = '#FFF6E2';
-            break;
-        case 'Concluida':
-            backgroundColor = '#e09f26ff'; // Laranja
-            break;
-    }
-
     return (
-        <View style={[hostStyles.statusButton, { backgroundColor }]}>
-            <Text style={[hostStyles.statusButtonText, { color: textColor }]}>
-                {status}
+        <View style={hostStyles.detailsContainer}>
+            <View style={hostStyles.dateHeader}>
+                <Text style={hostStyles.dateText}>{formatDate(dataInicio)}</Text>
+                <Text style={hostStyles.dateDivider}>{' - '}</Text>
+                <Text style={hostStyles.dateText}>{formatDate(dataFim)}</Text>
+            </View>
+            <Text style={hostStyles.detailRow}>
+                <Text style={hostStyles.boldDetail}>Duração:</Text> {dias} dia(s)
+            </Text>
+            <Text style={hostStyles.detailRow}>
+                <Text style={hostStyles.boldDetail}>Total:</Text> <Text style={hostStyles.totalValue}>{formatCurrency(safeTotal)}</Text>
             </Text>
         </View>
     );
 };
 
-// NOVO Componente do Botão de Avaliar para o Host (para o Tutor!)
-const AvaliarTutorButton = ({ requestId, navigation }: { requestId: string; navigation: RootStackScreenProps<'Reserva_Tutor'>['navigation']; }) => (
-    <TouchableOpacity
-        style={hostStyles.avaliarButton}
-        onPress={() => {
-            console.log(`Navegando para a tela de avaliação do Tutor da reserva ${requestId}`);
-            // Simular navegação para a tela de avaliação do Tutor, se existir
-            navigation.navigate('TutorAvaliacao', { reservaId: requestId }); 
-        }}
-    >
-        <Image source={ICON_STAR} style={hostStyles.avaliarIcon} tintColor="#a57d17ff" />
-        <Text style={hostStyles.avaliarButtonText}>Avaliar Tutor</Text>
-    </TouchableOpacity>
-);
+const StatusButton = ({ status }: { status: ReservaStatus }) => {
+    const { backgroundColor, textColor } = getStatusColor(status);
+    return (
+        <View style={[hostStyles.statusButton, { backgroundColor }]}>
+            <Text style={[hostStyles.statusButtonText, { color: textColor }]}>
+                {STATUS_DISPLAY_MAP[status]}
+            </Text>
+        </View>
+    );
+};
 
-// Componente para Ações do Host (Confirmar/Negar - SÓ para status Pendente)
-const HostActionButtons = ({ onConfirm, onDeny }: { onConfirm: () => void; onDeny: () => void }) => (
+const HostActionButtons = ({ onConfirm, onDeny, loading }: { onConfirm: () => void; onDeny: () => void, loading: boolean }) => (
     <View style={hostStyles.hostActionButtonsContainer}>
-        <TouchableOpacity style={[hostStyles.hostActionButton, hostStyles.denyButton]} onPress={onDeny}>
-            <Text style={hostStyles.hostActionButtonText}>Negar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[hostStyles.hostActionButton, hostStyles.confirmButton]} onPress={onConfirm}>
-            <Text style={hostStyles.hostActionButtonText}>Aceitar</Text>
-        </TouchableOpacity>
+        {loading ? (
+             <ActivityIndicator color="#556A44" />
+        ) : (
+            <>
+                <TouchableOpacity style={[hostStyles.hostActionButton, hostStyles.denyButton]} onPress={onDeny}>
+                    <Text style={hostStyles.hostActionButtonText}>Negar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[hostStyles.hostActionButton, hostStyles.confirmButton]} onPress={onConfirm}>
+                    <Text style={hostStyles.hostActionButtonText}>Aceitar</Text>
+                </TouchableOpacity>
+            </>
+        )}
     </View>
 );
 
-// NOVO Card de Reserva com base no Status
+// --- 2. COMPONENTE REQUEST CARD (O QUE ESTAVA FALTANDO) ---
 const RequestCard = ({ 
-    request, 
-    onConfirm, 
-    onDeny, 
+    reserva, 
+    onAction, 
     navigation 
 }: { 
-    request: typeof MOCK_REQUESTS_WITH_STATUS[0]; 
-    onConfirm: () => void; 
-    onDeny: () => void;
-    navigation: ReturnType<typeof useNavigation>;
+    reserva: ReservaCompleta; 
+    onAction: (id: number, status: 'confirmada' | 'negada') => void;
+    navigation: any;
 }) => {
-    const isPendente = request.status === 'Pendente';
-    const isConcluida = request.status === 'Concluida';
+    const [actionLoading, setActionLoading] = useState(false);
+    
+    const isPendente = reserva.status === 'pendente';
+    const isConcluida = reserva.status === 'concluida';
+    
+    // Fallback caso tutor venha undefined (segurança)
+    const tutor = reserva.tutor || { nome: 'Usuário', localizacao: 'Local não informado', id_usuario: 0, foto_perfil_url: undefined };
+
+    const handleAction = async (status: 'confirmada' | 'negada') => {
+        setActionLoading(true);
+        await onAction(reserva.id_reserva, status);
+        setActionLoading(false);
+    };
 
     return (
         <View style={hostStyles.cardContainer}>
-            <TutorMiniCard 
-                name={request.tutor.name} 
-                location={request.tutor.location} 
-                avatarUrl={request.tutor.avatarUrl} 
+            <TutorMiniCard tutor={tutor} />
+            
+            <RequestDetails 
+                dataInicio={reserva.data_inicio} 
+                dataFim={reserva.data_fim} 
+                dias={reserva.dias} 
+                totalValue={reserva.valor_total_reserva} 
             />
-            <RequestDetails {...request} />
-            <PetsInRequest pets={request.pets} />
+            
+            <View style={hostStyles.petsSelectedContainer}>
+                <Text style={hostStyles.petsLabel}>Pets:</Text>
+                {reserva.pets.map((pet, index) => (
+                    <View key={index} style={hostStyles.petAvatarWrapper}>
+                        <Image 
+                            source={pet.fotos_urls?.[0] ? { uri: pet.fotos_urls[0] } : ICON_AVATAR} 
+                            style={hostStyles.smallPetAvatar} 
+                        />
+                        <Text style={hostStyles.petNameSmall}>{pet.nome}</Text>
+                    </View>
+                ))}
+            </View>
             
             <View style={hostStyles.statusAndActionsWrapper}>
-                <StatusButton status={request.status} />
+                <StatusButton status={reserva.status} />
 
                 {isPendente && (
-                    <HostActionButtons onConfirm={onConfirm} onDeny={onDeny} />
+                    <HostActionButtons 
+                        loading={actionLoading}
+                        onConfirm={() => handleAction('confirmada')} 
+                        onDeny={() => handleAction('negada')} 
+                    />
                 )}
                 
-                {isConcluida && (
-                    <AvaliarTutorButton requestId={request.id} navigation={navigation} />
+                {isConcluida && !reserva.ja_avaliado_tutor && (
+                    <TouchableOpacity 
+                        style={hostStyles.avaliarButton}
+                        onPress={() => navigation.navigate('TutorAvaliacao', { reservaId: String(reserva.id_reserva) })}
+                    >
+                        <Image source={ICON_STAR} style={hostStyles.avaliarIcon} />
+                        <Text style={hostStyles.avaliarButtonText}>Avaliar Tutor</Text>
+                    </TouchableOpacity>
+                )}
+                {isConcluida && reserva.ja_avaliado_tutor && (
+                     <Text style={{color:'#7AB24E', fontWeight:'bold', fontSize: 12}}>✓ Tutor avaliado</Text>
                 )}
             </View>
         </View>
     );
 };
 
-// Componente do Filtro de Status (Copiado do Reserva_Tutor)
-const StatusFilterOptions = ({ 
-    selectedStatus, 
-    onSelectStatus 
-}: { 
-    selectedStatus: FilterStatus; 
-    onSelectStatus: (status: FilterStatus) => void; 
-}) => {
-    const options: FilterStatus[] = ['Todos', 'Pendente', 'Confirmada', 'Em Andamento', 'Concluida', 'Negada'];
+// Filtro Horizontal
+const StatusFilterOptions = ({ selectedStatus, onSelectStatus }: { selectedStatus: string, onSelectStatus: (s: string) => void }) => {
+    const options = [
+        { value: 'todos', label: 'Todos' },
+        { value: 'pendente', label: 'Pendente' },
+        { value: 'confirmada', label: 'Confirmada' },
+        { value: 'em_andamento', label: 'Andamento' },
+        { value: 'concluida', label: 'Concluída' },
+        { value: 'negada', label: 'Negada' },
+    ];
 
     return (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={listStyles.filterScroll}>
-            <View style={listStyles.filterContainer}>
-                {options.map(status => (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={hostStyles.filterScroll}>
+            <View style={hostStyles.filterContainer}>
+                {options.map(opt => (
                     <TouchableOpacity
-                        key={status}
-                        style={[
-                            listStyles.filterOptionButton,
-                            selectedStatus === status && listStyles.filterOptionSelected,
-                        ]}
-                        onPress={() => onSelectStatus(status)}
+                        key={opt.value}
+                        style={[hostStyles.filterOptionButton, selectedStatus === opt.value && hostStyles.filterOptionSelected]}
+                        onPress={() => onSelectStatus(opt.value)}
                     >
-                        <Text style={[
-                            listStyles.filterOptionText,
-                            selectedStatus === status && listStyles.filterOptionTextSelected,
-                        ]}>
-                            {status === 'Em Andamento' ? 'Andamento' : status}
+                        <Text style={[hostStyles.filterOptionText, selectedStatus === opt.value && hostStyles.filterOptionTextSelected]}>
+                            {opt.label}
                         </Text>
                     </TouchableOpacity>
                 ))}
@@ -221,338 +197,213 @@ const StatusFilterOptions = ({
     );
 };
 
+// --- 3. TELA PRINCIPAL (Reserva_Host) ---
+export default function Reserva_Host() {
+    const navigation = useNavigation<any>();
+    const route = useRoute<any>();
+    
+    // Pega usuario da navegação
+    const usuarioLogado = route.params?.usuario;
 
-// --- TELA LISTA DE SOLICITAÇÕES (REVISADA) ---
-export default function ListaSolicitacoes() {
-    const navigation = useNavigation();
-    const [selectedStatusFilter, setSelectedStatusFilter] = useState<FilterStatus>('Todos');
+    const [reservas, setReservas] = useState<ReservaCompleta[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedStatus, setSelectedStatus] = useState('todos');
+    const [idAnfitriao, setIdAnfitriao] = useState<number | null>(null);
+
+    // 1. Efeito para buscar o ID do Anfitrião
+    useEffect(() => {
+        let isMounted = true;
+
+        const getIdAnfitriao = async () => {
+            if (!usuarioLogado || !usuarioLogado.id_usuario) {
+                console.warn("Usuário não identificado na tela de reservas.");
+                if (isMounted) setLoading(false);
+                return;
+            }
+
+            try {
+                // Busca TODOS anfitriões (backend Python não filtra na rota base)
+                const response = await axios.get(`${API_BASE_URL}/anfitrioes`);
+                
+                // Encontra o anfitrião vinculado ao ID do usuário logado
+                const meuAnfitriao = response.data.find((a: any) => 
+                    a.usuarios && a.usuarios.id_usuario === usuarioLogado.id_usuario
+                );
+
+                if (isMounted) {
+                    if (meuAnfitriao) {
+                        console.log("Anfitrião encontrado ID:", meuAnfitriao.id_anfitriao);
+                        setIdAnfitriao(meuAnfitriao.id_anfitriao);
+                        // Não setamos loading(false) aqui, pois o fetchReservas vai rodar em seguida
+                    } else {
+                        console.warn('Perfil de anfitrião não encontrado para este usuário.');
+                        setLoading(false);
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao buscar ID do anfitrião:', error);
+                if (isMounted) setLoading(false);
+            }
+        };
+
+        getIdAnfitriao();
+
+        return () => { isMounted = false; };
+    }, [usuarioLogado]);
+
+    // 2. Busca Reservas quando tiver o ID do Anfitrião
+    const fetchReservas = useCallback(async () => {
+        if (!idAnfitriao) return;
+        
+        setLoading(true);
+        try {
+            console.log("Buscando reservas para anfitrião:", idAnfitriao);
+            const data = await ReservaService.getReservasByHostCompleta(idAnfitriao);
+            
+            // Ordenação: Pendentes primeiro, depois data mais recente
+            const sorted = data.sort((a, b) => {
+                if (a.status === 'pendente' && b.status !== 'pendente') return -1;
+                if (a.status !== 'pendente' && b.status === 'pendente') return 1;
+                return new Date(b.data_inicio).getTime() - new Date(a.data_inicio).getTime();
+            });
+            
+            setReservas(sorted);
+        } catch (e) {
+            console.error("Erro no fetchReservas:", e);
+            Alert.alert('Erro', 'Não foi possível carregar as solicitações.');
+        } finally {
+            setLoading(false);
+        }
+    }, [idAnfitriao]);
+
+    // Dispara a busca quando o idAnfitriao é setado ou a tela ganha foco
+    useFocusEffect(
+        useCallback(() => {
+            if (idAnfitriao) {
+                fetchReservas();
+            }
+        }, [idAnfitriao, fetchReservas])
+    );
+
+    // Lógica para Aceitar/Negar
+    const handleUpdateStatus = async (id_reserva: number, novoStatus: 'confirmada' | 'negada') => {
+        try {
+            await ReservaService.updateStatusReserva(id_reserva, novoStatus);
+            
+            // Atualiza lista localmente para feedback instantâneo
+            setReservas(prev => prev.map(r => 
+                r.id_reserva === id_reserva ? { ...r, status: novoStatus } : r
+            ));
+            
+            Alert.alert('Sucesso', `Reserva ${novoStatus === 'confirmada' ? 'confirmada' : 'negada'}!`);
+        } catch (error) {
+            Alert.alert('Erro', 'Falha ao atualizar status.');
+        }
+    };
 
     // Lógica de Filtro
-    const filteredRequests = useMemo(() => {
-        if (selectedStatusFilter === 'Todos') {
-            return MOCK_REQUESTS_WITH_STATUS;
-        }
-        return MOCK_REQUESTS_WITH_STATUS.filter(request => request.status === selectedStatusFilter);
-    }, [selectedStatusFilter]);
-
-    const handleConfirmRequest = (requestId) => {
-        console.log(`Solicitação ${requestId} CONFIRMADA (Ação Front-end)`);
-        // Aqui você faria a chamada à API e atualizaria a lista
-    };
-
-    const handleDenyRequest = (requestId) => {
-        console.log(`Solicitação ${requestId} NEGADA (Ação Front-end)`);
-        // Aqui você faria a chamada à API e atualizaria a lista
-    };
+    const filteredReservas = useMemo(() => {
+        if (selectedStatus === 'todos') return reservas;
+        return reservas.filter(r => r.status === selectedStatus);
+    }, [reservas, selectedStatus]);
 
     return (
-        <SafeAreaView style={listStyles.container}>
-
-            <ScrollView
-                contentContainerStyle={listStyles.scrollContentArea}
-                showsVerticalScrollIndicator={false}>
+        <SafeAreaView style={hostStyles.container}>
+            <ScrollView contentContainerStyle={hostStyles.scrollContentArea} showsVerticalScrollIndicator={false}>
                 
-                <View style={listStyles.innerContainer}>
-                    <Text style={listStyles.mainTitle}>Minhas Reservas</Text>
-                    <Text style={listStyles.sectionSubtitle}>Gerencie suas solicitações de Hospedagem</Text>
+                {/* Header Simples */}
+                <TouchableOpacity onPress={() => navigation.goBack()} style={hostStyles.cornerImageContainer}>
+                    <Image source={ICON_LOGO} style={hostStyles.cornerImage} resizeMode="contain" />
+                </TouchableOpacity>
+                <Text style={hostStyles.LogoText}>Lar Doce Pet</Text>
+                
+                <View style={hostStyles.innerContainer}>
+                    <Text style={hostStyles.mainTitle}>Solicitações</Text>
+                    <Text style={hostStyles.sectionSubtitle}>Gerencie os pedidos de hospedagem</Text>
 
-                    {/* FILTRO DE STATUS (Copiado do Tutor) */}
-                    <StatusFilterOptions 
-                        selectedStatus={selectedStatusFilter}
-                        onSelectStatus={setSelectedStatusFilter}
-                    />
-
-                    {/* Lista de Reservas Filtrada */}
-                    {filteredRequests.length > 0 ? (
-                        filteredRequests.map((request) => (
+                    <StatusFilterOptions selectedStatus={selectedStatus} onSelectStatus={setSelectedStatus} />
+                    
+                    {loading ? (
+                        <View style={{ marginTop: 50, alignItems: 'center' }}>
+                            <ActivityIndicator size="large" color="#556A44" />
+                            <Text style={{ marginTop: 10, color: '#556A44' }}>Carregando reservas...</Text>
+                        </View>
+                    ) : filteredReservas.length > 0 ? (
+                        filteredReservas.map(reserva => (
                             <RequestCard 
-                                key={request.id}
-                                request={request}
-                                onConfirm={() => handleConfirmRequest(request.id)}
-                                onDeny={() => handleDenyRequest(request.id)}
+                                key={reserva.id_reserva} 
+                                reserva={reserva} 
+                                onAction={handleUpdateStatus}
                                 navigation={navigation}
                             />
                         ))
                     ) : (
-                        <Text style={listStyles.noRequestsText}>Nenhuma reserva encontrada com o status: "{selectedStatusFilter}". 😔</Text>
+                        <Text style={hostStyles.noRequestsText}>
+                             {idAnfitriao ? "Nenhuma solicitação encontrada." : "Perfil de anfitrião não identificado."}
+                        </Text>
                     )}
                 </View>
-                
             </ScrollView>
         </SafeAreaView>
     );
 }
 
-
-// --- ESTILOS GERAIS DA LISTA (Adaptados para Host) ---
-const listStyles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#B3D18C',
-    },
-    scrollContentArea: {
-        flexGrow: 1,
-        paddingBottom: 40,
-    }, 
-    innerContainer: {
-        marginHorizontal: 12,
-        backgroundColor: '#FFFFFF',
-        borderRadius: 49,
-        paddingHorizontal: 20,
-        paddingVertical: 30,
-        marginTop: 40, 
-        marginBottom: 20,
-    },
-    mainTitle: {
-        fontSize: 24, 
-        fontWeight: '700', 
-        color: '#556A44', 
-        textAlign: 'center',
-        marginTop: 5, 
-        marginBottom: 5, 
-    },
-    sectionSubtitle: { 
-        fontSize: 15, 
-        fontWeight: '500', 
-        color: '#556A44',
-        fontFamily: 'Inter',
-        marginBottom: 20,
-        textAlign: 'center',
-    },
-    noRequestsText: {
-        fontSize: 16,
-        color: '#556A44',
-        textAlign: 'center',
-        paddingVertical: 20,
-        fontStyle: 'italic',
-    },
-
-    // --- ESTILOS DO FILTRO (Copiado do Tutor) ---
-    filterScroll: {
-        marginTop: 5,
-        marginBottom: 25,
-        marginHorizontal: -5,
-    },
-    filterContainer: {
-        flexDirection: 'row',
-        paddingHorizontal: 5,
-        paddingRight: 20,
-    },
-    filterOptionButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        backgroundColor: '#E0EFD3', 
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: '#B3D18C',
-        minWidth: 90,
-        alignItems: 'center',
-        marginRight: 8,
-    },
-    filterOptionSelected: {
-        backgroundColor: '#7AB24E', 
-        borderColor: '#556A44',
-    },
-    filterOptionText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#556A44',
-        minWidth: 'auto',
-        textAlign: 'center',
-    },
-    filterOptionTextSelected: {
-        color: '#FFF6E2', 
-    },
-});
-
-
-// --- ESTILOS PARA OS CARDS DE SOLICITAÇÃO (Adaptados) ---
+// --- 4. ESTILOS ---
 const hostStyles = StyleSheet.create({
-    cardContainer: {
-        backgroundColor: '#FFF6E2', 
-        borderRadius: 15,
-        borderWidth: 2,
-        borderColor: '#7AB24E', 
-        padding: 15,
-        marginBottom: 20,
-    },
-
-    // Mini Card Tutor
-    tutorCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 10,
-        backgroundColor: '#E0EFD3', 
-        borderRadius: 10,
-        marginBottom: 15,
-    },
-    tutorAvatar: {
-        width: 45,
-        height: 45,
-        borderRadius: 25,
-        backgroundColor: '#7AB24E',
-        marginRight: 10,
-    },
-    tutorInfo: {
-        flex: 1,
-    },
-    tutorName: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#556A44',
-    },
-    tutorLocation: {
-        fontSize: 13,
-        color: '#556A44',
-    },
+    container: { flex: 1, backgroundColor: '#B3D18C' },
+    scrollContentArea: { flexGrow: 1, paddingBottom: 40 },
+    innerContainer: { marginHorizontal: 12, backgroundColor: '#FFFFFF', borderRadius: 49, paddingHorizontal: 20, paddingVertical: 30, marginTop: 70, minHeight: 600 },
+    mainTitle: { fontSize: 24, fontWeight: '700', color: '#556A44', textAlign: 'center', marginTop: 10 },
+    sectionSubtitle: { fontSize: 14, color: '#556A44', textAlign: 'center', marginBottom: 20 },
     
-    // Detalhes
-    detailsContainer: {
-        paddingVertical: 5,
-        marginBottom: 10,
-    },
-    dateHeader: { 
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 10,
-        paddingBottom: 5,
-        borderBottomWidth: 1,
-        borderBottomColor: '#B3D18C',
-    },
-    dateText: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#4d654bff',
-    },
-    dateDivider: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#B3D18C',
-    },
-    detailRow: {
-        fontSize: 14,
-        color: '#556A44',
-        marginBottom: 5,
-    },
-    boldDetail: {
-        fontWeight: 'bold',
-    },
-    totalValue: {
-        fontSize: 15,
-        fontWeight: '900',
-        color: '#4d654bff',
-    },
+    // Header
+    cornerImageContainer: { position: 'absolute', top: 29, right: 220, width: 60, height: 60, zIndex: 10 },
+    cornerImage: { width: '100%', height: '100%' },
+    LogoText: { top: 60, left: 165, fontSize: 20, fontWeight: '700', color: '#ffffff', position: 'absolute', zIndex: 5 },
 
-    // Pets
-    petsSelectedContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 5,
-        marginTop: 0,
-        paddingHorizontal: 5,
-    },
-    petsLabel: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: '#556A44',
-        marginRight: 10,
-    },
-    petAvatarWrapper: {
-        marginRight: 8,
-        alignItems: 'center',
-    },
-    smallPetAvatar: {
-        width: 35, 
-        height: 35,
-        borderRadius: 17.5,
-        borderWidth: 2,
-        borderColor: '#7AB24E',
-        backgroundColor: '#FFF6E2',
-    },
+    // Filtros
+    filterScroll: { marginBottom: 20, height: 50 },
+    filterContainer: { flexDirection: 'row', paddingHorizontal: 5 },
+    filterOptionButton: { paddingVertical: 8, paddingHorizontal: 16, backgroundColor: '#E0EFD3', borderRadius: 20, borderWidth: 1, borderColor: '#B3D18C', marginRight: 8, height: 38 },
+    filterOptionSelected: { backgroundColor: '#7AB24E', borderColor: '#556A44' },
+    filterOptionText: { fontSize: 14, fontWeight: '600', color: '#556A44' },
+    filterOptionTextSelected: { color: '#FFF6E2' },
 
-    // Status e Ações
-    statusAndActionsWrapper: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: '#B3D18C',
-        paddingTop: 15,
-    },
+    // Card
+    cardContainer: { backgroundColor: '#FFF6E2', borderRadius: 15, borderWidth: 2, borderColor: '#7AB24E', padding: 15, marginBottom: 20 },
+    tutorCard: { flexDirection: 'row', alignItems: 'center', padding: 10, backgroundColor: '#E0EFD3', borderRadius: 10, marginBottom: 15 },
+    tutorAvatar: { width: 45, height: 45, borderRadius: 25, backgroundColor: '#7AB24E', marginRight: 10 },
+    tutorInfo: { flex: 1 },
+    tutorName: { fontSize: 16, fontWeight: '700', color: '#556A44' },
+    tutorLocation: { fontSize: 13, color: '#556A44' },
+
+    detailsContainer: { marginBottom: 10 },
+    dateHeader: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 10, borderBottomWidth: 1, borderBottomColor: '#B3D18C', paddingBottom: 5 },
+    dateText: { fontSize: 15, fontWeight: '700', color: '#4d654bff' },
+    dateDivider: { fontSize: 16, fontWeight: '700', color: '#B3D18C', marginHorizontal: 10 },
+    detailRow: { fontSize: 14, color: '#556A44', marginBottom: 3 },
+    boldDetail: { fontWeight: 'bold' },
+    totalValue: { fontSize: 15, fontWeight: '900', color: '#4d654bff' },
+
+    petsSelectedContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, flexWrap: 'wrap' },
+    petsLabel: { fontSize: 14, fontWeight: '700', color: '#556A44', marginRight: 10 },
+    petAvatarWrapper: { marginRight: 8, alignItems: 'center' },
+    smallPetAvatar: { width: 35, height: 35, borderRadius: 17.5, borderWidth: 2, borderColor: '#7AB24E' },
+    petNameSmall: { fontSize: 10, color: '#556A44' },
+
+    statusAndActionsWrapper: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#B3D18C', paddingTop: 15, marginTop: 5 },
+    statusButton: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 15, alignItems: 'center', minWidth: 100 },
+    statusButtonText: { fontSize: 13, fontWeight: '700' },
+
+    hostActionButtonsContainer: { flexDirection: 'row', gap: 10 },
+    hostActionButton: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 15 },
+    denyButton: { backgroundColor: '#d85e38ff' },
+    confirmButton: { backgroundColor: '#7AB24E' },
+    hostActionButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 13 },
+
+    avaliarButton: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#f7cf3fff', borderRadius: 15, borderWidth: 1, borderColor: '#ddab2dff' },
+    avaliarIcon: { width: 14, height: 14, marginRight: 5, tintColor: '#a57d17ff' },
+    avaliarButtonText: { fontSize: 13, fontWeight: '700', color: '#a57d17ff' },
     
-    // Botão de Status (Novo layout)
-    statusButton: {
-        paddingVertical: 12,
-        paddingHorizontal: 12,
-        borderRadius: 15,
-        alignItems: 'center',
-        borderWidth: 0,
-        borderColor: '#556A44',
-        width: '45%', // Ocupa uma parte
-        elevation: 1,
-    },
-    statusButtonText: {
-        fontSize: 14,
-        fontWeight: '700',
-    },
-
-    // Ações Pendentes
-    hostActionButtonsContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        width: '50%', // Ocupa o restante
-    },
-    hostActionButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 12,
-        borderRadius: 15,
-        width: '45%',
-        elevation: 3,
-    },
-    denyButton: {
-        backgroundColor: '#d85e38ff', 
-    },
-    confirmButton: {
-        backgroundColor: '#7AB24E', 
-    },
-    hostActionIcon: {
-        width: 16,
-        height: 16,
-        marginRight: 5,
-        tintColor: '#FFFFFF',
-    },
-    hostActionButtonText: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#FFFFFF',
-    },
-
-    // Botão de Avaliar (Host avalia Tutor - Status Concluida)
-    avaliarButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 8,
-        paddingHorizontal: 10,
-        backgroundColor: '#f7cf3fff', 
-        borderRadius: 17,
-        borderWidth: 2,
-        borderColor: '#ddab2dff',
-        width: '50%', // Ocupa o restante
-        elevation: 3,
-    },
-    avaliarIcon: {
-        width: 18,
-        height: 18,
-        marginRight: 5,
-    },
-    avaliarButtonText: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: '#a57d17ff',
-    },
+    noRequestsText: { textAlign: 'center', marginTop: 30, color: '#888', fontStyle: 'italic' }
 });
