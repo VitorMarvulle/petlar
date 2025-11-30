@@ -1,5 +1,5 @@
-import React, { useState, useContext, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useContext, useCallback, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SearchContext } from '../../context/SearchContext';
 
 const petOptions = [
@@ -11,19 +11,43 @@ const petOptions = [
 
 const SearchBar = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { searchFilters, updateSearchFilters } = useContext(SearchContext);
 
   const [showPetOptions, setShowPetOptions] = useState(false);
-  const [destinationInput, setDestinationInput] = useState(searchFilters.cidade || '');
+  const [destinationInput, setDestinationInput] = useState('');
   const [citySuggestions, setCitySuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+  // Initialize from URL params or Context
+  useEffect(() => {
+    const cityParam = searchParams.get('cidade');
+    const checkinParam = searchParams.get('checkin');
+    const checkoutParam = searchParams.get('checkout');
+    const especieParam = searchParams.get('especie');
+
+    if (cityParam || checkinParam || checkoutParam || especieParam) {
+      updateSearchFilters({
+        cidade: cityParam || '',
+        checkin: checkinParam || '',
+        checkout: checkoutParam || '',
+        especie: especieParam || ''
+      });
+      setDestinationInput(cityParam || '');
+    } else {
+      // If no params, sync input with context (e.g. returning from another page)
+      setDestinationInput(searchFilters.cidade || '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]); // Run once on mount/params change
 
   // Debounce timer for API calls
   let suggestionTimer = null;
 
   const handleDestinationChange = useCallback(async (value) => {
     setDestinationInput(value);
+    updateSearchFilters({ cidade: value }); // Update context as user types
 
     if (value.length < 1) {
       setCitySuggestions([]);
@@ -62,7 +86,7 @@ const SearchBar = () => {
         setLoadingSuggestions(false);
       }
     }, 300);
-  }, []);
+  }, [updateSearchFilters]);
 
   const handleSelectCity = (city) => {
     const displayName = `${city.cidade}, ${city.estado}`;
@@ -78,10 +102,13 @@ const SearchBar = () => {
   };
 
   const handleSearch = () => {
-    // Navigate to feed if not already there
-    if (window.location.pathname !== '/feed') {
-      navigate('/feed');
-    }
+    const params = new URLSearchParams();
+    if (searchFilters.cidade) params.append('cidade', searchFilters.cidade);
+    if (searchFilters.checkin) params.append('checkin', searchFilters.checkin);
+    if (searchFilters.checkout) params.append('checkout', searchFilters.checkout);
+    if (searchFilters.especie) params.append('especie', searchFilters.especie);
+
+    navigate(`/feed?${params.toString()}`);
   };
 
   const selectedPet = petOptions.find((p) => p.value === searchFilters.especie);
@@ -179,7 +206,7 @@ const SearchBar = () => {
                 <span className="capitalize">{pet.name}</span>
               </div>
             ))}
-            {/* <div
+            <div
               onClick={() => {
                 updateSearchFilters({ especie: '' });
                 setShowPetOptions(false);
@@ -188,7 +215,7 @@ const SearchBar = () => {
             >
               <span className="text-2xl mr-3">❌</span>
               <span className="capitalize text-gray-500">Limpar seleção</span>
-            </div> */}
+            </div>
           </div>
         )}
       </div>

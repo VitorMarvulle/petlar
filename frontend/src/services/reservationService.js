@@ -27,6 +27,29 @@ export const createReserva = async (reservaData) => {
 };
 
 /**
+ * Get all reservations (for availability checking)
+ * @returns {Promise<Array>} - List of all reservations
+ */
+export const getAllReservations = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/reservas/`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao buscar todas as reservas');
+        }
+
+        return await response.json();
+    } catch (error) {
+        throw new Error(error.message || 'Erro ao buscar todas as reservas');
+    }
+};
+
+/**
  * Get reservations for a specific tutor
  * @param {number} tutorId - Tutor ID
  * @returns {Promise<Array>} - List of reservations
