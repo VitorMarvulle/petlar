@@ -69,6 +69,7 @@ export default function EnderecoScreen({ route, navigation }: RootStackScreenPro
   };
 
   const handleSave = async () => {
+    // 1. Validação de campos vazios
     if (!formData.cep || !formData.cidade || !formData.logradouro || !formData.bairro || !formData.numero || !formData.uf) {
       Alert.alert('Atenção', 'Preencha CEP, cidade, logradouro, bairro, número e UF');
       return;
@@ -77,11 +78,12 @@ export default function EnderecoScreen({ route, navigation }: RootStackScreenPro
     setLoading(true);
 
     try {
-      const response = await fetch(`http://localhost:8000/usuarios/${id_usuario}`, {
+      // ---------------------------------------------------------
+      // PASSO 1: Atualizar Endereço (PUT)
+      // ---------------------------------------------------------
+      const putResponse = await fetch(`http://localhost:8000/usuarios/${id_usuario}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           cep: formData.cep.trim(),
           cidade: formData.cidade.trim(),
@@ -93,50 +95,79 @@ export default function EnderecoScreen({ route, navigation }: RootStackScreenPro
         }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.log('Erro ao salvar endereço:', data);
-        throw new Error(data.detail || 'Erro ao salvar informações adicionais');
+      if (!putResponse.ok) {
+        const errorData = await putResponse.json();
+        throw new Error(errorData.detail || 'Erro ao salvar endereço');
       }
 
-      console.log('Endereço atualizado:', data);
+      // ---------------------------------------------------------
+      // PASSO 2: Buscar Dados Atualizados do Usuário (GET)
+      // ---------------------------------------------------------
+      const getResponse = await fetch(`http://localhost:8000/usuarios/${id_usuario}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
 
-      Alert.alert(
-        'Sucesso',
-        'Informações adicionais salvas com sucesso!',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              const usuarioAtualizado = Array.isArray(data) ? data[0] : data;
+      if (!getResponse.ok) {
+        throw new Error('Erro ao recuperar dados atualizados do usuário.');
+      }
+
+      // Aqui pegamos o usuário COMPLETO vindo do banco (incluindo o tipo correto)
+      const usuarioAtualizado = await getResponse.json();
+      
+      console.log("Dados do usuário recuperados:", usuarioAtualizado);
+
+      // ---------------------------------------------------------
+      // PASSO 3: Navegação baseada nos dados do GET
+      // ---------------------------------------------------------
+      Alert.alert('Sucesso', 'Endereço salvo com sucesso!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            // Usamos usuarioAtualizado.tipo vindo do banco, ignorando o route.params
+            const tipoDoBanco = usuarioAtualizado.tipo; 
+
+            if (tipoDoBanco === 'tutor') {
               navigation.reset({
                 index: 0,
-                routes: [
-                  {
-                    name: 'Home',
-                    params: {
-                      usuario: {
-                        id_usuario: usuarioAtualizado.id_usuario,
-                        nome: usuarioAtualizado.nome,
-                        email: usuarioAtualizado.email,
-                        tipo: usuarioAtualizado.tipo,
-                        telefone: usuarioAtualizado.telefone,
-                      },
-                    },
-                  },
-                ],
+                routes: [{ name: 'Home', params: { usuario: usuarioAtualizado } }],
               });
-            },
+            } 
+            else if (tipoDoBanco === 'anfitriao') {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home_Host', params: { usuario: usuarioAtualizado } }],
+              });
+            } 
+            else {
+              // Fallback caso o tipo venha nulo ou diferente
+              console.error('Tipo de usuário desconhecido:', tipoDoBanco);
+              Alert.alert('Erro', `Tipo de usuário não identificado: ${tipoDoBanco}`);
+            }
           },
-        ]
-      );
-      
-      navigation.navigate('Home', { id_usuario: id_usuario });
+        },
+      ]);
+    if (usuarioAtualizado.tipo === 'tutor') {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home', params: { usuario: usuarioAtualizado } }],
+              });
+            } 
+            else if (usuarioAtualizado.tipo === 'anfitriao') {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home_Host', params: { usuario: usuarioAtualizado } }],
+              });
+            } 
+            else {
+              // Fallback caso o tipo venha nulo ou diferente
+              console.error('Tipo de usuário desconhecido:', usuarioAtualizado.tipo);
+              Alert.alert('Erro', `Tipo de usuário não identificado: ${usuarioAtualizado.tipo}`);
+            }
 
     } catch (error: any) {
-      console.error('Erro na InfoAdc:', error);
-      Alert.alert('Erro', error.message || 'Não foi possível salvar. Tente novamente.');
+      console.error('Erro no processo de salvar:', error);
+      Alert.alert('Erro', error.message || 'Ocorreu um erro inesperado.');
     } finally {
       setLoading(false);
     }

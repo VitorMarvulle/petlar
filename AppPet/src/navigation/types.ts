@@ -6,6 +6,7 @@ import { Pet } from '../screens/Registros/AdicionarPet';
 export type RootStackParamList = {
   Login: undefined;
   Cadastro: undefined;
+  Endereco: {id_usuario: number};
   Home: { usuario: {  
     id_usuario: number;  
     nome: string;  
@@ -70,6 +71,10 @@ export type RootStackParamList = {
   FAQ_Host: undefined;
   InfoHost: { id_usuario: number; hostCriado?: any; fotoPerfilUrl?: string };  
   CriarAnuncioDetalhes: { id_usuario: number; fotoPerfilUrl: string };
+  EditarAnuncio: { 
+    hostData: any; // Recebe os dados completos do anfitrião para editar
+    id_usuario: number;
+  };
 };
 
 export type RootStackScreenProps<Screen extends keyof RootStackParamList> =

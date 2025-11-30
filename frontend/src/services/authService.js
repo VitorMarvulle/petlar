@@ -55,26 +55,22 @@ export const signup = async (userData) => {
  * @param {string} senha_hash - User password (plain text - will be hashed by backend)
  * @returns {Promise<Object>} - User data if credentials match
  */
-export const login = async (email, senha_hash) => {
+export const login = async (email, senha) => {
   try {
-    // Get all users and find the one with matching email
-    const response = await fetch(`${API_BASE_URL}/usuarios/`, {
-      method: 'GET',
+    const response = await fetch(`${API_BASE_URL}/usuarios/login`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ email, senha }),
     });
 
     if (!response.ok) {
-      throw new Error('Erro ao buscar usuários');
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Email ou senha inválidos');
     }
 
-    const usuarios = await response.json();
-    const usuario = usuarios.find((u) => u.email === email);
-
-    if (!usuario) {
-      throw new Error('Email ou senha inválidos');
-    }
+    const usuario = await response.json();
 
     // Check if user is also an anfitriao
     try {
@@ -96,12 +92,11 @@ export const login = async (email, senha_hash) => {
       // Continue login even if host check fails, defaulting to existing type
     }
 
-    // Store user data in localStorage (exclude password)
-    const { senha_hash, ...userData } = usuario;
-    localStorage.setItem('currentUser', JSON.stringify(userData));
+    // Store user data in localStorage
+    localStorage.setItem('currentUser', JSON.stringify(usuario));
     localStorage.setItem('userToken', usuario.id_usuario || usuario.id); // Use ID as a simple token
 
-    return userData;
+    return usuario;
   } catch (error) {
     throw new Error(error.message || 'Erro ao fazer login');
   }
