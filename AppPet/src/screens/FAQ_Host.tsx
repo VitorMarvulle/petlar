@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// AppPet\src\screens\FAQ_Host.tsx
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,82 +8,178 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Alert,
+  ActivityIndicator
 } from "react-native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../navigation/types";
 
-// TIPAGEM DO ITEM DO FAQ
+// Ajuste para o seu IP
+const API_BASE_URL = 'http://localhost:8000'; 
+
 interface FAQItem {
-  id: string;
-  question: string;
-  answer: string | null;
+  id_pergunta: number;
+  id_tutor: number;
+  id_anfitriao: number;
+  pergunta: string;
+  data_envio: string;
+  resposta: {
+    id_resposta: number;
+    resposta: string;
+    data_envio: string;
+  } | null;
 }
 
+type FAQHostRouteProp = RouteProp<RootStackParamList, 'FAQ_Host'>;
+type FAQHostNavigationProp = NativeStackNavigationProp<RootStackParamList, 'FAQ_Host'>;
+
 export default function FAQHost() {
-  const [questions, setQuestions] = useState<FAQItem[]>([
-    {
-      id: "1",
-      question: "O host aceita gatos filhotes?",
-      answer: null,
-    },
-    {
-      id: "2",
-      question: "O host passeia com o pet quantas vezes por dia?",
-      answer: "Normalmente 2x ao dia.",
-    },
-  ]);
+  const navigation = useNavigation<FAQHostNavigationProp>(); // Hook de navegação
+  const route = useRoute<FAQHostRouteProp>();
+  const { id_anfitriao } = route.params;
 
-  const [responses, setResponses] = useState<Record<string, string>>({});
+  const [questions, setQuestions] = useState<FAQItem[]>([]);
+  const [responses, setResponses] = useState<Record<number, string>>({});
+  const [loading, setLoading] = useState(false);
+  const [sendingId, setSendingId] = useState<number | null>(null);
 
-  const handleSendAnswer = (id: string) => {
-    if (!responses[id] || responses[id].trim().length === 0) return;
+  const fetchQuestions = useCallback(async () => {
+    try {
+      setLoading(true);
+      const url = `${API_BASE_URL}/perguntas/anfitriao/${id_anfitriao}`;
+      const response = await fetch(url);
 
-    const updated = questions.map((q) =>
-      q.id === id ? { ...q, answer: responses[id] } : q
-    );
+      if (!response.ok) {
+        throw new Error("Erro ao buscar perguntas");
+      }
 
-    setQuestions(updated);
+      const data: FAQItem[] = await response.json();
+      setQuestions(data);
 
-    setResponses((prev) => ({ ...prev, [id]: "" }));
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Erro", "Não foi possível carregar as perguntas.");
+    } finally {
+      setLoading(false);
+    }
+  }, [id_anfitriao]);
+
+  useEffect(() => {
+    fetchQuestions();
+  }, [fetchQuestions]);
+
+  const handleSendAnswer = async (id_pergunta: number) => {
+    const text = responses[id_pergunta];
+    if (!text || text.trim().length === 0) {
+      Alert.alert("Atenção", "Escreva uma resposta antes de enviar.");
+      return;
+    }
+
+    try {
+      setSendingId(id_pergunta);
+
+      const payload = {
+        id_pergunta: id_pergunta,
+        id_anfitriao: id_anfitriao,
+        resposta: text
+      };
+
+      const response = await fetch(`${API_BASE_URL}/perguntas/respostas`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error("Falha ao enviar resposta");
+      }
+
+      Alert.alert("Sucesso", "Resposta enviada!");
+      
+      setResponses((prev) => {
+        const copy = { ...prev };
+        delete copy[id_pergunta];
+        return copy;
+      });
+      fetchQuestions();
+
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Erro", "Não foi possível enviar a resposta.");
+    } finally {
+      setSendingId(null);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
-        <Text style={styles.title}>Responder Perguntas</Text>
+        
+        {/* --- BOTÃO DE VOLTAR --- */}
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>{"< Voltar"}</Text>
+        </TouchableOpacity>
 
-        <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 10 }}>
-          {questions.map((item) => (
-            <View key={item.id} style={styles.questionCard}>
-              <Text style={styles.questionText}>{item.question}</Text>
+        <Text style={styles.title}>Perguntas dos Tutores</Text>
 
-              {!item.answer ? (
-                <>
-                  <TextInput
-                    placeholder="Escreva sua resposta..."
-                    placeholderTextColor="#8AA17A"
-                    value={responses[item.id] || ""}
-                    onChangeText={(text) =>
-                      setResponses((prev) => ({ ...prev, [item.id]: text }))
-                    }
-                    style={styles.answerInput}
-                    multiline
-                  />
+        {loading ? (
+           <ActivityIndicator size="large" color="#556A44" style={{ marginTop: 20 }} />
+        ) : questions.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Nenhuma pergunta recebida ainda.</Text>
+          </View>
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 10 }}>
+            {questions.map((item) => (
+              <View key={item.id_pergunta} style={styles.questionCard}>
+                <Text style={styles.questionLabel}>Pergunta:</Text>
+                <Text style={styles.questionText}>{item.pergunta}</Text>
+                <Text style={styles.dateText}>
+                    {new Date(item.data_envio).toLocaleDateString('pt-BR')}
+                </Text>
 
-                  <TouchableOpacity
-                    style={styles.sendButton}
-                    onPress={() => handleSendAnswer(item.id)}
-                  >
-                    <Text style={styles.sendButtonText}>Enviar Resposta</Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <View style={styles.answerContainer}>
-                  <Text style={styles.answerLabel}>Resposta:</Text>
-                  <Text style={styles.answerText}>{item.answer}</Text>
-                </View>
-              )}
-            </View>
-          ))}
-        </ScrollView>
+                {!item.resposta ? (
+                  <>
+                    <TextInput
+                      placeholder="Escreva sua resposta..."
+                      placeholderTextColor="#8AA17A"
+                      value={responses[item.id_pergunta] || ""}
+                      onChangeText={(text) =>
+                        setResponses((prev) => ({ ...prev, [item.id_pergunta]: text }))
+                      }
+                      style={styles.answerInput}
+                      multiline
+                    />
+
+                    <TouchableOpacity
+                      style={styles.sendButton}
+                      onPress={() => handleSendAnswer(item.id_pergunta)}
+                      disabled={sendingId === item.id_pergunta}
+                    >
+                      {sendingId === item.id_pergunta ? (
+                         <ActivityIndicator color="#FFF" />
+                      ) : (
+                         <Text style={styles.sendButtonText}>Enviar Resposta</Text>
+                      )}
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <View style={styles.answerContainer}>
+                    <Text style={styles.answerLabel}>Sua Resposta:</Text>
+                    <Text style={styles.answerText}>{item.resposta.resposta}</Text>
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -93,7 +190,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#B3D18C",
   },
-
   innerContainer: {
     flex: 1,
     marginHorizontal: 12,
@@ -104,6 +200,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 25,
   },
+  
+  // --- ESTILOS DO BOTÃO VOLTAR ---
+  backButton: {
+    alignSelf: 'flex-start', // Alinha à esquerda
+    marginBottom: 10,       // Espaço antes do título
+    padding: 5,             // Área de toque melhor
+  },
+  backButtonText: {
+    color: '#556A44',
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'Inter' // Se estiver usando a fonte Inter
+  },
+  // -------------------------------
 
   title: {
     color: "#556A44",
@@ -112,7 +222,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 25,
   },
-
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  emptyText: {
+    color: '#888',
+    fontSize: 16
+  },
   questionCard: {
     backgroundColor: "#FFF6E2",
     borderColor: "#B3D18C",
@@ -121,14 +239,24 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
   },
-
+  questionLabel: {
+    color: "#556A44",
+    fontWeight: "700",
+    fontSize: 12,
+    marginBottom: 2
+  },
   questionText: {
     color: "#556A44",
     fontSize: 16,
     fontWeight: "600",
-    marginBottom: 8,
+    marginBottom: 4,
   },
-
+  dateText: {
+    color: "#8AA17A",
+    fontSize: 11,
+    fontStyle: 'italic',
+    marginBottom: 10
+  },
   answerInput: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
@@ -139,36 +267,33 @@ const styles = StyleSheet.create({
     fontSize: 15,
     minHeight: 60,
     marginBottom: 10,
+    textAlignVertical: 'top'
   },
-
   sendButton: {
     backgroundColor: "#85B65E",
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: "center",
   },
-
   sendButtonText: {
     color: "#FFF",
     fontSize: 15,
     fontWeight: "600",
   },
-
   answerContainer: {
     marginTop: 8,
     paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: "#B3D18C",
   },
-
   answerLabel: {
     color: "#556A44",
     fontWeight: "700",
     fontSize: 14,
   },
-
   answerText: {
     color: "#556A44",
     fontSize: 14,
+    marginTop: 2
   },
 });
