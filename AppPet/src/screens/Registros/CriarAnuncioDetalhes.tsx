@@ -142,7 +142,7 @@ export default function CriarAnuncioDetalhesScreen({
     onCancel: () => {},
   });
 
-  const PET_OPTIONS = ['Cachorro', 'Gato', 'Pássaro', 'Réptil'];
+  const PET_OPTIONS = ['Cachorro', 'Gato', 'Pássaro', 'Silvestre'];
 
   const PET_MAP: Record<string, string> = {  
   'Cachorro': 'cachorro',  
