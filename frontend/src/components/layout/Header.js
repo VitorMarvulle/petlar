@@ -53,6 +53,7 @@ const Header = () => {
                 alt="Logo Petlar"
                 className="h-20 w-20 hover:opacity-75 transition-opacity"
               />
+              <span className="ml-2 text-2xl font-bold" style={{ color: '#7ab24e' }}>LarDocePet</span>
             </Link>
           </div>
 
@@ -84,7 +85,7 @@ const Header = () => {
                       Minhas Reservas
                     </Link>
                     <div className="flex items-center space-x-2">
-                        <p style={{color: "gray", fontSize: "1.3rem"}}>|</p>
+                      <p style={{ color: "gray", fontSize: "1.3rem" }}>|</p>
                       <span className="text-gray-800 font-medium hidden sm:inline">
                         Bem vindo, <span className="font-bold text-red-500">{currentUser.nome}</span>! 😊
                       </span>

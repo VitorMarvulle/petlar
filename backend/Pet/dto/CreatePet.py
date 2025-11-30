@@ -11,6 +11,7 @@ class PetCreate(BaseModel):
     idade_unidade: Optional[str] = 'ano' 
     peso: Optional[float] = None
     peso_unidade: Optional[str] = 'kg'  
+    tamanho_pet: Optional[str] = None
     observacoes: Optional[str] = None
     fotos_urls: Optional[List[str]] = []  
 
@@ -22,5 +23,6 @@ class PetUpdate(BaseModel):
     idade_unidade: Optional[str] = None
     peso: Optional[float] = None
     peso_unidade: Optional[str] = None
+    tamanho_pet: Optional[str] = None
     observacoes: Optional[str] = None
     fotos_urls: Optional[List[str]] = None
