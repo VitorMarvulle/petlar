@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getCurrentUser } from '../services/authService';
+import { getCurrentUser, getAllUsers } from '../services/authService';
 import { getReservasByTutor, getReservasByHost, updateReservaStatus, getAllReservations } from '../services/reservationService';
 import { Link } from 'react-router-dom';
 
@@ -11,6 +11,7 @@ const ReservationsPage = () => {
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState('tutor'); // 'tutor' or 'host'
     const [isHost, setIsHost] = useState(false);
+    const [userMap, setUserMap] = useState({});
 
     useEffect(() => {
         if (currentUser && currentUser.tipo === 'anfitriao') {
@@ -19,11 +20,19 @@ const ReservationsPage = () => {
     }, [currentUser]);
 
     useEffect(() => {
-        const fetchReservations = async () => {
+        const fetchData = async () => {
             if (!currentUser) return;
             setLoading(true);
             setError('');
             try {
+                // Fetch users for name lookup
+                const users = await getAllUsers();
+                const map = {};
+                users.forEach(u => {
+                    map[u.id_usuario || u.id] = u;
+                });
+                setUserMap(map);
+
                 if (activeTab === 'tutor') {
                     const data = await getReservasByTutor(currentUser.id_usuario || currentUser.id);
                     const sortedData = Array.isArray(data) ? data.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio)) : [];
@@ -49,14 +58,14 @@ const ReservationsPage = () => {
                     }
                 }
             } catch (err) {
-                console.error('Erro ao buscar reservas:', err);
+                console.error('Erro ao buscar dados:', err);
                 setError('Não foi possível carregar as reservas.');
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchReservations();
+        fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentUser?.id_usuario, currentUser?.id, activeTab, isHost]);
 
@@ -66,9 +75,22 @@ const ReservationsPage = () => {
         try {
             await updateReservaStatus(reservaId, 'confirmada');
             // Refresh list
-            const data = await getReservasByHost(currentUser.id_usuario || currentUser.id);
-            const sortedData = Array.isArray(data) ? data.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio)) : [];
-            setHostReservations(sortedData);
+            // Re-fetch logic similar to useEffect, but simplified for just the list
+            try {
+                const allReservations = await getAllReservations();
+                const hostId = currentUser.id_usuario || currentUser.id;
+                const data = allReservations.filter(r =>
+                    r.id_anfitriao === hostId ||
+                    r.id_anfitriao === Number(hostId) ||
+                    String(r.id_anfitriao) === String(hostId)
+                );
+                const sortedData = Array.isArray(data) ? data.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio)) : [];
+                setHostReservations(sortedData);
+            } catch (e) {
+                const data = await getReservasByHost(currentUser.id_usuario || currentUser.id);
+                const sortedData = Array.isArray(data) ? data.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio)) : [];
+                setHostReservations(sortedData);
+            }
             alert('Reserva aprovada com sucesso!');
         } catch (err) {
             console.error('Erro ao aprovar reserva:', err);
@@ -213,12 +235,14 @@ const ReservationsPage = () => {
                                     </div>
                                 </div>
 
-                                {/* Additional Info for Host View could go here (e.g., Tutor Name) */}
-                                {activeTab === 'host' && (
-                                    <div className="mt-4 pt-4 border-t border-gray-100 text-sm text-gray-600">
-                                        <p><strong>Solicitado por:</strong> {reserva.tutor_nome || `Tutor #${reserva.id_tutor}`}</p>
-                                    </div>
-                                )}
+                                {/* User/Host Info */}
+                                <div className="mt-4 pt-4 border-t border-gray-100 text-sm text-gray-600">
+                                    {activeTab === 'host' ? (
+                                        <p><strong>Solicitado por:</strong> {userMap[reserva.id_tutor]?.nome || `Tutor #${reserva.id_tutor}`}</p>
+                                    ) : (
+                                        <p><strong>Anfitrião:</strong> {userMap[reserva.id_anfitriao]?.nome || `Anfitrião #${reserva.id_anfitriao}`}</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}

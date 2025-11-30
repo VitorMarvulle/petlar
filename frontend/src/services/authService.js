@@ -131,3 +131,26 @@ export const getCurrentUser = () => {
 export const isLoggedIn = () => {
   return localStorage.getItem('userToken') !== null;
 };
+
+/**
+ * Get all users
+ * @returns {Promise<Array>} - List of all users
+ */
+export const getAllUsers = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/usuarios/`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Erro ao buscar usuários');
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw new Error(error.message || 'Erro ao buscar usuários');
+  }
+};
