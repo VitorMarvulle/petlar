@@ -265,55 +265,20 @@ export default function PerfilTutor({navigation, route}: PerfilTutorProps) {
   );
 
   // ➕ Adicionar novo pet (callback da tela AdicionarPet)
-  const addNewPet = async newPetData => {
-    try {
-      // 🆕 Usar o id_usuario dos parâmetros
-      if (!id_usuario) {
-        showAlert('Erro', 'Usuário não autenticado.');
-        return;
-      }
-
-      // Preparar dados para enviar à API
-      const petData = {
-        id_tutor: parseInt(id_usuario),
-        nome: newPetData.nome,
-        especie: newPetData.especie,
-        idade: parseInt(newPetData.idade) || null,
-        idade_unidade: newPetData.idadeUnidade || 'ano',
-        peso: parseFloat(newPetData.peso) || null,
-        peso_unidade: newPetData.unidade || 'kg',
-        observacoes: newPetData.especificacoes || null,
-        fotos_urls: newPetData.fotos || [],
-      };
-
-      const response = await fetch(`${API_BASE_URL}/pets/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(petData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Erro ao adicionar pet');
-      }
-
-      const novoPet = await response.json();
-
-      // Atualizar lista local
-      setPets(currentPets => [...currentPets, novoPet[0]]);
+  // 🟢 CORREÇÃO: Função limpa, sem fetch interno.
+  const addNewPet = (petSalvo) => {
+    if (petSalvo) {
+      // Atualiza a lista local adicionando o novo pet que veio da tela de cadastro
+      setPets(currentPets => [...currentPets, petSalvo]);
 
       showAlert(
         'Pet Adicionado!',
-        `${novoPet[0].nome} foi adicionado à sua lista de pets com sucesso.`,
+        `${petSalvo.nome} foi adicionado à sua lista de pets com sucesso.`,
         undefined,
         'Entendido',
         undefined,
         true,
       );
-    } catch (error) {
-      console.error('Erro ao adicionar pet:', error);
-      showAlert('Erro', 'Não foi possível adicionar o pet. Tente novamente.');
     }
   };
 
@@ -489,7 +454,6 @@ export default function PerfilTutor({navigation, route}: PerfilTutorProps) {
 }
 
 const styles = StyleSheet.create({
-  // ... (mantenha todos os estilos existentes)
   container: {
     flex: 1,
     backgroundColor: '#B3D18C',

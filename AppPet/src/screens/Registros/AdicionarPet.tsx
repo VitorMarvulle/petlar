@@ -10,7 +10,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 export type Pet = {
   id_pet?: number;
   nome: string;
-  especie: 'Gato' | 'Cachorro' | 'Pássaro' | 'Exótico';
+  especie: 'Gato' | 'Cachorro' | 'Pássaro' | 'Silvestre';
   idade: string;
   idadeUnidade: 'ano' | 'mês';
   peso: string;
@@ -176,7 +176,7 @@ export default function FormularioPet() {
     }
   };
 
-  const speciesOptions: Pet['especie'][] = ['Gato', 'Cachorro', 'Pássaro', 'Exótico'];
+  const speciesOptions: Pet['especie'][] = ['Gato', 'Cachorro', 'Pássaro', 'Silvestre'];
 
   return (
     <SafeAreaView style={styles.container}>
