@@ -104,6 +104,13 @@ def login_usuario(login_data: LoginRequest):
         "tipo": usuario.get("tipo"),
         "telefone": usuario.get("telefone"),
         "message": "Login realizado com sucesso",
+        "cep": usuario.get("cep"),
+        "logradouro": usuario.get("logradouro"),
+        "numero": usuario.get("numero"),
+        "bairro": usuario.get("bairro"),
+        "cidade": usuario.get("cidade"),
+        "uf": usuario.get("uf"),
+        "complemento": usuario.get("complemento"),
     }
 
 @usuario_router.put("/{id}", status_code=HTTP_200_OK)
