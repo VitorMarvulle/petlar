@@ -19,6 +19,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 
 const { width } = Dimensions.get('window');
+// Ajuste para o IP correto se necessário
 const API_BASE_URL = 'http://localhost:8000';
 
 // Import PNGs
@@ -319,7 +320,7 @@ export default function CardHost() {
   const avaliacoesFiltradas = avaliacoes.filter((av) =>
     av.comentario?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-   
+    
   const handleFAQPress = () => {
       if (!usuario?.id_usuario) {
         Alert.alert('Atenção', 'Você precisa estar logado para ver ou fazer perguntas.');
@@ -426,16 +427,20 @@ export default function CardHost() {
               </View>
             </View>
 
-            <View style={styles.buttonRow}>
-              <TouchableOpacity 
-                  style={styles.actionButton_FAQ} 
-                  onPress={handleFAQPress} >
+            {/* BOTÕES DE AÇÃO: Renderizar apenas se NÃO for anfitrião */}
+            {usuario?.tipo !== 'anfitriao' && (
+                <View style={styles.buttonRow}>
+                <TouchableOpacity 
+                    style={styles.actionButton_FAQ} 
+                    onPress={handleFAQPress} >
                     <Text style={styles.actionButtonText}>Perguntas Frequentes</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton_Reserva} onPress={handleReservaPress}>
-                <Text style={styles.actionButtonText}>Reserva</Text>
-              </TouchableOpacity>
-            </View>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionButton_Reserva} onPress={handleReservaPress}>
+                    <Text style={styles.actionButtonText}>Reserva</Text>
+                </TouchableOpacity>
+                </View>
+            )}
+
           </View>
 
           {/* Avaliações */}
@@ -510,7 +515,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 40,
   },
-   
+    
   // --- HEADER LOGO STYLES (Centralizado) ---
   headerLogoContainer: {
     position: 'absolute',
