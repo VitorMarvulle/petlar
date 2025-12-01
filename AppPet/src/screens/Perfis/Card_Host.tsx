@@ -20,7 +20,7 @@ import type { RootStackParamList } from '../../navigation/types';
 
 const { width } = Dimensions.get('window');
 // Ajuste para o IP correto se necessário
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com';
 
 // Import PNGs
 const UserIconPng = require('../../../assets/icons/user.png');

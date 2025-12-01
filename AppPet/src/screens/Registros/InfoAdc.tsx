@@ -21,6 +21,7 @@ export default function InfoAdcScreen({ navigation, route }: RootStackScreenProp
   const { id_usuario } = route.params;
   const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
   const [fotoPerfilFile, setFotoPerfilFile] = useState<File | null>(null); // WEB
+  const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; 
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -98,7 +99,7 @@ export default function InfoAdcScreen({ navigation, route }: RootStackScreenProp
       }
 
       // NÃO definir manualmente Content-Type; o fetch preenche com boundary
-      const response = await fetch(`http://localhost:8000/usuarios/${id_usuario}/foto-perfil`, {
+      const response = await fetch(`${API_BASE_URL}/usuarios/${id_usuario}/foto-perfil`, {
         method: 'POST',
         body: formData,
       });

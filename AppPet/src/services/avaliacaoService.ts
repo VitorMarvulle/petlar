@@ -1,7 +1,7 @@
 // AppPet/src/services/avaliacaoService.ts
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000'; // Ajuste conforme sua configuração
+const API_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; // Ajuste conforme sua configuração
 
 export interface AvaliacaoCreate {
     id_reserva: number;

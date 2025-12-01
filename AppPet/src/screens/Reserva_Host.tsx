@@ -19,7 +19,7 @@ import {
 } from '../navigation/reservaTypes';
 
 // Ajuste o IP conforme necessário
-const API_BASE_URL = 'http://localhost:8000'; 
+const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; 
 
 // Ícones
 const ICON_AVATAR = require('../../assets/icons/user.png');
@@ -231,7 +231,7 @@ export default function Reserva_Host() {
 
             try {
                 // Busca TODOS anfitriões (backend Python não filtra na rota base)
-                const response = await axios.get(`${API_BASE_URL}/anfitrioes`);
+                const response = await axios.get(`${API_BASE_URL}/anfitrioes/`);
                 
                 // Encontra o anfitrião vinculado ao ID do usuário logado
                 const meuAnfitriao = response.data.find((a: any) => 
@@ -248,8 +248,18 @@ export default function Reserva_Host() {
                         setLoading(false);
                     }
                 }
-            } catch (error) {
-                console.error('Erro ao buscar ID do anfitrião:', error);
+            } catch (error: any) {
+                console.error('Erro ao buscar ID do anfitrião:', error.message);
+                
+                if (error.response) {
+                    // O servidor respondeu com um status fora de 2xx
+                    console.log('Dados:', error.response.data);
+                    console.log('Status:', error.response.status);
+                } else if (error.request) {
+                    // A requisição foi feita mas não houve resposta (CORS ou Timeout)
+                    console.log('Sem resposta do servidor (Possível CORS ou Offline).');
+                }
+                
                 if (isMounted) setLoading(false);
             }
         };

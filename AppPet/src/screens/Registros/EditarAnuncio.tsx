@@ -94,6 +94,7 @@ export default function EditarAnuncioScreen({ route, navigation }: RootStackScre
   // Controle de Alerta
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertData, setAlertData] = useState({ title: '', message: '', isConfirmation: false, onConfirm: () => {}, onCancel: () => {} });
+  const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; 
 
   const PET_OPTIONS = ['Cachorro', 'Gato', 'Pássaro', 'Silvestre'];
   const WEIGHT_OPTIONS_LABELS = ['Pequeno', 'Médio', 'Grande'];
@@ -234,7 +235,7 @@ export default function EditarAnuncioScreen({ route, navigation }: RootStackScre
     }
 
     // Endpoint de upload
-    const response = await fetch(`http://localhost:8000/anfitrioes/${id_usuario}/fotos-area`, {
+    const response = await fetch(`${API_BASE_URL}/anfitrioes/${id_usuario}/fotos-area`, {
       method: 'POST',
       body: formDataUpload,
     });
@@ -301,7 +302,7 @@ export default function EditarAnuncioScreen({ route, navigation }: RootStackScre
         };
 
         // 5. Enviar PUT
-        const response = await fetch(`http://localhost:8000/anfitrioes/${hostData.id_anfitriao}`, {
+        const response = await fetch(`${API_BASE_URL}/anfitrioes/${hostData.id_anfitriao}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

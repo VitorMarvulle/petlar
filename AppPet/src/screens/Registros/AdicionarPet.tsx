@@ -28,7 +28,7 @@ type Props = RootStackScreenProps<'AdicionarPet'>;
 export default function FormularioPet() {
   const navigation = useNavigation<Props['navigation']>();
   const route = useRoute<Props['route']>();
-  
+  const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; 
   const { id_tutor, onAddPet, petParaEditar } = route.params || {};
 
   const [petData, setPetData] = useState<Pet>({
@@ -82,8 +82,8 @@ export default function FormularioPet() {
 
   const savePetInBackend = async () => {
     const url = isEditing 
-      ? `http://localhost:8000/pets/${petData.id_pet}`
-      : 'http://localhost:8000/pets/';
+      ? `${API_BASE_URL}/pets/${petData.id_pet}`
+      : `${API_BASE_URL}/pets/`;
     
     const method = isEditing ? 'PUT' : 'POST';
 
@@ -153,7 +153,7 @@ export default function FormularioPet() {
         }
       }
 
-      const response = await fetch(`http://localhost:8000/pets/${id_pet}/fotos`, {
+      const response = await fetch(`${API_BASE_URL}/pets/${id_pet}/fotos`, {
         method: 'POST',
         body: formData,
       });

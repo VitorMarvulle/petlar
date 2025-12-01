@@ -17,6 +17,7 @@ const PetIcon = () => (
 export default function RegisterScreen({ navigation }: RootStackScreenProps<'Cadastro'>) {
   const [userType, setUserType] = useState<'tutor' | 'host' | null>(null);
   const [loading, setLoading] = useState(false);
+  const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -52,7 +53,7 @@ export default function RegisterScreen({ navigation }: RootStackScreenProps<'Cad
     const tipoDB = userType === 'host' ? 'anfitriao' : 'tutor';
 
     try {
-      const response = await fetch('http://localhost:8000/usuarios/', {
+      const response = await fetch(`${API_BASE_URL}/usuarios/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -109,8 +110,9 @@ export default function RegisterScreen({ navigation }: RootStackScreenProps<'Cad
           },
         ]
       );
+    // Nota: Mantive a lógica original, mas cuidado pois isso pode executar navegação duplicada fora do Alert
     if (userType === 'tutor') {
-              navigation.navigate('InfoAdc', { id_usuario: usuarioId });
+            navigation.navigate('InfoAdc', { id_usuario: usuarioId });
     } else if (userType === 'host') {
       navigation.navigate('InfoHost', { id_usuario: usuarioId });
     }
@@ -121,11 +123,6 @@ export default function RegisterScreen({ navigation }: RootStackScreenProps<'Cad
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleGoogleRegister = () => {
-    console.log('Registro via Google');
-    Alert.alert('Em breve', 'Cadastro com Google será implementado em breve!');
   };
 
   return (
@@ -200,24 +197,7 @@ export default function RegisterScreen({ navigation }: RootStackScreenProps<'Cad
               </Text>
             </TouchableOpacity>
 
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>ou</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <TouchableOpacity 
-              style={styles.googleButton} 
-              onPress={handleGoogleRegister}
-              disabled={loading}
-            >
-              <Image
-                source={require('../../../assets/icons/google.png')}
-                style={styles.googleIcon}
-                resizeMode="contain"
-              />
-              <Text style={styles.googleButtonText}>Continuar com Google</Text>
-            </TouchableOpacity>
+            {/* Google Button Removido daqui */}
           </View>
         </View>
       </ScrollView>
@@ -340,49 +320,6 @@ const styles = StyleSheet.create({
   },
   loginTextLink: {
     color: '#7AB24E',
-    fontFamily: 'Inter',
-    fontSize: 15,
-  },
-
-  // Divisor
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: 277,
-    marginBottom: 25,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#B3D18C',
-  },
-  dividerText: {
-    color: '#B3D18C',
-    fontFamily: 'Inter',
-    fontSize: 15,
-    marginHorizontal: 10,
-  },
-
-  // Botão Google
-  googleButton: {
-    width: 309,
-    height: 55,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: '#B3D18C',
-    backgroundColor: '#FFF6E2',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 22,
-    marginBottom: 20,
-  },
-  googleIcon: {
-    width: 28,
-    height: 28,
-    marginRight: 35,
-  },
-  googleButtonText: {
-    color: '#000',
     fontFamily: 'Inter',
     fontSize: 15,
   },

@@ -22,7 +22,7 @@ const ICON_ADD = require('../../../assets/icons/add.png');
 const ICON_EDIT = require('../../../assets/icons/edit.png');
 const ICON_CHECK = require('../../../assets/icons/check.png');
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com';
 
 // --- Componentes Auxiliares (CustomAlert, UserAvatar, StarRating) ---
 

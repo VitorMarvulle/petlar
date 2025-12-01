@@ -9,7 +9,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types'; 
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-const API_BASE_URL = 'http://localhost:8000'; // ⚠️ Ajuste para seu IP se necessário
+const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; // ⚠️ Ajuste para seu IP se necessário
 
 // --- INTERFACES ---
 interface Pet {

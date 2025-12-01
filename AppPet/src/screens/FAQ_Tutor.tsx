@@ -16,7 +16,7 @@ import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
 
 // URL base da API
-const API_BASE_URL = 'http://localhost:8000'; 
+const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; 
 const ICON_LOGO_BRANCO = require('../../assets/icons/LogoBranco.png');
 
 // Tipos baseados na resposta da API

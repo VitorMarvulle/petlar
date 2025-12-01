@@ -15,6 +15,7 @@ import { RootStackScreenProps } from '../../navigation/types';
 
 export default function EnderecoScreen({ route, navigation }: RootStackScreenProps<'Endereco'>) {
   const { id_usuario } = route.params;
+  const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; 
 
   const [loading, setLoading] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
@@ -81,7 +82,7 @@ export default function EnderecoScreen({ route, navigation }: RootStackScreenPro
       // ---------------------------------------------------------
       // PASSO 1: Atualizar Endereço (PUT)
       // ---------------------------------------------------------
-      const putResponse = await fetch(`http://localhost:8000/usuarios/${id_usuario}`, {
+      const putResponse = await fetch(`${API_BASE_URL}/usuarios/${id_usuario}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -103,7 +104,7 @@ export default function EnderecoScreen({ route, navigation }: RootStackScreenPro
       // ---------------------------------------------------------
       // PASSO 2: Buscar Dados Atualizados do Usuário (GET)
       // ---------------------------------------------------------
-      const getResponse = await fetch(`http://localhost:8000/usuarios/${id_usuario}`, {
+      const getResponse = await fetch(`${API_BASE_URL}/usuarios/${id_usuario}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });

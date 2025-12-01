@@ -18,7 +18,7 @@ import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../navigation/types";
 
 // Ajuste para o seu IP
-const API_BASE_URL = 'http://localhost:8000'; 
+const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; 
 const ICON_LOGO_BRANCO = require('../../assets/icons/LogoBranco.png');
 
 interface FAQItem {

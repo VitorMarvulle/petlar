@@ -15,7 +15,7 @@ const RED_ALERT = '#FF6347';
 const FOOTER_TEXT_COLOR = GREEN_DARK;
 
 const ICON_LOGO_BRANCO = require('../../assets/icons/LogoBranco.png');
-const API_BASE_URL = 'http://localhost:8000'; // Ajuste conforme seu IP se necessário
+const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; // Ajuste conforme seu IP se necessário
 
 // Tipo de navegação e props
 type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Configuracoes'>;

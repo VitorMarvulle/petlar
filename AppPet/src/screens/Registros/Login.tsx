@@ -1,3 +1,4 @@
+// AppPet\src\screens\Registros\Login.tsx
 import React, { useState } from 'react';
 import {View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Image, Alert} from 'react-native';
 import { RootStackScreenProps } from '../../navigation/types';
@@ -17,7 +18,8 @@ export default function Login({ navigation }: RootStackScreenProps<'Login'>) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-
+  const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; 
+  
   const handleLogin = async () => {
     // Validações básicas
     if (!email || !password) {
@@ -28,7 +30,7 @@ export default function Login({ navigation }: RootStackScreenProps<'Login'>) {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/usuarios/login', {
+      const response = await fetch(`${API_BASE_URL}/usuarios/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -56,7 +58,7 @@ export default function Login({ navigation }: RootStackScreenProps<'Login'>) {
                                             email: data.email,  
                                             tipo: data.tipo,  
                                             telefone: data.telefone,  
-                                            },}  );
+                                            },});
       } else if (data.tipo === 'anfitriao') {
                 navigation.navigate('Home_Host', {usuario: {  
                                             id_usuario: data.id_usuario,  
@@ -66,20 +68,6 @@ export default function Login({ navigation }: RootStackScreenProps<'Login'>) {
                                             telefone: data.telefone,  
                                             },});
       }
-      // navigation.navigate('Home', {  
-      //   usuario: {  
-      //   id_usuario: data.id_usuario,  
-      //   nome: data.nome,  
-      //   email: data.email,  
-      //   tipo: data.tipo,  
-      //   telefone: data.telefone,  
-      //   },  
-      // });
-      // Aqui você pode salvar os dados do usuário
-      // Exemplo com AsyncStorage:
-      // await AsyncStorage.setItem('usuario', JSON.stringify(data));
-
-      //teste para celular solução abaixo
       
       Alert.alert('Sucesso', data.message || 'Login realizado com sucesso!', [
         {
@@ -101,11 +89,6 @@ export default function Login({ navigation }: RootStackScreenProps<'Login'>) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleGoogleSignIn = () => {
-    console.log('Google sign in pressed');
-    Alert.alert('Em breve', 'Login com Google será implementado em breve!');
   };
 
   return (
@@ -156,26 +139,7 @@ export default function Login({ navigation }: RootStackScreenProps<'Login'>) {
             </Text>
           </TouchableOpacity>
 
-          {/* Divisor */}
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>ou</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <TouchableOpacity
-            style={styles.googleButton}
-            onPress={handleGoogleSignIn}
-            disabled={loading}
-          >
-            <Image
-              source={require('../../../assets/icons/google.png')}
-              style={styles.googleIcon}
-              resizeMode="contain"
-            />
-            <Text style={styles.googleButtonText}>Continuar com Google</Text>
-          </TouchableOpacity>
-        
+          {/* Google e Divisor removidos daqui */}
         
         </View>
       </View>
@@ -279,45 +243,5 @@ const styles = StyleSheet.create({
   },
   signUpTextDark: {
     color: '#7AB24E',
-  },
-
-  // Divisor "ou"
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 25,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#B3D18C',
-  },
-  dividerText: {
-    marginHorizontal: 10,
-    fontSize: 15,
-    color: '#B3D18C',
-    fontFamily: 'Inter',
-  },
-
-  // Botão Google
-  googleButton: {
-    height: 55,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF6E2',
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: '#B3D18C',
-    paddingHorizontal: 22,
-  },
-  googleIcon: {
-    width: 28,
-    height: 28,
-    marginRight: 35,
-  },
-  googleButtonText: {
-    fontSize: 15,
-    color: '#000',
-    fontFamily: 'Inter',
   },
 });

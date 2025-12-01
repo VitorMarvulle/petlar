@@ -20,7 +20,7 @@ import {
 const { width } = Dimensions.get('window');
 
 // Ajuste para o seu IP local
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com';
 
 // --- Interfaces ---
 interface UsuarioFromApi {

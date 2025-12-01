@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
-const API_BASE_URL = 'http://localhost:8000'; 
+const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; 
 
 // --- Interfaces ---
 interface UsuarioFromApi {

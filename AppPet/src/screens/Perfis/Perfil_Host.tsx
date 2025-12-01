@@ -16,7 +16,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { RootStackScreenProps } from '../../navigation/types';
 
 const { width } = Dimensions.get('window');
-const API_BASE_URL = 'http://localhost:8000'; 
+const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; 
 
 // --- ÍCONES ---
 const ICON_STAR = require('../../../assets/icons/starFilled.png');

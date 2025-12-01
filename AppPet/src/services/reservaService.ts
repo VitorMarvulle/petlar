@@ -14,7 +14,7 @@ import {
 // Use 'http://10.0.2.2:8000' se estiver no Emulador Android.
 // Use 'http://localhost:8000' se estiver na Web.
 // Use o IP da sua máquina (ex: 192.168.1.X:8000) se estiver em dispositivo físico.
-const API_BASE_URL = 'http://localhost:8000'; 
+const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; 
 
 export class ReservaService {
 

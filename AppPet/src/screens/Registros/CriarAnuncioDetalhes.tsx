@@ -122,6 +122,7 @@ export default function CriarAnuncioDetalhesScreen({
   navigation,
 }: RootStackScreenProps<'CriarAnuncioDetalhes'>) {
   const { id_usuario, fotoPerfilUrl } = route.params;
+  const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; 
 
   const [formData, setFormData] = useState({
     petsAceitos: [] as string[],
@@ -263,7 +264,7 @@ export default function CriarAnuncioDetalhesScreen({
             }
 
             const response = await fetch(
-            `http://localhost:8000/anfitrioes/${id_usuario}/fotos-area`,
+            `${API_BASE_URL}/anfitrioes/${id_usuario}/fotos-area`,
             {
                 method: 'POST',
                 body: formDataUpload,
@@ -309,11 +310,11 @@ export default function CriarAnuncioDetalhesScreen({
       especie: especieDB,
       tamanho_pet: formData.pesoMaximo.join(','),
       preco: precoNumber,
-      status: 'pendente',
+      status: 'ativo',
       fotos_urls: fotosAreaUrls,
     };
 
-    const response = await fetch('http://localhost:8000/anfitrioes', {
+    const response = await fetch(`${API_BASE_URL}/anfitrioes/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

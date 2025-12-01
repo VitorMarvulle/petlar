@@ -30,7 +30,7 @@ export default function InfoHostScreen({
   route,
 }: RootStackScreenProps<'InfoHost'>) {
   const { id_usuario } = route.params;
-
+  const API_BASE_URL = 'https://container-service-1.7q33f42wtcfq2.us-east-1.cs.amazonlightsail.com'; 
   const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
   const [fotoPerfilFile, setFotoPerfilFile] = useState<File | null>(null); // WEB
   const [fotoPerfilUrl, setFotoPerfilUrl] = useState<string | null>(null);
@@ -122,7 +122,7 @@ export default function InfoHostScreen({
       }
 
       const response = await fetch(
-        `http://localhost:8000/usuarios/${id_usuario}/foto-perfil`,
+        `${API_BASE_URL}/usuarios/${id_usuario}/foto-perfil`,
         {
           method: 'POST',
           body: formData,
