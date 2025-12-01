@@ -52,6 +52,12 @@ interface AnfitriaoFromApi {
   rating_medio?: number | null;
 }
 
+interface MediaAvaliacaoResponse {
+  id_usuario: number;
+  media: number;
+  total_avaliacoes: number;
+}
+
 // Mesmo formato da Home
 interface HostCardProps {
   id_anfitriao: number;
@@ -124,13 +130,15 @@ const HostCard = ({ name, location, rating, price, imageUri, petsAccepted, onPre
 
 // --- COMPONENTES DA TELA FAVORITOS ---
 
-const LogoLarDocePet = () => (
-  <>
-    <View style={styles.cornerImageContainer}>
-      <Image source={ICON_LOGO_BRANCO} style={styles.cornerImage} resizeMode="contain" />
+// Componente de Logo ajustado para ser clicável e com novo layout
+const HeaderLogo = ({ onPress }: { onPress: () => void }) => (
+  <TouchableOpacity style={styles.headerLogoContainer} onPress={onPress} activeOpacity={0.7}>
+    <View style={styles.logoImageWrapper}>
+      <Image source={ICON_LOGO_BRANCO} style={styles.logoImage} resizeMode="contain" />
     </View>
-    <Text style={styles.LogoText}>Lar Doce Pet</Text>
-  </>
+    {/* Texto alterado para PetLar e com margem ajustada */}
+    <Text style={styles.logoText}>PetLar</Text>
+  </TouchableOpacity>
 );
 
 const SearchIconPNG = () => (
@@ -150,6 +158,11 @@ export default function Favoritos() {
   const [loading, setLoading] = useState(true);
   const [favoriteHosts, setFavoriteHosts] = useState<HostCardProps[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Função para navegar de volta para Home ao clicar na logo
+  const handleLogoPress = () => {
+    navigation.navigate('Home', { usuario });
+  };
 
   useEffect(() => {
     const fetchFavoritos = async () => {
@@ -173,15 +186,38 @@ export default function Favoritos() {
           return;
         }
 
-        // 2. Para cada ID de anfitrião, buscar dados completos
+        // 2. Para cada ID de anfitrião, buscar dados completos e a MÉDIA real
         const anfitrioesPromises = favoritosIds.map(async (id_anfitriao) => {
-          const url = `${API_BASE_URL}/anfitrioes/${id_anfitriao}`;
-          const resp = await fetch(url);
-          if (!resp.ok) {
-            throw new Error(`Erro ao buscar anfitrião ${id_anfitriao}: ${resp.status}`);
+          // 2.1 Buscar dados do anfitrião
+          const urlHost = `${API_BASE_URL}/anfitrioes/${id_anfitriao}`;
+          const respHost = await fetch(urlHost);
+          if (!respHost.ok) {
+            throw new Error(`Erro ao buscar anfitrião ${id_anfitriao}: ${respHost.status}`);
           }
-          const data: AnfitriaoFromApi = await resp.json();
-          return data;
+          const hostData: AnfitriaoFromApi = await respHost.json();
+
+          // 2.2 Buscar média de avaliações do usuário vinculado ao anfitrião
+          let mediaReal = 5.0; // Valor padrão caso falhe ou não tenha
+          if (hostData.usuarios?.id_usuario) {
+            try {
+              const urlMedia = `${API_BASE_URL}/avaliacoes/media/${hostData.usuarios.id_usuario}`;
+              const respMedia = await fetch(urlMedia);
+              if (respMedia.ok) {
+                const dataMedia: MediaAvaliacaoResponse = await respMedia.json();
+                // Se média for 0 (nenhuma avaliação), mantemos 5.0 ou mostramos 0.0 conforme preferência.
+                // Aqui vou assumir que se for 0, mostramos "Novo" (5.0) para não prejudicar, 
+                // ou use dataMedia.media diretamente se quiser ser estrito.
+                mediaReal = dataMedia.media === 0 ? 5.0 : dataMedia.media;
+              }
+            } catch (err) {
+              console.warn(`Erro ao buscar media para user ${hostData.usuarios.id_usuario}`, err);
+            }
+          }
+
+          // Injeta a média real no objeto para uso posterior
+          hostData.rating_medio = mediaReal;
+          
+          return hostData;
         });
 
         const anfitrioes = await Promise.all(anfitrioesPromises);
@@ -194,6 +230,7 @@ export default function Favoritos() {
           const location =
             cidade && bairro ? `${cidade}, ${bairro}` : cidade || bairro || 'Local não informado';
 
+          // Usa a média calculada no passo anterior
           const ratingNumber = item.rating_medio ?? 5;
           const rating = ratingNumber.toFixed(1).replace('.', ',');
 
@@ -267,7 +304,9 @@ export default function Favoritos() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollContentArea} showsVerticalScrollIndicator={false}>
-        <LogoLarDocePet />
+        
+        {/* Nova Logo Clicável e reposicionada */}
+        <HeaderLogo onPress={handleLogoPress} />
 
         <View style={styles.innerContainer}>
           <Text style={styles.mainTitle}>Hosts Favoritos</Text>
@@ -335,7 +374,7 @@ const styles = StyleSheet.create({
   },
   innerContainer: {
     marginHorizontal: 12,
-    marginTop: 100,
+    marginTop: 100, // Mantido para dar espaço ao Header
     marginBottom: 4,
     backgroundColor: '#FFFFFF',
     borderRadius: 40,
@@ -351,28 +390,35 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
 
-  cornerImageContainer: {
+  // --- NOVOS ESTILOS PARA O HEADER LOGO ---
+  headerLogoContainer: {
     position: 'absolute',
-    top: 29,
-    right: 220,
+    top: 30, // Posição vertical
+    left: 20, // Posição horizontal fixa à esquerda ou ajuste conforme preferir
+    right: 20, // Ocupa a largura para centralizar ou organizar
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center', // Centraliza o conjunto Imagem + Texto na tela, ou use 'flex-start'
+    zIndex: 20,
+  },
+  logoImageWrapper: {
     width: 60,
     height: 60,
-    zIndex: 10,
   },
-  cornerImage: {
+  logoImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'contain',
   },
-  LogoText: {
-    position: 'absolute',
-    top: 60,
-    left: 165,
-    fontSize: 20,
+  logoText: {
+    fontSize: 24, // Levemente maior para destacar
     fontWeight: '700',
     color: '#ffffff',
-    zIndex: 10,
+    marginLeft: 15, // Espaço horizontal maior solicitado entre logo e texto
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
+  // ----------------------------------------
 
   searchBarContainer: {
     flexDirection: 'row',

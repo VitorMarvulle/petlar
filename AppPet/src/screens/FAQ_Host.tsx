@@ -9,7 +9,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Image
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -18,6 +19,7 @@ import type { RootStackParamList } from "../navigation/types";
 
 // Ajuste para o seu IP
 const API_BASE_URL = 'http://localhost:8000'; 
+const ICON_LOGO_BRANCO = require('../../assets/icons/LogoBranco.png');
 
 interface FAQItem {
   id_pergunta: number;
@@ -35,8 +37,18 @@ interface FAQItem {
 type FAQHostRouteProp = RouteProp<RootStackParamList, 'FAQ_Host'>;
 type FAQHostNavigationProp = NativeStackNavigationProp<RootStackParamList, 'FAQ_Host'>;
 
+// --- HEADER LOGO ---
+const HeaderLogo = ({ onPress }: { onPress: () => void }) => (
+    <TouchableOpacity style={styles.headerLogoContainer} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.logoImageWrapper}>
+        <Image source={ICON_LOGO_BRANCO} style={styles.logoImage} resizeMode="contain" />
+      </View>
+      <Text style={styles.logoText}>PetLar</Text>
+    </TouchableOpacity>
+);
+
 export default function FAQHost() {
-  const navigation = useNavigation<FAQHostNavigationProp>(); // Hook de navegação
+  const navigation = useNavigation<FAQHostNavigationProp>(); 
   const route = useRoute<FAQHostRouteProp>();
   const { id_anfitriao } = route.params;
 
@@ -115,18 +127,17 @@ export default function FAQHost() {
     }
   };
 
+  const handleLogoPress = () => {
+      navigation.goBack();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      
+      <HeaderLogo onPress={handleLogoPress} />
+
       <View style={styles.innerContainer}>
         
-        {/* --- BOTÃO DE VOLTAR --- */}
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backButtonText}>{"< Voltar"}</Text>
-        </TouchableOpacity>
-
         <Text style={styles.title}>Perguntas dos Tutores</Text>
 
         {loading ? (
@@ -193,7 +204,7 @@ const styles = StyleSheet.create({
   innerContainer: {
     flex: 1,
     marginHorizontal: 12,
-    marginTop: 35,
+    marginTop: 100, // Ajustado para o Header Logo
     marginBottom: 50,
     backgroundColor: "#FFFFFF",
     borderRadius: 40,
@@ -201,19 +212,35 @@ const styles = StyleSheet.create({
     paddingVertical: 25,
   },
   
-  // --- ESTILOS DO BOTÃO VOLTAR ---
-  backButton: {
-    alignSelf: 'flex-start', // Alinha à esquerda
-    marginBottom: 10,       // Espaço antes do título
-    padding: 5,             // Área de toque melhor
+  // --- HEADER LOGO STYLES ---
+  headerLogoContainer: {
+    position: 'absolute',
+    top: 30,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
   },
-  backButtonText: {
-    color: '#556A44',
-    fontSize: 16,
+  logoImageWrapper: {
+    width: 60,
+    height: 60,
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  logoText: {
+    fontSize: 24,
     fontWeight: '700',
-    fontFamily: 'Inter' // Se estiver usando a fonte Inter
+    color: '#ffffff',
+    marginLeft: 15,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
-  // -------------------------------
+  // --------------------------
 
   title: {
     color: "#556A44",

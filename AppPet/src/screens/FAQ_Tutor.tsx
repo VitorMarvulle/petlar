@@ -10,12 +10,14 @@ import {
   Alert,
   ActivityIndicator,
   Keyboard,
+  Image,
 } from "react-native";
-import { useRoute, RouteProp } from "@react-navigation/native";
+import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
 
 // URL base da API
-const API_BASE_URL = 'http://localhost:8000'; // Se estiver no emulador Android, use 'http://10.0.2.2:8000'
+const API_BASE_URL = 'http://localhost:8000'; 
+const ICON_LOGO_BRANCO = require('../../assets/icons/LogoBranco.png');
 
 // Tipos baseados na resposta da API
 interface RespostaAPI {
@@ -34,8 +36,19 @@ interface PerguntaAPI {
 
 type FAQRouteProp = RouteProp<RootStackParamList, "FAQ_Tutor">;
 
+// --- HEADER LOGO ---
+const HeaderLogo = ({ onPress }: { onPress: () => void }) => (
+    <TouchableOpacity style={styles.headerLogoContainer} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.logoImageWrapper}>
+        <Image source={ICON_LOGO_BRANCO} style={styles.logoImage} resizeMode="contain" />
+      </View>
+      <Text style={styles.logoText}>PetLar</Text>
+    </TouchableOpacity>
+);
+
 export default function FAQ() {
   const route = useRoute<FAQRouteProp>();
+  const navigation = useNavigation();
   const { id_anfitriao, id_tutor } = route.params;
 
   const [newQuestion, setNewQuestion] = useState("");
@@ -58,10 +71,6 @@ export default function FAQ() {
       }
 
       const data = await response.json();
-      // O endpoint retorna todas as perguntas do anfitrião.
-      // Você pode filtrar aqui se quiser mostrar apenas as perguntas DESTE tutor:
-      // const minhasPerguntas = data.filter((q: PerguntaAPI) => q.id_tutor === id_tutor);
-      // Por enquanto, vou mostrar todas (estilo FAQ público):
       setQuestions(data);
     } catch (error) {
       console.error("Erro ao carregar perguntas:", error);
@@ -96,10 +105,6 @@ export default function FAQ() {
       }
 
       const novaPerguntaCriada = await response.json();
-
-      // Atualiza a lista localmente adicionando a nova pergunta ao final
-      // Nota: A API retorna o objeto criado, mas sem a estrutura 'resposta' aninhada ainda,
-      // então garantimos que resposta seja null visualmente.
       setQuestions([...questions, { ...novaPerguntaCriada, resposta: null }]);
       
       setNewQuestion("");
@@ -112,6 +117,10 @@ export default function FAQ() {
     }
   };
 
+  const handleLogoPress = () => {
+      navigation.goBack();
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
@@ -122,6 +131,9 @@ export default function FAQ() {
 
   return (
     <SafeAreaView style={styles.container}>
+      
+      <HeaderLogo onPress={handleLogoPress} />
+
       <View style={styles.innerContainer}>
         <Text style={styles.title}>Perguntas Frequentes</Text>
 
@@ -163,7 +175,6 @@ export default function FAQ() {
                 ) : (
                   <View style={styles.answerContainer}>
                     <Text style={styles.answerLabel}>Resposta:</Text>
-                    {/* Acessa a propriedade .resposta do objeto resposta */}
                     <Text style={styles.answerText}>{item.resposta.resposta}</Text>
                   </View>
                 )}
@@ -184,13 +195,44 @@ const styles = StyleSheet.create({
   innerContainer: {
     flex: 1,
     marginHorizontal: 12,
-    marginTop: 30,
+    marginTop: 100, // Ajustado para o Header Logo
     marginBottom: 4,
     backgroundColor: "#FFFFFF",
     borderRadius: 40,
     paddingHorizontal: 20,
     paddingVertical: 25,
   },
+  
+  // --- HEADER LOGO STYLES ---
+  headerLogoContainer: {
+    position: 'absolute',
+    top: 30,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+  },
+  logoImageWrapper: {
+    width: 60,
+    height: 60,
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  logoText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginLeft: 15,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  // --------------------------
+
   title: {
     color: "#556A44",
     fontSize: 24,
