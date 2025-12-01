@@ -71,7 +71,7 @@ export const login = async (email, senha) => {
     }
 
     const usuario = await response.json();
-
+    console.log(usuario);
     // Check if user is also an anfitriao
     try {
       const hostsResponse = await fetch(`${API_BASE_URL}/anfitrioes/`, {
