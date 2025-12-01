@@ -12,20 +12,6 @@ class ReservaCreate(BaseModel):
     pets_tutor: List[int] = []
     valor_diaria: float
     qtd_pets: int
-# backend\Reserva\dto\CreateReserva.py
-from pydantic import BaseModel
-from typing import Optional, List
-from datetime import date
-
-class ReservaCreate(BaseModel):
-    id_tutor: int
-    id_anfitriao: int
-    data_inicio: date
-    data_fim: date
-    status: Optional[str] = "pendente"
-    pets_tutor: List[int] = []
-    valor_diaria: float
-    qtd_pets: int
     qtd_dias: int
     valor_total_reserva: Optional[float]
     ja_avaliado_host: Optional[bool] = False

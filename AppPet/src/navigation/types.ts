@@ -1,7 +1,12 @@
-// petlar\AppPet\src\navigation\types.ts
+// AppPet/src/navigation/types.ts
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HostCardProps } from '../screens/Home';
-import { Pet } from '../screens/Registros/AdicionarPet';
+
+// Definição do tipo Pet movida para cá ou importada para evitar dependência circular, 
+// mas para este exemplo, manteremos a referência se o arquivo AdicionarPet exportar, 
+// ou definimos 'any' temporariamente se necessário. 
+// Idealmente, importe Pet de AdicionarPet ou crie um arquivo types/Pet.ts.
+import { Pet } from '../screens/Registros/AdicionarPet'; 
 
 export type RootStackParamList = {
   Login: undefined;
@@ -37,10 +42,15 @@ export type RootStackParamList = {
     };
   };
   InfoAdc: { id_usuario: number };
+  
+  // --- ATUALIZADO AQUI ---
   AdicionarPet: { 
     id_tutor: number;
-    onAddPet: (newPet: Pet) => void;
+    onAddPet?: (newPet: Pet) => void; // Opcional, pois na edição atualizamos a lista de outra forma
+    petParaEditar?: Pet; // Novo parâmetro para passar os dados na edição
   };
+  // -----------------------
+
   Reserva: {
     id_usuario: number;
     id_anfitriao: number;
@@ -68,11 +78,11 @@ export type RootStackParamList = {
   Alterar_senha: undefined;
   Alterar_email: undefined;
   FAQ_Tutor: {id_anfitriao: number; id_tutor: number};
-  FAQ_Host: undefined;
+  FAQ_Host: {id_anfitriao: number};
   InfoHost: { id_usuario: number; hostCriado?: any; fotoPerfilUrl?: string };  
   CriarAnuncioDetalhes: { id_usuario: number; fotoPerfilUrl: string };
   EditarAnuncio: { 
-    hostData: any; // Recebe os dados completos do anfitrião para editar
+    hostData: any; 
     id_usuario: number;
   };
 };
