@@ -37,7 +37,7 @@ const ProfilePage = () => {
             </div>
         );
     }
-
+console.log(user)
     return (
         <div className="container mx-auto px-4 py-8">
             <div className="max-w-4xl mx-auto">
@@ -47,10 +47,12 @@ const ProfilePage = () => {
                     <div className="px-8 pb-8">
                         <div className="relative flex justify-between items-end -mt-12 mb-6">
                             <div className="flex items-end">
-                                <div className="w-24 h-24 bg-white rounded-full p-1 shadow-md">
-                                    <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center text-3xl font-bold text-gray-500">
-                                        {user?.nome?.charAt(0).toUpperCase()}
-                                    </div>
+                                <div className="w-24 h-24 bg-white rounded-full p-1 shadow-md overflow-hidden">
+                                    <img
+                                        src={user?.imagem_usuario || `https://avatar.iran.liara.run/public?username=${user?.id_usuario || user?.id}`}
+                                        alt={user?.nome}
+                                        className="w-full h-full object-cover rounded-full"
+                                    />
                                 </div>
                                 <div className="ml-4 mb-1">
                                     <h1 className="text-3xl font-bold text-gray-800">{user?.nome}</h1>
@@ -75,14 +77,16 @@ const ProfilePage = () => {
                                     </div>
                                     <div>
                                         <span className="text-gray-500 text-sm block">Endereço</span>
-                                        <span className="text-gray-800 font-medium">{user?.endereco || 'Não informado'}</span>
+                                        <span className="text-gray-800 font-medium">
+                                            {user?.endereco ||
+                                                (user?.logradouro ? `${user.logradouro}, ${user.numero || ''} - ${user.bairro || ''}, ${user.cidade || ''} - ${user.uf || ''}` : 'Não informado')}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
                 {/* Seção de Pets */}
                 <div className="mb-8">
                     <div className="flex justify-between items-center mb-6">

@@ -15,8 +15,7 @@ const AddPetPage = () => {
         especie: 'Gato',
         idade: '',
         idadeUnidade: 'ano',
-        peso: '',
-        unidade: 'kg',
+        tamanho_pet: '',
         especificacoes: '',
     });
     const [photos, setPhotos] = useState([]);
@@ -55,7 +54,7 @@ const AddPetPage = () => {
             return;
         }
 
-        if (!petData.nome || !petData.idade || !petData.peso) {
+        if (!petData.nome || !petData.idade || !petData.tamanho_pet) {
             alert('Preencha os campos obrigatórios!');
             return;
         }
@@ -74,8 +73,7 @@ const AddPetPage = () => {
                 especie: petData.especie,
                 idade: parseInt(petData.idade),
                 idade_unidade: petData.idadeUnidade,
-                peso: parseFloat(petData.peso),
-                peso_unidade: petData.unidade,
+                tamanho_pet: petData.tamanho_pet,
                 observacoes: petData.especificacoes || null,
             });
 
@@ -98,7 +96,7 @@ const AddPetPage = () => {
         { value: 'Gato', label: 'Gato 🐱' },
         { value: 'Cachorro', label: 'Cachorro 🐶' },
         { value: 'Pássaro', label: 'Pássaro 🐦' },
-        { value: 'Exótico', label: 'Exótico 🦎' }
+        { value: 'Silvestre', label: 'Silvestre 🦎' }
     ];
 
     return (
@@ -177,32 +175,23 @@ const AddPetPage = () => {
                         </div>
                     </div>
 
-                    {/* Peso */}
+                    {/* tamanho */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input
-                            label="Peso:"
-                            type="number"
-                            id="peso"
-                            name="peso"
-                            value={petData.peso}
-                            onChange={handleChange}
-                            min="0"
-                            step="0.1"
-                            placeholder="Ex: 5.5"
-                        />
+
                         <div>
-                            <label htmlFor="unidade" className="block text-sm font-medium text-gray-700 mb-1">
-                                Unidade de Peso:
+                            <label htmlFor="tamanho_pet" className="block text-sm font-medium text-gray-700 mb-1">
+                                Tamanho:
                             </label>
                             <select
-                                id="unidade"
-                                name="unidade"
-                                value={petData.unidade}
+                                id="tamanho_pet"
+                                name="tamanho_pet"
+                                value={petData.tamanho_pet}
                                 onChange={handleChange}
                                 className="w-full px-4 py-3 bg-white border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-red-400 focus:outline-none"
                             >
-                                <option value="kg">Kg</option>
-                                <option value="g">g</option>
+                                <option value="pequeno">Pequeno</option>
+                                <option value="medio">Medio</option>
+                                <option value="grande">Grande</option>
                             </select>
                         </div>
                     </div>
