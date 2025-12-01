@@ -278,7 +278,7 @@ export default function Home_Host() {
               onPress={() => {
                 if (item === 'conta') navigation.navigate('Perfil_Host', { host: myHost || {} as any });
                 if (item === 'Reservas') navigation.navigate('Reserva_Host', { usuario: usuario });
-                if (item === 'config') navigation.navigate('Configuracoes');
+                if (item === 'config') navigation.navigate('Configuracoes', { usuario });
                 if (item === 'perguntas') {
                     if (myHost && myHost.id_anfitriao) {
                         navigation.navigate('FAQ_Host', { id_anfitriao: myHost.id_anfitriao });

@@ -116,24 +116,28 @@ def login_usuario(login_data: LoginRequest):
 @usuario_router.put("/{id}", status_code=HTTP_200_OK)
 def update_usuario(id: int, usuario_update: UsuarioUpdate):
     """
-    Atualiza parcialmente os dados de um usuário existente.
-    Usado, por exemplo, após o cadastro inicial para completar informações
-    na tela InfoAdc (foto de perfil, endereço, etc.).
+    Atualiza dados do usuário, incluindo criptografia de nova senha se fornecida.
     """
     url = f"{SUPABASE_URL}/rest/v1/usuarios?id_usuario=eq.{id}"
 
-    # Converte para dict e remove campos None para não sobrescrever com null
+    # Converte para dict e remove None
     update_data = {k: v for k, v in usuario_update.dict().items() if v is not None}
 
     if not update_data:
         raise HTTPException(status_code=400, detail="Nenhum dado para atualizar")
 
-    response = requests.patch(url, json=update_data, headers=HEADERS)  # PATCH para atualização parcial
+    # LOGICA DE TROCA DE SENHA:
+    # Se 'senha' vier no update, precisamos fazer o hash e salvar em 'senha_hash'
+    if "senha" in update_data:
+        plain_password = update_data.pop("senha") # Remove 'senha' pois não existe essa coluna no banco
+        hashed_password = bcrypt_context.hash(plain_password)
+        update_data["senha_hash"] = hashed_password
+
+    response = requests.patch(url, json=update_data, headers=HEADERS) 
 
     if response.status_code not in (200, 204):
         raise HTTPException(status_code=response.status_code, detail=response.text)
 
-    # Supabase REST com Prefer=return=representation normalmente retorna o registro atualizado
     return response.json()
 
 @usuario_router.post("/{id}/foto-perfil", status_code=HTTP_200_OK)

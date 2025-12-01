@@ -25,7 +25,6 @@ const ICON_DELETE = require('../../../assets/icons/delete.png');
 const ICON_EDIT = require('../../../assets/icons/edit.png');
 const ICON_LIST = require('../../../assets/icons/planilha.png');
 const ICON_LOGO_BRANCO = require('../../../assets/icons/LogoBranco.png');
-const ICON_BACK = require('../../../assets/icons/arrow-left.png');
 
 // --- INTERFACES ---
 interface RatingResponse {
@@ -48,18 +47,16 @@ interface HostDataParam {
 // --- COMPONENTES VISUAIS ---
 
 const PetIconItem = ({ petName }: { petName: string }) => {
-    // Mapeamento para garantir que nomes do banco (minúsculos/sem acento) achem o ícone
     const icons: Record<string, any> = {
         'cachorro': require('../../../assets/icons/animais/cachorro.png'),
         'gato': require('../../../assets/icons/animais/gato.png'),
         'passaro': require('../../../assets/icons/animais/passaro.png'),
-        'pássaro': require('../../../assets/icons/animais/passaro.png'), // fallback
+        'pássaro': require('../../../assets/icons/animais/passaro.png'), 
         'tartaruga': require('../../../assets/icons/animais/tartaruga.png'),
-        'reptil': require('../../../assets/icons/animais/tartaruga.png'), // usa tartaruga como genérico réptil/silvestre se não tiver outro
+        'reptil': require('../../../assets/icons/animais/tartaruga.png'),
         'silvestre': require('../../../assets/icons/animais/tartaruga.png'),
     };
     
-    // Normaliza a string para buscar no mapa (lowercase)
     const normalizedName = petName.toLowerCase();
     const source = icons[normalizedName];
     
@@ -128,13 +125,14 @@ const ActionButton = ({ onPress, backgroundColor, iconSource, label }: any) => (
     </View>
 );
 
-const LogoLarDocePet = () => (
-    <>
-        <View style={styles.cornerImageContainer}>
-            <Image source={ICON_LOGO_BRANCO} style={styles.cornerImage} resizeMode="contain" />
-        </View>
-        <Text style={styles.LogoText}>Lar Doce Pet</Text>
-    </>
+// Novo Header Logo Unificado e Centralizado
+const HeaderLogo = ({ onPress }: { onPress: () => void }) => (
+    <TouchableOpacity style={styles.headerLogoContainer} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.logoImageWrapper}>
+        <Image source={ICON_LOGO_BRANCO} style={styles.logoImage} resizeMode="contain" />
+      </View>
+      <Text style={styles.logoText}>PetLar</Text>
+    </TouchableOpacity>
 );
 
 const CustomAlert = ({ visible, title, message, onConfirm, onCancel, confirmText, cancelText }: any) => (
@@ -159,7 +157,6 @@ const CustomAlert = ({ visible, title, message, onConfirm, onCancel, confirmText
 // --- TELA PRINCIPAL DO HOST ---
 export default function PerfilHost({ navigation, route }: RootStackScreenProps<'Perfil_Host'>) {
     
-    // Params pode vir da Home (com 'host') ou da Edição/Criação (com 'newListingData')
     const params = route.params;
     const initialListing = params?.host || null;
 
@@ -195,12 +192,8 @@ export default function PerfilHost({ navigation, route }: RootStackScreenProps<'
     }, [fetchRating]);
 
     // --- 2. EFEITO PARA ATUALIZAR DADOS APÓS EDIÇÃO/CRIAÇÃO ---
-    // Esta é a parte crítica para corrigir o erro de ID não encontrado
     useEffect(() => {
         if (params?.listingCreated && params.newListingData) {
-            
-            // Tenta pegar o objeto 'usuarios' que mandamos de volta no EditarAnuncio
-            // Se não vier (caso raro), tenta pegar do estado anterior
             const userData = params.newListingData.usuarios || currentListing?.rawData?.usuarios;
 
             if (!userData) {
@@ -215,7 +208,6 @@ export default function PerfilHost({ navigation, route }: RootStackScreenProps<'
                 imageUri: params.newListingData.imageUri,
                 rating: ratingData?.media ? ratingData.media.toFixed(1).replace('.', ',') : (currentListing?.rating || "Novo"),
                 
-                // RECONSTRÓI O RAW DATA COM O USUÁRIO DENTRO
                 rawData: { 
                     ...params.newListingData, 
                     usuarios: userData 
@@ -223,29 +215,26 @@ export default function PerfilHost({ navigation, route }: RootStackScreenProps<'
             };
             
             setCurrentListing(updatedListing);
-            
-            // Limpa os parametros para evitar loops
             navigation.setParams({ listingCreated: undefined, newListingData: undefined } as any);
         }
     }, [params, currentListing, ratingData, navigation]);
 
 
     // --- HANDLERS ---
-
     const handleViewRequests = () => navigation.navigate('Reserva_Host');
     
     const handleEditListing = () => {
         if (currentListing && currentListing.rawData) {
             navigation.navigate('EditarAnuncio', {
                 hostData: currentListing.rawData,
-                id_usuario: currentListing.rawData.id_anfitriao // Ou id_usuario, dependendo do seu DB
+                id_usuario: currentListing.rawData.id_anfitriao 
             });
         } else {
             Alert.alert("Erro", "Dados do anúncio não carregados corretamente.");
         }
     };
     
-    const handleCreateListing = () => navigation.navigate('CriarAnuncioDetalhes'); // Sua rota de fluxo inicial de criação
+    const handleCreateListing = () => navigation.navigate('CriarAnuncioDetalhes');
     
     const handleDeleteListing = () => setAlertVisible(true);
     
@@ -304,16 +293,8 @@ export default function PerfilHost({ navigation, route }: RootStackScreenProps<'
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.headerButtons}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
-                    <Image source={ICON_BACK} style={styles.headerIcon} resizeMode="contain" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.headerButton}>
-                    <Text style={styles.logoutText}>Sair</Text>
-                </TouchableOpacity>
-            </View>
-            
-            <LogoLarDocePet />
+            {/* Header Unificado e Centralizado (Sem setas e botões extras) */}
+            <HeaderLogo onPress={() => navigation.goBack()} />
             
             <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
                 <View style={styles.innerContainer}>
@@ -399,14 +380,34 @@ const styles = StyleSheet.create({
         flex: 1, margin: 12, backgroundColor: '#FFFFFF', borderRadius: 49,
         paddingHorizontal: 20, paddingVertical: 20, marginTop: 100, marginBottom: 20,
     },
-    // Header e Logo
-    cornerImageContainer: { position: 'absolute', top: 29, left: '50%', marginLeft: -85, width: 60, height: 60, zIndex: 10 },
-    cornerImage: { width: '100%', height: '100%', resizeMode: 'contain' },
-    LogoText: { position: 'absolute', top: 60, left: '50%', marginLeft: -25, fontSize: 20, fontWeight: '700', color: '#ffffff', zIndex: 10 },
-    headerButtons: { position: 'absolute', top: 40, left: 20, right: 20, flexDirection: 'row', justifyContent: 'space-between', zIndex: 20 },
-    headerButton: { padding: 5 },
-    headerIcon: { width: 25, height: 25, tintColor: '#FFFFFF' },
-    logoutText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 16, fontFamily: 'Inter' },
+    // Header e Logo Centralizados
+    headerLogoContainer: {
+        position: 'absolute',
+        top: 40,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center', // Centraliza
+        zIndex: 20,
+    },
+    logoImageWrapper: {
+        width: 60,
+        height: 60,
+    },
+    logoImage: {
+        width: '100%',
+        height: '100%',
+    },
+    logoText: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#ffffff',
+        marginLeft: 15,
+        textShadowColor: 'rgba(0, 0, 0, 0.1)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 2,
+    },
     
     // Perfil
     profileSection: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 5, marginLeft: -6, marginBottom: 30 },

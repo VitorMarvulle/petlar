@@ -32,7 +32,6 @@ const PassaroIconPng = require('../../../assets/icons/animais/passaro.png');
 const TartarugaIconPng = require('../../../assets/icons/animais/tartaruga.png');
 const NaoFavorito = require('../../../assets/icons/GreyFav.png');
 const Favorito = require('../../../assets/icons/GoldFav.png');
-const BackIconPng = require('../../../assets/icons/arrow-left.png');
 const ICON_LOGO_BRANCO = require('../../../assets/icons/LogoBranco.png');
 
 // Tipos
@@ -170,7 +169,7 @@ const PetIcon = ({ petName }: { petName: string }) => {
   return <Image source={source} style={styles.petTypeIcon} />;
 };
 
-// Componente Header Logo
+// Componente Header Logo Centralizado (Funciona como botão voltar)
 const HeaderLogo = ({ onPress }: { onPress: () => void }) => (
     <TouchableOpacity style={styles.headerLogoContainer} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.logoImageWrapper}>
@@ -263,11 +262,8 @@ export default function CardHost() {
   };
 
   const handleLogoPress = () => {
-    if (usuario?.tipo === 'tutor') {
-        navigation.navigate('Home', { usuario });
-    } else {
-        navigation.goBack();
-    }
+    // Ao clicar na logo, volta para a tela anterior
+    navigation.goBack();
   };
 
   if (loading) {
@@ -323,7 +319,7 @@ export default function CardHost() {
   const avaliacoesFiltradas = avaliacoes.filter((av) =>
     av.comentario?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  
+   
   const handleFAQPress = () => {
       if (!usuario?.id_usuario) {
         Alert.alert('Atenção', 'Você precisa estar logado para ver ou fazer perguntas.');
@@ -342,17 +338,8 @@ export default function CardHost() {
 
   return (
     <SafeAreaView style={styles.container}>
-        {/* Nova Header Logo Centralizada */}
+        {/* Header Logo Centralizada e Clicável (Serve como botão voltar) */}
         <HeaderLogo onPress={handleLogoPress} />
-
-        {/* Botões de navegação e ação absolutos */}
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.absoluteBackButton}>
-            <Image source={BackIconPng} style={styles.backIcon} />
-        </TouchableOpacity>
-        
-        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.absoluteLogoutButton}>
-            <Text style={styles.logoutText}>Sair</Text>
-        </TouchableOpacity>
 
       <View style={styles.innerContainer}>
         <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -380,14 +367,18 @@ export default function CardHost() {
             </View>
           </View>
 
-          {/* Botão de Favoritar */}
-          {usuario?.id_usuario && (
-            <FavoritarButton
-              hostId={anfitriao.id_anfitriao}
-              userId={usuario.id_usuario}
-              initialFavorito={isFavorito}
-            />
-          )}
+          {/* Botão de Favoritar (Com Spacer para corrigir layout quando não logado) */}
+          <View style={styles.favoriteContainer}>
+            {usuario?.id_usuario ? (
+                <FavoritarButton
+                hostId={anfitriao.id_anfitriao}
+                userId={usuario.id_usuario}
+                initialFavorito={isFavorito}
+                />
+            ) : (
+                <View style={styles.favoriteSpacer} />
+            )}
+          </View>
 
           {/* Rating */}
           <View style={styles.ratingSectionNew}>
@@ -501,7 +492,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#B3D18C',
-    paddingTop: 0, // Removido padding extra pois SafeAreaView lida com isso
+    paddingTop: 0,
   },
   innerContainer: {
     flex: 1,
@@ -519,13 +510,13 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 40,
   },
-  
-  // --- HEADER LOGO STYLES ---
+   
+  // --- HEADER LOGO STYLES (Centralizado) ---
   headerLogoContainer: {
     position: 'absolute',
-    top: 40, // Ajustado para ficar na área segura superior
-    left: 20,
-    right: 20,
+    top: 40,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -547,21 +538,6 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.1)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
-  },
-  // Botões absolutos para manter funcionalidade anterior
-  absoluteBackButton: {
-      position: 'absolute',
-      top: 55, // Alinhado verticalmente com o centro da logo
-      left: 25,
-      zIndex: 25,
-      padding: 5,
-  },
-  absoluteLogoutButton: {
-      position: 'absolute',
-      top: 58,
-      right: 25,
-      zIndex: 25,
-      padding: 5,
   },
   // --------------------------
 
@@ -636,12 +612,26 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     fontFamily: 'Inter',
   },
+  
+  // --- FAVORITE BUTTON & SPACER ---
+  favoriteContainer: {
+    zIndex: 2,
+  },
   fav: {
     width: 75,
     height: 75,
     left: 250,
     bottom: 55,
   },
+  favoriteSpacer: {
+    height: 75,
+    width: 1, 
+    // O Spacer funciona porque o layout abaixo dele (ratingSectionNew)
+    // tem margem negativa confiando que algo ocupou esses 75px de altura
+    // no fluxo normal (mesmo que o botão em si tenha position relative + offset).
+  },
+  // ------------------------------
+
   ratingSectionNew: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -650,6 +640,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: -98,
     marginBottom: 20,
+    zIndex: 1,
   },
   starIcon: {
     width: 18,
@@ -888,18 +879,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 5,
-  },
-  // Remover header styles antigos ou não utilizados se necessário
-  backIcon: {
-    width: 24,
-    height: 24,
-    tintColor: '#556A44',
-  },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#556A44',
-    fontFamily: 'Inter',
   },
   avatarImage: {
     width: '100%',

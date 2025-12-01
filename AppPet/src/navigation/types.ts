@@ -75,7 +75,15 @@ export type RootStackParamList = {
     preco_diaria?: number;
   };
   Reserva_Lista: undefined;
-  Configuracoes: undefined;
+  Configuracoes: {
+    usuario: {
+      id_usuario: number;
+      nome: string;
+      email: string;
+      tipo?: string | null;
+      telefone?: string | null;
+    };
+  };
   Home_Host: { 
       usuario: {  
         id_usuario: number;  
