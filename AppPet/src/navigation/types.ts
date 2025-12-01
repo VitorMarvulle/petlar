@@ -8,18 +8,38 @@ import { HostCardProps } from '../screens/Home';
 // Idealmente, importe Pet de AdicionarPet ou crie um arquivo types/Pet.ts.
 import { Pet } from '../screens/Registros/AdicionarPet'; 
 
+// Definição da interface dos Filtros para tipagem forte
+export interface FiltrosSearch {
+  tipo?: string;
+  region?: string | null;
+  size?: string;
+  priceMin?: number;
+  priceMax?: number;
+  dataEntrada?: string;
+  dataSaida?: string;
+}
+
 export type RootStackParamList = {
   Login: undefined;
   Cadastro: undefined;
   Endereco: {id_usuario: number};
-  Home: { usuario: {  
-    id_usuario: number;  
-    nome: string;  
-    email: string;  
-    tipo?: string | null;  
-    telefone?: string | null;  
-  }};
-  Filtros: undefined;
+  Home: { 
+    usuario: {  
+      id_usuario: number;  
+      nome: string;  
+      email: string;  
+      tipo?: string | null;  
+      telefone?: string | null;  
+    };
+    filtros?: FiltrosSearch; // <--- NOVO
+  };
+  Filtros: {
+    usuario: {
+      id_usuario: number;  
+      nome: string;  
+      tipo?: string | null; 
+    }
+  };
   Perfil_Tutor: { id_usuario: number };
   Perfil_Host: { host: HostCardProps };
   Card_Host: { 
@@ -56,13 +76,16 @@ export type RootStackParamList = {
   };
   Reserva_Lista: undefined;
   Configuracoes: undefined;
-  Home_Host: { usuario: {  
-    id_usuario: number;  
-    nome: string;  
-    email: string;  
-    tipo?: string | null;  
-    telefone?: string | null;  
-  }};
+  Home_Host: { 
+      usuario: {  
+        id_usuario: number;  
+        nome: string;  
+        email: string;  
+        tipo?: string | null;  
+        telefone?: string | null;  
+      };
+      filtros?: FiltrosSearch; // <--- NOVO
+    };
   Reserva_Tutor: {usuario?: {
       id_usuario: number;
       nome: string;

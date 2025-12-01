@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import type { RootStackParamList } from '../navigation/types';
+import type { RootStackParamList, FiltrosSearch } from '../navigation/types';
 import {
   View,
   Text,
@@ -18,10 +18,9 @@ import {
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
-// Ajuste para o IP da sua máquina
 const API_BASE_URL = 'http://localhost:8000'; 
 
-// --- Interfaces (Mantidas iguais) ---
+// --- Interfaces ---
 interface UsuarioFromApi {
   id_usuario: number;
   nome: string;
@@ -52,7 +51,7 @@ interface GetAnfitrioesAtivosResponse {
   results: AnfitriaoFromApi[];
 }
 
-// --- Componentes de UI ---
+// --- Componentes UI ---
 const PetIconItem = ({ petName }: { petName: string }) => {
   const icons: Record<string, any> = {
     cachorro: require('../../assets/icons/animais/cachorro.png'),
@@ -60,14 +59,13 @@ const PetIconItem = ({ petName }: { petName: string }) => {
     passaro: require('../../assets/icons/animais/passaro.png'),
     tartaruga: require('../../assets/icons/animais/tartaruga.png'),
   };
-  const source = icons[petName.toLowerCase()];
-  if (!source) return null;
+  const source = icons[petName.toLowerCase()] || icons['cachorro'];
   return <Image source={source} style={styles.petIconImage} resizeMode="contain" />;
 };
 
 const HomeIcon = ({ name }: { name: string }) => {
   const icons: Record<string, { src: any; size: number }> = {
-    config: { src: require('../../assets/icons/config.png'), size: 28 }, // Reduzi um pouco para caber melhor
+    config: { src: require('../../assets/icons/config.png'), size: 28 }, 
     perguntas: { src: require('../../assets/icons/perguntas.png'), size: 32 },
     Reservas: { src: require('../../assets/icons/planilha.png'), size: 30 },
     favoritos: { src: require('../../assets/icons/Favoritos.png'), size: 35 },
@@ -87,7 +85,7 @@ const PetIcons = ({ petsAccepted }: { petsAccepted: string[] }) => (
   </View>
 );
 
-// --- Card do Host ---
+// --- Card Host ---
 export interface HostCardProps {
   id_anfitriao?: number;
   name: string;
@@ -139,18 +137,33 @@ type HomeHostScreenRouteProp = RouteProp<RootStackParamList, 'Home_Host'>;
 export default function Home_Host() {
   const navigation = useNavigation<HomeHostScreenNavigationProp>();
   const route = useRoute<HomeHostScreenRouteProp>();
-  const { usuario } = route.params;
+  const { usuario, filtros } = route.params;
 
   // Estados
+  const [activeFilters, setActiveFilters] = useState<FiltrosSearch | null>(null);
   const [loading, setLoading] = useState(false);
   const [myHost, setMyHost] = useState<HostCardProps | null>(null);
   const [otherHosts, setOtherHosts] = useState<HostCardProps[]>([]);
   
-  // Paginação
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const pageSize = 10;
 
+  // Gerenciamento de Filtros
+  useEffect(() => {
+    if (filtros) {
+        setActiveFilters(filtros);
+        setPage(1); // Reseta paginação
+    }
+  }, [filtros]);
+
+  const clearFilters = () => {
+      setActiveFilters(null);
+      setPage(1);
+      navigation.setParams({ filtros: undefined });
+  };
+
+  // Mapeamento API -> Card
   const mapApiToCard = (item: AnfitriaoFromApi): HostCardProps => {
     const nome = item.usuarios?.nome ?? 'Anfitrião';
     const cidade = item.usuarios?.cidade ?? '';
@@ -165,11 +178,11 @@ export default function Home_Host() {
     if (Array.isArray(item.fotos_urls)) {
       fotosArray = item.fotos_urls;
     } else if (typeof item.fotos_urls === 'string' && item.fotos_urls.trim() !== '') {
-      try {
-        const parsed = JSON.parse(item.fotos_urls);
-        if (Array.isArray(parsed)) fotosArray = parsed;
-      } catch (e) {
-        if (item.fotos_urls.startsWith('http')) fotosArray = [item.fotos_urls];
+      try { 
+          const parsed = JSON.parse(item.fotos_urls); 
+          if (Array.isArray(parsed)) fotosArray = parsed; 
+      } catch (e) { 
+          if (item.fotos_urls.startsWith('http')) fotosArray = [item.fotos_urls]; 
       }
     }
     const firstPhoto = fotosArray.length > 0 ? fotosArray[0] : 'https://via.placeholder.com/800x600/B3D18C/FFFFFF?text=Lar+Doce+Pet';
@@ -189,7 +202,27 @@ export default function Home_Host() {
   const fetchHosts = useCallback(async (currentPage: number) => {
     try {
       setLoading(true);
-      const url = `${API_BASE_URL}/anfitrioes/ativos?page=${currentPage}&page_size=${pageSize}`;
+      
+      let url = '';
+      if (activeFilters) {
+         const params = new URLSearchParams();
+         params.append('page', currentPage.toString());
+         params.append('page_size', pageSize.toString());
+         
+         if (activeFilters.region) params.append('cidade', activeFilters.region);
+         if (activeFilters.tipo) params.append('tipo_pet', activeFilters.tipo);
+         if (activeFilters.size) params.append('tamanho', activeFilters.size);
+         
+         // ADICIONE ISTO:
+         if (activeFilters.priceMin !== undefined) params.append('preco_min', activeFilters.priceMin.toString());
+         if (activeFilters.priceMax !== undefined) params.append('preco_max', activeFilters.priceMax.toString());
+         
+         url = `${API_BASE_URL}/anfitrioes/buscar?${params.toString()}`;
+      } else {
+         // Rota Padrão
+         url = `${API_BASE_URL}/anfitrioes/ativos?page=${currentPage}&page_size=${pageSize}`;
+      }
+
       const response = await fetch(url);
       if (!response.ok) throw new Error('Falha ao buscar anfitriões');
 
@@ -207,7 +240,9 @@ export default function Home_Host() {
         }
       });
 
+      // Se encontrar meu host na paginação atual, atualiza.
       if (foundMyHost) setMyHost(foundMyHost);
+      
       setOtherHosts(others);
       setHasNext(data.has_next);
 
@@ -217,7 +252,7 @@ export default function Home_Host() {
     } finally {
       setLoading(false);
     }
-  }, [usuario.id_usuario]);
+  }, [usuario.id_usuario, activeFilters]);
 
   useEffect(() => {
     fetchHosts(page);
@@ -248,7 +283,7 @@ export default function Home_Host() {
                     if (myHost && myHost.id_anfitriao) {
                         navigation.navigate('FAQ_Host', { id_anfitriao: myHost.id_anfitriao });
                     } else {
-                        Alert.alert('Aguarde', 'Carregando dados do seu perfil de anfitrião...');
+                        Alert.alert('Aguarde', 'Carregando dados do seu perfil...');
                     }
                 }
               }}>
@@ -260,17 +295,33 @@ export default function Home_Host() {
           ))}
         </View>
 
-        {/* Filtros */}
+        {/* Botão de Filtro */}
         <View style={styles.filtersHeader}>
           <TouchableOpacity 
             style={styles.filtersButton}
-            onPress={() => navigation.navigate('Filtros')}
+            onPress={() => navigation.navigate('Filtros', { usuario })}
             >
             <Text style={styles.filtersText}>Filtros de Busca</Text>
             <FilterIcon />
           </TouchableOpacity>
         </View>
 
+        {/* BANNER DE FILTRO ATIVO */}
+        {activeFilters && (
+            <View style={styles.activeFilterContainer}>
+                <View style={{flexDirection:'column'}}>
+                    <Text style={styles.activeFilterTitle}>Filtro Ativo:</Text>
+                    <Text style={styles.activeFilterText}>
+                         {activeFilters.tipo} • {activeFilters.region || 'Todas regiões'}
+                    </Text>
+                </View>
+                <TouchableOpacity onPress={clearFilters} style={styles.closeFilterButton}>
+                    <Text style={styles.closeFilterX}>X</Text>
+                </TouchableOpacity>
+            </View>
+        )}
+
+        {/* Lista e Conteúdo */}
         {loading && otherHosts.length === 0 ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <ActivityIndicator size="large" color="#556A44" />
@@ -278,8 +329,8 @@ export default function Home_Host() {
         ) : (
           <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
             
-             {/* SEU ANUNCIO */}
-             {myHost && (
+             {/* SEU ANUNCIO - Esconde se estiver filtrando para focar na pesquisa */}
+             {myHost && !activeFilters && (
               <View style={styles.sectionContainer}>
                 <Text style={styles.sectionTitle}>Seu Anúncio</Text>
                 <HostCard
@@ -290,9 +341,12 @@ export default function Home_Host() {
               </View>
             )}
 
-            {/* OUTROS HOSTS */}
+            {/* OUTROS HOSTS / RESULTADOS */}
             <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Outros Anfitriões</Text>
+              <Text style={styles.sectionTitle}>
+                  {activeFilters ? 'Resultados da Busca' : 'Outros Anfitriões'}
+              </Text>
+
               {otherHosts.length > 0 ? (
                 otherHosts.map((host, i) => (
                   <HostCard
@@ -302,7 +356,16 @@ export default function Home_Host() {
                   />
                 ))
               ) : (
-                <Text style={styles.infoText}>Nenhum outro anfitrião nesta página.</Text>
+                <View style={{alignItems: 'center', padding: 20}}>
+                     <Text style={styles.infoText}>
+                        {activeFilters ? 'Nenhum resultado encontrado.' : 'Nenhum outro anfitrião nesta página.'}
+                     </Text>
+                     {activeFilters && (
+                        <TouchableOpacity onPress={clearFilters} style={styles.clearFilterButton}>
+                            <Text style={styles.clearFilterButtonText}>Limpar Filtros</Text>
+                        </TouchableOpacity>
+                     )}
+                </View>
               )}
             </View>
 
@@ -313,9 +376,7 @@ export default function Home_Host() {
                   <Text style={styles.pageNumber}>{'<'}</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity disabled>
-                <Text style={[styles.pageNumber, styles.currentPage]}>{page}</Text>
-              </TouchableOpacity>
+              <Text style={[styles.pageNumber, styles.currentPage]}>{page}</Text>
               {hasNext && (
                 <TouchableOpacity onPress={() => handleChangePage(page + 1)}>
                   <Text style={styles.pageNumber}>{'>'}</Text>
@@ -338,15 +399,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#B3D18C' },
   innerContainer: { flex: 1, marginHorizontal: 12, marginTop: 30, marginBottom: 4, backgroundColor: '#FFFFFF', borderRadius: 40, paddingHorizontal: 20, paddingVertical: 28 },
 
-  // --- ALTERAÇÕES AQUI PARA LINHA ÚNICA ---
+  // --- Top Nav em Linha Única ---
   topNav: { 
     flexDirection: 'row', 
-    justifyContent: 'space-between', // Distribui os itens uniformemente
+    justifyContent: 'space-between', 
     marginBottom: 20,
-    // Removi flexWrap e gap para forçar linha única com justifyContent
   },
   navButton: { 
-    width: '23%', // Largura ajustada para caber 4 (aprox 23% cada + espaços)
+    width: '23%', 
     height: 70, 
     borderRadius: 17, 
     borderWidth: 2, 
@@ -354,22 +414,40 @@ const styles = StyleSheet.create({
     backgroundColor: '#85B65E', 
     justifyContent: 'center', 
     alignItems: 'center',
-    paddingHorizontal: 2 // Pequeno padding interno para segurança
+    paddingHorizontal: 2 
   },
   navButtonText: { 
     color: '#FFF6E2', 
-    fontSize: 10, // Reduzi levemente a fonte para garantir que nomes longos caibam
+    fontSize: 10, 
     fontFamily: 'Inter', 
     marginTop: 4,
     textAlign: 'center' 
   },
-  // ------------------------------------------
 
   filtersHeader: { alignItems: 'flex-end', marginBottom: 15 },
   filtersButton: { flexDirection: 'row', alignItems: 'center' },
   filtersText: { color: '#556A44', fontSize: 16, fontFamily: 'Inter', marginRight: 8 },
   filterIconImage: { width: 30, height: 30, marginLeft: 5 },
   
+  // --- Filtro Ativo Styles ---
+  activeFilterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#85B65E',
+    padding: 12,
+    borderRadius: 15,
+    marginBottom: 15,
+    borderWidth: 2,
+    borderColor: '#B3D18C'
+  },
+  activeFilterTitle: { color: '#FFF6E2', fontSize: 10, fontWeight: 'bold' },
+  activeFilterText: { color: '#FFF6E2', fontSize: 14, fontWeight: '600' },
+  closeFilterButton: { padding: 5 },
+  closeFilterX: { color: '#FFF6E2', fontSize: 18, fontWeight: '900' },
+  clearFilterButton: { backgroundColor: '#85B65E', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10, marginTop: 10 },
+  clearFilterButtonText: { color: '#FFF', fontWeight: 'bold' },
+
   scrollContainer: { flex: 1 },
   sectionContainer: { marginBottom: 10 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#556A44', marginBottom: 10, fontFamily: 'Inter' },
