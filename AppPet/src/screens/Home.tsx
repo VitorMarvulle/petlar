@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/types';
+import type { RootStackParamList, FiltrosSearch } from '../navigation/types';
 import {
   View,
   Text,
@@ -19,9 +19,10 @@ import {
 
 const { width } = Dimensions.get('window');
 
+// Ajuste para o seu IP local
 const API_BASE_URL = 'http://localhost:8000';
 
-// Tipos auxiliares pra resposta da API
+// --- Interfaces ---
 interface UsuarioFromApi {
   id_usuario: number;
   nome: string;
@@ -40,12 +41,12 @@ interface AnfitriaoFromApi {
   id_anfitriao: number;
   descricao?: string;
   capacidade_maxima: number;
-  especie?: string[];         // array de espécies
+  especie?: string[];
   tamanho_pet?: string;
-  preco?: number | string | null; // supabase às vezes devolve string  
-  status?: string;  
-  fotos_urls?: string | string[];      // array de URLs
-  usuarios?: UsuarioFromApi;  // join vindo do backend
+  preco?: number | string | null;
+  status?: string;
+  fotos_urls?: string | string[];
+  usuarios?: UsuarioFromApi;
   rating_medio?: number | null;
 }
 
@@ -56,7 +57,7 @@ interface GetAnfitrioesAtivosResponse {
   results: AnfitriaoFromApi[];
 }
 
-// --- Componentes auxiliares (sem alteração estrutural) ---
+// --- Componentes Auxiliares ---
 const PetIconItem = ({ petName }: { petName: string }) => {
   const icons: Record<string, any> = {
     cachorro: require('../../assets/icons/animais/cachorro.png'),
@@ -64,10 +65,7 @@ const PetIconItem = ({ petName }: { petName: string }) => {
     passaro: require('../../assets/icons/animais/passaro.png'),
     tartaruga: require('../../assets/icons/animais/tartaruga.png'),
   };
-
-  const source = icons[petName.toLowerCase()];
-  if (!source) return null;
-
+  const source = icons[petName.toLowerCase()] || icons['cachorro']; // Fallback
   return <Image source={source} style={styles.petIconImage} resizeMode="contain" />;
 };
 
@@ -78,7 +76,6 @@ const HomeIcon = ({ name }: { name: string }) => {
     favoritos: { src: require('../../assets/icons/Favoritos.png'), size: 40 },
     conta: { src: require('../../assets/icons/user.png'), size: 30 },
   };
-
   const icon = icons[name];
   if (!icon) return null;
   return <Image source={icon.src} style={{ width: icon.size, height: icon.size }} resizeMode="contain" />;
@@ -109,7 +106,7 @@ export interface HostCardProps {
   price: string;
   imageUri: string;
   petsAccepted: string[];
-  rawData?: AnfitriaoFromApi; // se quiser mandar tudo pro Card_Host
+  rawData?: AnfitriaoFromApi;
   onPress?: () => void;
 }
 
@@ -152,20 +149,63 @@ export default function Home() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const route = useRoute<HomeScreenRouteProp>();
 
-  const { usuario } = route.params;
-  console.log('Usuário logado na Home:', usuario);
+  const { usuario, filtros } = route.params;
+  
+  // Estado para armazenar filtros ativos
+  const [activeFilters, setActiveFilters] = useState<FiltrosSearch | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(5); // ajuste conforme quiser
+  const [pageSize] = useState(5);
   const [hosts, setHosts] = useState<HostCardProps[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasNext, setHasNext] = useState(false);
+
+  // Monitora alterações nos params da rota (quando volta da tela de Filtros)
+  useEffect(() => {
+    if (filtros) {
+        setActiveFilters(filtros);
+        setCurrentPage(1); // Reseta para primeira página ao filtrar
+    }
+  }, [filtros]);
+
+  // Função para limpar filtros
+  const clearFilters = () => {
+      setActiveFilters(null);
+      setCurrentPage(1);
+      navigation.setParams({ filtros: undefined }); // Limpa params da rota
+  };
 
   const fetchHosts = useCallback(
     async (page: number) => {
       try {
         setLoading(true);
-        const url = `${API_BASE_URL}/anfitrioes/ativos?page=${page}&page_size=${pageSize}`;
+        
+        let url = '';
+
+        // SE houver filtros ativos, usa a rota de busca
+        if (activeFilters) {
+            const params = new URLSearchParams();
+            params.append('page', page.toString());
+            params.append('page_size', pageSize.toString());
+            
+            if (activeFilters.region) params.append('cidade', activeFilters.region);
+            if (activeFilters.tipo) params.append('tipo_pet', activeFilters.tipo);
+            if (activeFilters.size) params.append('tamanho', activeFilters.size);
+            
+            // Lógica de Preço Atualizada
+            if (activeFilters.priceMin !== undefined) {
+                params.append('preco_min', activeFilters.priceMin.toString());
+            }
+            if (activeFilters.priceMax !== undefined) {
+                params.append('preco_max', activeFilters.priceMax.toString());
+            }
+            
+            url = `${API_BASE_URL}/anfitrioes/buscar?${params.toString()}`;
+        } else {
+            // Rota padrão (sem filtros)
+            url = `${API_BASE_URL}/anfitrioes/ativos?page=${page}&page_size=${pageSize}`;
+        }
+
         const response = await fetch(url);
 
         if (!response.ok) {
@@ -175,46 +215,36 @@ export default function Home() {
 
         const data: GetAnfitrioesAtivosResponse = await response.json();
 
-        // Mapeia do formato da API para HostCardProps
+        // Mapeamento de dados
         const mappedHosts: HostCardProps[] = data.results.map((item) => {
           const nome = item.usuarios?.nome ?? 'Anfitrião';
           const cidade = item.usuarios?.cidade ?? '';
           const bairro = item.usuarios?.bairro ?? '';
-          const location =
-            cidade && bairro ? `${cidade}, ${bairro}` : cidade || bairro || 'Local não informado';
+          const location = cidade && bairro ? `${cidade}, ${bairro}` : cidade || bairro || 'Local não informado';
 
-          // rating: se vier média, usa; senão mock 5
           const ratingNumber = item.rating_medio ?? 5;
           const rating = ratingNumber.toFixed(1).replace('.', ',');
 
-          // price: se vier null, coloca "0,00" ou qualquer padrão
-          const precoNumber = item.preco ?? 0;
+          const precoNumber = typeof item.preco === 'number' ? item.preco : Number(item.preco) || 0;
           const price = precoNumber.toFixed(2).replace('.', ',');
 
-          // fotos_urls pode vir como string JSON ou array → normalizar para array  
+          // Tratamento de fotos (pode vir array ou string JSON)
           let fotosArray: string[] = [];  
-            
-          // se já veio array  
           if (Array.isArray(item.fotos_urls)) {  
             fotosArray = item.fotos_urls;  
           } else if (typeof item.fotos_urls === 'string' && item.fotos_urls.trim() !== '') {  
-            try {  
-              const parsed = JSON.parse(item.fotos_urls);  
-              if (Array.isArray(parsed)) {  
-                fotosArray = parsed;  
-              }  
-            } catch (e) {  
-              console.warn('Não foi possível fazer parse de fotos_urls:', item.fotos_urls);  
+            try { 
+                const parsed = JSON.parse(item.fotos_urls); 
+                if (Array.isArray(parsed)) fotosArray = parsed; 
+            } catch (e) {
+                // Se falhar parse, assume que é URL direta se começar com http
+                if(item.fotos_urls.startsWith('http')) fotosArray = [item.fotos_urls];
             }  
           }  
             
-          // imagem: primeira foto ou placeholder  
-          const firstPhoto =  
-            fotosArray.length > 0  
-              ? fotosArray[0]  
-              : 'https://via.placeholder.com/800x600/B3D18C/FFFFFF?text=Lar+Doce+Pet';
-
-          const petsAccepted = item.especie ?? [];
+          const firstPhoto = fotosArray.length > 0 
+            ? fotosArray[0] 
+            : 'https://via.placeholder.com/800x600/B3D18C/FFFFFF?text=Pet';
 
           return {
             id_anfitriao: item.id_anfitriao,
@@ -223,7 +253,7 @@ export default function Home() {
             rating,
             price,
             imageUri: firstPhoto,
-            petsAccepted,
+            petsAccepted: item.especie ?? [],
             rawData: item,
           };
         });
@@ -233,27 +263,22 @@ export default function Home() {
         setCurrentPage(data.page);
       } catch (error: any) {
         console.error('Erro ao buscar anfitriões:', error);
-        Alert.alert('Erro', 'Não foi possível carregar os anfitriões. Tente novamente mais tarde.');
+        Alert.alert('Erro', 'Não foi possível carregar os anfitriões.');
       } finally {
         setLoading(false);
       }
     },
-    [pageSize],
+    [pageSize, activeFilters], // Recarrega se filtros mudarem
   );
 
   useEffect(() => {
     fetchHosts(currentPage);
-  }, [fetchHosts]);
+  }, [fetchHosts, currentPage]);
 
   const handleChangePage = (page: number) => {
     if (page < 1) return;
-    // se quiser bloquear avanço sem hasNext, descomente:
-    // if (page > currentPage && !hasNext) return;
     fetchHosts(page);
   };
-
-  // Cria o conjunto de páginas pra exibir
-  const pagesToShow = [1, 2, 3, 4]; // simplificado, igual seu mock atual
 
   return (
     <SafeAreaView style={styles.container}>
@@ -279,21 +304,49 @@ export default function Home() {
           ))}
         </View>
 
+        {/* Botão de Filtros */}
         <View style={styles.filtersHeader}>
           <TouchableOpacity
             style={styles.filtersButton}
-            onPress={() => navigation.navigate('Filtros')}
+            onPress={() => navigation.navigate('Filtros', { usuario })} // Passa usuário para saber voltar
           >
             <Text style={styles.filtersText}>Filtros de Busca</Text>
             <FilterIcon />
           </TouchableOpacity>
         </View>
 
-        {/* Host Listings */}
-        {loading && hosts.length === 0 ? (
+        {/* BANNER DE FILTRO ATIVO (Novo) */}
+        {activeFilters && (
+            <View style={styles.activeFilterContainer}>
+                <View style={{flexDirection:'column'}}>
+                    <Text style={styles.activeFilterTitle}>Filtro Ativo:</Text>
+                    <Text style={styles.activeFilterText}>
+                         {activeFilters.tipo} • {activeFilters.region || 'Todas regiões'}
+                    </Text>
+                </View>
+                <TouchableOpacity onPress={clearFilters} style={styles.closeFilterButton}>
+                    <Text style={styles.closeFilterX}>X</Text>
+                </TouchableOpacity>
+            </View>
+        )}
+
+        {/* Lista de Anfitriões */}
+        {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <ActivityIndicator color="#556A44" size="large" />
           </View>
+        ) : hosts.length === 0 ? (
+           // Estado Vazio com Filtro
+           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+                <Text style={{color: '#556A44', fontSize: 16, textAlign: 'center', marginBottom: 20}}>
+                    Nenhum anfitrião encontrado com esses critérios.
+                </Text>
+                {activeFilters && (
+                    <TouchableOpacity onPress={clearFilters} style={styles.clearFilterButton}>
+                        <Text style={styles.clearFilterButtonText}>Limpar Filtros</Text>
+                    </TouchableOpacity>
+                )}
+           </View>
         ) : (
           <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
             {hosts.map((host) => (
@@ -306,34 +359,17 @@ export default function Home() {
 
             {/* Paginação */}
             <View style={styles.pagination}>
-              {pagesToShow.map((page) => (
-                <TouchableOpacity key={page} onPress={() => handleChangePage(page)}>
-                  <Text
-                    style={[
-                      styles.pageNumber,
-                      currentPage === page && styles.currentPage,
-                    ]}
-                  >
-                    {page}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-              <Text style={styles.pageNumber}>...</Text>
-              {/* Exemplo: ir para próxima página enquanto tiver dados */}
-              <TouchableOpacity
-                onPress={() => {
-                  if (hasNext) handleChangePage(currentPage + 1);
-                }}
-              >
-                <Text
-                  style={[
-                    styles.pageNumber,
-                    // se quiser destacar a "página seguinte", pode ajustar aqui
-                  ]}
-                >
-                  Próx
-                </Text>
-              </TouchableOpacity>
+               {currentPage > 1 && (
+                  <TouchableOpacity onPress={() => handleChangePage(currentPage - 1)}>
+                     <Text style={styles.pageNumber}>{'<'}</Text>
+                  </TouchableOpacity>
+               )}
+               <Text style={[styles.pageNumber, styles.currentPage]}>{currentPage}</Text>
+               {hasNext && (
+                  <TouchableOpacity onPress={() => handleChangePage(currentPage + 1)}>
+                     <Text style={styles.pageNumber}>{'>'}</Text>
+                  </TouchableOpacity>
+               )}
             </View>
           </ScrollView>
         )}
@@ -347,7 +383,6 @@ export default function Home() {
   );
 }
 
-// === Styles iguais aos seus originais ===
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#B3D18C' },
   innerContainer: {
@@ -374,35 +409,31 @@ const styles = StyleSheet.create({
   },
   navButtonText: { color: '#FFF6E2', fontSize: 11, fontFamily: 'Inter', marginTop: 4 },
 
-  searchContainer: { flexDirection: 'row', height: 54, marginBottom: 10 },
-  searchFilters: {
-    flex: 1,
-    flexDirection: 'row',
-    borderWidth: 2,
-    borderColor: '#B3D18C',
-    backgroundColor: '#FFF6E2',
-    borderRadius: 6,
-    alignItems: 'center',
-    paddingHorizontal: 15,
-  },
-  filterButton: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  filterText: { color: '#556A44', fontSize: 15, fontFamily: 'Inter', marginRight: 4 },
-  dropdownArrow: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 3,
-    borderRightWidth: 3,
-    borderTopWidth: 4,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: '#556A44',
-  },
-  filterDivider: { width: 1, height: 20, backgroundColor: '#B3D18C', marginHorizontal: 8 },
-
   filtersHeader: { alignItems: 'flex-end', marginBottom: 15 },
   filtersButton: { flexDirection: 'row', alignItems: 'center' },
   filtersText: { color: '#556A44', fontSize: 16, fontFamily: 'Inter', marginRight: 8 },
   filterIconImage: { width: 30, height: 30, marginLeft: 5 },
+
+  // --- Estilos do Filtro Ativo ---
+  activeFilterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#85B65E',
+    padding: 12,
+    borderRadius: 15,
+    marginBottom: 15,
+    borderWidth: 2,
+    borderColor: '#B3D18C'
+  },
+  activeFilterTitle: { color: '#FFF6E2', fontSize: 10, fontWeight: 'bold' },
+  activeFilterText: { color: '#FFF6E2', fontSize: 14, fontWeight: '600' },
+  closeFilterButton: { padding: 5 },
+  closeFilterX: { color: '#FFF6E2', fontSize: 18, fontWeight: '900' },
+  
+  clearFilterButton: { backgroundColor: '#85B65E', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10 },
+  clearFilterButtonText: { color: '#FFF', fontWeight: 'bold' },
+  // ------------------------------
 
   scrollContainer: { flex: 1 },
 
@@ -441,8 +472,8 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     gap: 20,
   },
-  pageNumber: { color: '#556A44', fontSize: 15, fontFamily: 'Inter' },
-  currentPage: { fontWeight: '700' },
+  pageNumber: { color: '#556A44', fontSize: 18, fontFamily: 'Inter' },
+  currentPage: { fontWeight: '700', fontSize: 20, textDecorationLine: 'underline' },
 
   footer: { alignItems: 'center', paddingVertical: 15 },
   footerText: { color: '#556A44', fontSize: 15, fontWeight: '700', fontFamily: 'Inter' },

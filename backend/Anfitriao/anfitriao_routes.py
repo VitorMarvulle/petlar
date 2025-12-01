@@ -66,6 +66,77 @@ def get_anfitrioes_ativos(
         "has_next": len(data) == page_size,  
         "results": data,  
     }  
+# Rota de busca avançada com filtros
+@anfitriao_router.get("/buscar", status_code=HTTP_200_OK)
+def buscar_anfitrioes(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=50),
+    cidade: Optional[str] = None,
+    tipo_pet: Optional[str] = None,
+    tamanho: Optional[str] = None,
+    preco_min: Optional[float] = None, # NOVO
+    preco_max: Optional[float] = None  # JÁ EXISTIA
+):
+    """
+    Busca avançada de anfitriões com filtros.
+    """
+    offset = (page - 1) * page_size
+    limit = page_size
+
+    # Base URL com join em usuarios
+    query_parts = [
+        f"{SUPABASE_URL}/rest/v1/anfitrioes",
+        "?select=*,usuarios!inner(id_usuario,nome,email,telefone,cidade,bairro,cep,logradouro,numero,uf,complemento,foto_perfil_url)",
+        "&status=eq.ativo"
+    ]
+
+    # Filtro Cidade (Case Insensitive)
+    if cidade and cidade.strip():
+        query_parts.append(f"&usuarios.cidade=ilike.*{cidade}*")
+
+    # Filtro Espécie (Array Contains)
+    if tipo_pet:
+        query_parts.append(f"&especie=cs.{{ {tipo_pet} }}")
+
+    # Filtro Tamanho/Porte
+    if tamanho:
+        # Se tamanho for múltiplo "Pequeno,Grande", o ideal seria um 'or' ou 'in', 
+        # mas para simplificar no supabase via URL params com operador 'in':
+        # Formato: tamanho_pet=in.(Pequeno,Grande)
+        query_parts.append(f"&tamanho_pet=in.({tamanho})")
+
+    # --- CORREÇÃO DO PREÇO ---
+    # Lógica: Preço >= Minimo E Preço <= Maximo
+    
+    if preco_min is not None:
+        query_parts.append(f"&preco=gte.{preco_min}")
+        
+    if preco_max is not None:
+        query_parts.append(f"&preco=lte.{preco_max}")
+
+    # Paginação
+    query_parts.append(f"&limit={limit}&offset={offset}")
+
+    full_url = "".join(query_parts)
+    print(f"Buscando URL: {full_url}") # Debug no console do Python
+
+    response = requests.get(full_url, headers=HEADERS)
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
+    data = response.json()
+
+    # Mock rating
+    for item in data:
+        item["rating_medio"] = None
+
+    return {
+        "page": page,
+        "page_size": page_size,
+        "has_next": len(data) == page_size,
+        "results": data,
+    }
   
 @anfitriao_router.get("/status/{status}", status_code=HTTP_200_OK)  
 def get_anfitrioes_by_status(status: str):  
