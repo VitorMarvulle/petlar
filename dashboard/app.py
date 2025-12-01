@@ -181,61 +181,93 @@ elif tabela_escolhida == "reservas" and not df.empty:
 # USUÁRIOS
 # ---------------------------------------------------------------------
 elif tabela_escolhida == "usuarios" and not df.empty:
-
     st.markdown("## 👥 Análise de Usuários")
+
     st.divider()
 
-    # 1️⃣ Evolução dos cadastros
-    st.markdown("### 📅 Cadastros por Mês")
+    # ======================================================
+    # 1️⃣ Evolução dos cadastros por mês (gráfico de linha)
+    # ======================================================
+    st.markdown("### 📊 Usuários - Quantidade de Usuários (Últimos 3 Meses)")
 
+    # --- Consulta SQL: filtrar pelos últimos 3 meses mantendo o dia
     df_sql = sqldf("""
-        SELECT
-            CAST(strftime('%m', data_cadastro) AS INTEGER) AS MES,
+        SELECT 
+            strftime('%Y-%m', data_cadastro) AS MES_ANO,
             COUNT(id_usuario) AS usuarios
         FROM df
         WHERE data_cadastro IS NOT NULL
-        GROUP BY MES
-        ORDER BY MES
+        AND DATE(data_cadastro) >= DATE((SELECT MAX(data_cadastro) FROM df), '-3 months')
+        GROUP BY MES_ANO
+        ORDER BY MES_ANO
     """)
 
-    df_sql["MES"] = df_sql["MES"].astype(int)
+    # Converter MES_ANO para datetime (primeiro dia do mês)
+    df_sql['MES_ANO'] = pd.to_datetime(df_sql['MES_ANO'], format='%Y-%m')
 
+    # --- Gráfico de Linhas ---
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(df_sql["MES"], df_sql["usuarios"],
-            marker="o", linewidth=2, color="steelblue")
+    ax.plot(df_sql['MES_ANO'], df_sql['usuarios'], marker='o',
+            linewidth=2, markersize=8, color='steelblue')
 
-    ax.set_xlabel("Mês")
-    ax.set_ylabel("Usuários")
-    ax.set_title("Quantidade de Usuários por Mês")
-    ax.set_xticks(df_sql["MES"])
+    # Adiciona valores sobre os pontos
+    for x, y in zip(df_sql['MES_ANO'], df_sql['usuarios']):
+        ax.text(x, y + 0.5, str(int(y)), ha='center',
+                va='bottom', fontsize=10, fontweight='bold')
+
+    # Formatar eixo X
+    import matplotlib.dates as mdates
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%Y'))
+    plt.xticks(rotation=45)
+
+    # Títulos e rótulos
+    ax.set_xlabel('Data (Mês/Ano)', fontsize=8)
+    ax.set_ylabel('Quantidade de Usuários', fontsize=10)
+    ax.set_title('Quantidade de Usuários por Mês – Últimos 4 Meses',
+                 fontsize=12, fontweight='bold', pad=16)
+
+    # Forçar números inteiros no eixo Y
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+
     st.pyplot(fig)
-
     st.divider()
 
-    # 2️⃣ Distribuição por Tipo
-    st.markdown("### 🧩 Tipos de Usuário")
+    # ======================================================
+    # 2️⃣ Distribuição por tipo (Tutor x Anfitrião)
+    # ======================================================
+    st.markdown("### 🧩 Distribuição por Tipo de Usuário")
 
-    tipo_count = df["tipo"].value_counts()
-
+    tipo_count = df["tipo"].value_counts(dropna=True)
     fig, ax = plt.subplots(figsize=(4, 4))
-    ax.pie(tipo_count, labels=tipo_count.index,
-           autopct="%1.1f%%", startangle=90)
-    ax.set_title("Distribuição por Tipo de Usuário")
+    ax.pie(
+        tipo_count,
+        labels=tipo_count.index,
+        autopct="%1.1f%%",
+        startangle=90,
+        colors=["#6fa8dc", "#93c47d"]
+    )
+    ax.set_title("Distribuição de Tipos de Usuário")
     st.pyplot(fig)
 
     st.divider()
 
-    # 3️⃣ Distribuição por Estado
-    st.markdown("### 🗺️ Usuários por Estado")
+    # ======================================================
+    # 3️⃣ Distribuição por estado (UF)
+    # ======================================================
+    if "uf" in df.columns and df["uf"].notna().any():
+        st.markdown("### 🗺️ Distribuição por Estado")
 
-    if "uf" in df.columns:
+        # 🔤 Padroniza os valores de UF (corrige variações como 'rs', 'Rs', etc.)
         df["uf"] = df["uf"].astype(str).str.strip().str.upper()
+
+        # Conta e plota os 10 estados mais frequentes
         uf_count = df["uf"].value_counts().head(10)
 
         fig, ax = plt.subplots(figsize=(8, 4))
-        ax.bar(uf_count.index, uf_count.values, color="teal")
+        ax.bar(uf_count.index, uf_count.values, color='teal')
+        ax.set_xlabel("Estado (UF)")
+        ax.set_ylabel("Quantidade de Usuários")
         ax.set_title("Usuários por Estado (Top 10)")
         st.pyplot(fig)
-
     else:
         st.info("Nenhum dado de UF disponível.")
