@@ -108,7 +108,7 @@ def preparar_dataframe(df):
 st.sidebar.header("📋 Selecione a Tabela")
 tabela_escolhida = st.sidebar.selectbox(
     "Escolha uma tabela para visualizar:",
-    ["usuarios", "anfitrioes", "pets", "reservas", "avaliacoes"]
+    ["usuarios", "anfitrioes", "pets"]
 )
 
 
@@ -152,90 +152,233 @@ if tabela_escolhida == "pets" and not df.empty:
 
 
 # ---------------------------------------------------------------------
-# AVALIAÇÕES
-# ---------------------------------------------------------------------
-elif tabela_escolhida == "avaliacoes" and not df.empty:
-    st.markdown("### 📊 Avaliações - Distribuição de Notas")
-
-    fig, ax = plt.subplots(figsize=(6, 4))
-    ax.hist(df["nota"], bins=range(1, 7), color="orange", edgecolor="black")
-    ax.set_title("Distribuição de Notas")
-    st.pyplot(fig)
-
-
-# ---------------------------------------------------------------------
-# RESERVAS
-# ---------------------------------------------------------------------
-elif tabela_escolhida == "reservas" and not df.empty:
-    st.markdown("### 📊 Reservas - Status")
-
-    status_count = df["status"].value_counts()
-    fig, ax = plt.subplots(figsize=(6, 4))
-    ax.bar(status_count.index, status_count.values,
-           color=["#ff9999", "#66b3ff", "#99ff99"])
-    ax.set_title("Quantidade de Reservas por Status")
-    st.pyplot(fig)
-
-
-# ---------------------------------------------------------------------
 # USUÁRIOS
 # ---------------------------------------------------------------------
 elif tabela_escolhida == "usuarios" and not df.empty:
-
     st.markdown("## 👥 Análise de Usuários")
+
     st.divider()
 
-    # 1️⃣ Evolução dos cadastros
-    st.markdown("### 📅 Cadastros por Mês")
+    # ======================================================
+    # 1️⃣ Evolução dos cadastros por mês (gráfico de linha)
+    # ======================================================
+    st.markdown("### 📊 Usuários - Quantidade de Usuários (Últimos 3 Meses)")
 
+    # --- Consulta SQL: filtrar pelos últimos 3 meses mantendo o dia
     df_sql = sqldf("""
-        SELECT
-            CAST(strftime('%m', data_cadastro) AS INTEGER) AS MES,
+        SELECT 
+            strftime('%Y-%m', data_cadastro) AS MES_ANO,
             COUNT(id_usuario) AS usuarios
         FROM df
         WHERE data_cadastro IS NOT NULL
-        GROUP BY MES
-        ORDER BY MES
+        AND DATE(data_cadastro) >= DATE((SELECT MAX(data_cadastro) FROM df), '-3 months')
+        GROUP BY MES_ANO
+        ORDER BY MES_ANO
     """)
 
-    df_sql["MES"] = df_sql["MES"].astype(int)
+    # Converter MES_ANO para datetime (primeiro dia do mês)
+    df_sql['MES_ANO'] = pd.to_datetime(df_sql['MES_ANO'], format='%Y-%m')
 
+    # --- Gráfico de Linhas ---
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(df_sql["MES"], df_sql["usuarios"],
-            marker="o", linewidth=2, color="steelblue")
+    ax.plot(df_sql['MES_ANO'], df_sql['usuarios'], marker='o',
+            linewidth=2, markersize=8, color='steelblue')
 
-    ax.set_xlabel("Mês")
-    ax.set_ylabel("Usuários")
-    ax.set_title("Quantidade de Usuários por Mês")
-    ax.set_xticks(df_sql["MES"])
+    # Adiciona valores sobre os pontos
+    for x, y in zip(df_sql['MES_ANO'], df_sql['usuarios']):
+        ax.text(x, y + 0.5, str(int(y)), ha='center',
+                va='bottom', fontsize=10, fontweight='bold')
+
+    # Formatar eixo X
+    import matplotlib.dates as mdates
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%Y'))
+    plt.xticks(rotation=45)
+
+    # Títulos e rótulos
+    ax.set_xlabel('Data (Mês/Ano)', fontsize=8)
+    ax.set_ylabel('Quantidade de Usuários', fontsize=10)
+    ax.set_title('Quantidade de Usuários por Mês – Últimos 4 Meses',
+                 fontsize=12, fontweight='bold', pad=16)
+
+    # Forçar números inteiros no eixo Y
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+
     st.pyplot(fig)
-
     st.divider()
 
-    # 2️⃣ Distribuição por Tipo
-    st.markdown("### 🧩 Tipos de Usuário")
+    # ======================================================
+    # 2️⃣ Distribuição por tipo (Tutor x Anfitrião)
+    # ======================================================
+    st.markdown("### 🧩 Distribuição por Tipo de Usuário")
 
-    tipo_count = df["tipo"].value_counts()
-
+    tipo_count = df["tipo"].value_counts(dropna=True)
     fig, ax = plt.subplots(figsize=(4, 4))
-    ax.pie(tipo_count, labels=tipo_count.index,
-           autopct="%1.1f%%", startangle=90)
-    ax.set_title("Distribuição por Tipo de Usuário")
+    ax.pie(
+        tipo_count,
+        labels=tipo_count.index,
+        autopct="%1.1f%%",
+        startangle=90,
+        colors=["#6fa8dc", "#93c47d"]
+    )
+    ax.set_title("Distribuição de Tipos de Usuário")
     st.pyplot(fig)
 
     st.divider()
 
-    # 3️⃣ Distribuição por Estado
-    st.markdown("### 🗺️ Usuários por Estado")
+    # ======================================================
+    # 3️⃣ Distribuição por estado (UF)
+    # ======================================================
+    if "uf" in df.columns and df["uf"].notna().any():
+        st.markdown("### 🗺️ Distribuição por Estado")
 
-    if "uf" in df.columns:
+        # 🔤 Padroniza os valores de UF (corrige variações como 'rs', 'Rs', etc.)
         df["uf"] = df["uf"].astype(str).str.strip().str.upper()
+
+        # Conta e plota os 10 estados mais frequentes
         uf_count = df["uf"].value_counts().head(10)
 
         fig, ax = plt.subplots(figsize=(8, 4))
-        ax.bar(uf_count.index, uf_count.values, color="teal")
+        ax.bar(uf_count.index, uf_count.values, color='teal')
+        ax.set_xlabel("Estado (UF)")
+        ax.set_ylabel("Quantidade de Usuários")
         ax.set_title("Usuários por Estado (Top 10)")
         st.pyplot(fig)
-
     else:
         st.info("Nenhum dado de UF disponível.")
+
+# ---------------------------------------------------------------------
+# ANFITRIÕES
+# ---------------------------------------------------------------------
+elif tabela_escolhida == "anfitrioes" and not df.empty:
+    st.markdown("## 🏠 Análise de Anfitriões")
+
+    # ----------------------------
+    # 1️⃣ Distribuição por status
+    # ----------------------------
+    status_count = df["status"].value_counts()
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.pie(
+        status_count,
+        labels=status_count.index,
+        autopct='%1.1f%%',
+        startangle=90,
+        colors=plt.cm.Pastel2.colors,
+        textprops=dict(color="black", fontsize=12, weight='bold')
+    )
+    ax.set_title("Distribuição por Status do Anfitrião",
+                 fontsize=16, weight='bold', pad=20)
+    ax.axis("equal")
+    st.pyplot(fig)
+    st.divider()
+
+    # --------------------------------
+    # 2️⃣ Capacidade máxima (histograma)
+    # --------------------------------
+    fig, ax = plt.subplots(figsize=(8, 5))
+    df['capacidade_maxima'].dropna().plot(
+        kind='hist',
+        bins=range(1, int(df['capacidade_maxima'].max()) + 2),
+        color='steelblue',
+        edgecolor='black',
+        ax=ax
+    )
+    ax.set_xlabel('Capacidade Máxima', fontsize=12)
+    ax.set_ylabel('Quantidade de Anfitriões', fontsize=12)
+    ax.set_title('Distribuição da Capacidade Máxima dos Anfitriões',
+                 fontsize=16, weight='bold', pad=20)
+    st.pyplot(fig)
+    st.divider()
+
+    # --------------------------------
+    # 3️⃣ Distribuição por tamanho de pet
+    # --------------------------------
+    tamanho_count = df['tamanho_pet'].value_counts()
+    fig, ax = plt.subplots(figsize=(8, 5))
+    tamanho_count.plot(kind='bar', color='coral', ax=ax)
+    ax.set_xlabel('Tamanho do Pet', fontsize=12)
+    ax.set_ylabel('Quantidade de Anfitriões', fontsize=12)
+    ax.set_title('Distribuição por Tamanho de Pet Aceito',
+                 fontsize=16, weight='bold', pad=20)
+    ax.bar_label(ax.containers[0], padding=4, fontsize=11, weight='bold')
+    st.pyplot(fig)
+    st.divider()
+
+    # --------------------------------
+    # 4️⃣ Distribuição por espécie
+    # --------------------------------
+    especies = df['especie'].dropna().explode()
+    especie_count = especies.value_counts()
+    fig, ax = plt.subplots(figsize=(8, 5))
+    especie_count.plot(kind='bar', color='mediumseagreen', ax=ax)
+    ax.set_xlabel('Espécie', fontsize=12)
+    ax.set_ylabel('Quantidade de Anfitriões', fontsize=12)
+    ax.set_title('Distribuição por Espécie Aceita',
+                 fontsize=16, weight='bold', pad=20)
+    ax.bar_label(ax.containers[0], padding=4, fontsize=11, weight='bold')
+    st.pyplot(fig)
+    st.divider()
+
+    # --------------------------------
+    # 5️⃣ Preço médio por status
+    # --------------------------------
+    preco_medio = df.groupby('status')['preco'].mean().dropna()
+    fig, ax = plt.subplots(figsize=(8, 5))
+    preco_medio.plot(kind='bar', color='mediumpurple', ax=ax)
+    ax.set_xlabel('Status', fontsize=12)
+    ax.set_ylabel('Preço Médio', fontsize=12)
+    ax.set_title('Preço Médio dos Anfitriões por Status',
+                 fontsize=16, weight='bold', pad=20)
+    ax.bar_label(ax.containers[0], padding=4, fontsize=11, weight='bold')
+    st.pyplot(fig)
+    st.divider()
+
+    # --------------------------------
+    # 6️⃣ Análises relacionadas a reservas
+    # --------------------------------
+    if 'reservas' in globals() and not reservas.empty:
+        st.markdown("### 📅 Análises de Reservas")
+
+        # Reservas por status
+        reservas_status = reservas.groupby('id_anfitriao')[
+            'status'].value_counts().unstack(fill_value=0)
+        st.markdown("**Reservas por Status:**")
+        st.dataframe(reservas_status)
+
+        # Valor médio de reservas por anfitrião
+        valor_medio = reservas.groupby('id_anfitriao')[
+            'valor_total_reserva'].mean()
+        st.markdown("**Valor médio das reservas por anfitrião:**")
+        st.dataframe(valor_medio)
+        st.divider()
+
+    # --------------------------------
+    # 7️⃣ Análises relacionadas a avaliações
+    # --------------------------------
+    if 'avaliacoes' in globals() and not avaliacoes.empty:
+        st.markdown("### ⭐ Análises de Avaliações")
+
+        # Nota média por anfitrião
+        nota_media = avaliacoes.groupby('id_avaliado')['nota'].mean()
+        st.markdown("**Nota média por anfitrião:**")
+        st.dataframe(nota_media)
+
+        # Contagem de avaliações por nota
+        nota_count = avaliacoes['nota'].value_counts().sort_index()
+        fig, ax = plt.subplots(figsize=(8, 5))
+        nota_count.plot(kind='bar', color='gold', ax=ax)
+        ax.set_xlabel('Nota', fontsize=12)
+        ax.set_ylabel('Quantidade de Avaliações', fontsize=12)
+        ax.set_title('Distribuição de Avaliações por Nota',
+                     fontsize=16, weight='bold', pad=20)
+        ax.bar_label(ax.containers[0], padding=4, fontsize=11, weight='bold')
+        st.pyplot(fig)
+        st.divider()
+
+    # --------------------------------
+    # 8️⃣ Perguntas enviadas
+    # --------------------------------
+    if 'perguntas' in globals() and not perguntas.empty:
+        st.markdown("### ❓ Perguntas Enviadas aos Anfitriões")
+        perguntas_count = perguntas.groupby(
+            'id_anfitriao')['id_pergunta'].count()
+        st.dataframe(perguntas_count.rename("Quantidade de Perguntas"))

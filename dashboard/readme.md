@@ -35,7 +35,7 @@ streamlit run app.py
 ## Para buildar o dashboard:
 
 ```bash
-streamlit-desktop-app build app.py --name PetLarDashboard --pyinstaller-options --onefile --noconsole
+streamlit-desktop-app build app.py --name PetLarDashboard --icon logo_petlar.ico --pyinstaller-options --onefile --noconsole
 ```
 
 - `--name`: nome do app
