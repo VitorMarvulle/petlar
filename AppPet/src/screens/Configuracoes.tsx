@@ -1,22 +1,25 @@
-// AppPet\src\screens\Configuracoes.tsx
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Switch, Modal } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Modal, Alert } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/types';
+import type { RootStackParamList, RootStackScreenProps } from '../navigation/types';
 
-// --- CONSTANTES DE ESTILO REAPROVEITADAS ---
+// --- CONSTANTES DE ESTILO ---
 const GREEN_DARK = '#556A44'; 
 const GREEN_MEDIUM = '#7AB24E'; 
 const GREEN_LIGHT = '#B3D18C'; 
 const BG_INNER = '#FFF6E2'; 
 const BG_INNER_WHITE = '#FFFFFF'; 
+const RED_ALERT = '#FF6347';
 const FOOTER_TEXT_COLOR = GREEN_DARK;
 
 const ICON_LOGO_BRANCO = require('../../assets/icons/LogoBranco.png');
+const API_BASE_URL = 'http://localhost:8000'; // Ajuste conforme seu IP se necessário
 
-// Tipo de navegação
+// Tipo de navegação e props
 type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Configuracoes'>;
+type Props = RootStackScreenProps<'Configuracoes'>;
 
 // --- COMPONENTE CUSTOMIZADO: LINHA DE CONFIGURAÇÃO ---
 interface SettingItemProps {
@@ -36,36 +39,15 @@ const SettingItem = ({ label, subLabel, onPress, showArrow = true }: SettingItem
   </TouchableOpacity>
 );
 
-// --- COMPONENTE CUSTOMIZADO: LINHA DE DISPLAY COM SWITCH (Modo Escuro) ---
-interface DisplaySettingItemProps {
-  label: string;
-  isEnabled: boolean;
-  toggleSwitch: () => void;
-}
-
-const DisplaySettingItem = ({ label, isEnabled, toggleSwitch }: DisplaySettingItemProps) => (
-  <View style={[settingsStyles.settingItem, { justifyContent: 'space-between' }]}>
-    <Text style={settingsStyles.settingLabel}>{label}</Text>
-    <View style={settingsStyles.displaySwitchContainer}>
-      <Text style={settingsStyles.displayIcon}>{isEnabled ? '🌙' : '☀️'}</Text>
-      <Switch
-        trackColor={{ false: GREEN_LIGHT, true: GREEN_MEDIUM }}
-        thumbColor={isEnabled ? BG_INNER : BG_INNER}
-        onValueChange={toggleSwitch}
-        value={isEnabled}
-      />
-    </View>
-  </View>
-);
-
-// --- 1. MODAL DE CONFIRMAÇÃO DE EXCLUSÃO (DUPLO BOTÃO) ---
+// --- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO ---
 interface DeleteModalProps {
   isVisible: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  isLoading: boolean;
 }
 
-const DeleteConfirmationModal = ({ isVisible, onClose, onConfirm }: DeleteModalProps) => (
+const DeleteConfirmationModal = ({ isVisible, onClose, onConfirm, isLoading }: DeleteModalProps) => (
   <Modal transparent visible={isVisible} animationType="fade">
     <View style={settingsStyles.modalOverlay}>
       <View style={settingsStyles.modalContainer}>
@@ -76,40 +58,13 @@ const DeleteConfirmationModal = ({ isVisible, onClose, onConfirm }: DeleteModalP
         </Text>
 
         <View style={settingsStyles.modalButtonRow}>
-          <TouchableOpacity style={[settingsStyles.modalButton, settingsStyles.modalButtonCancel]} onPress={onClose}>
+          <TouchableOpacity style={[settingsStyles.modalButton, settingsStyles.modalButtonCancel]} onPress={onClose} disabled={isLoading}>
             <Text style={[settingsStyles.modalButtonText, {color: GREEN_DARK}]}>Cancelar</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[settingsStyles.modalButton, settingsStyles.modalButtonConfirm]} onPress={onConfirm}>
-            <Text style={settingsStyles.modalButtonText}>Excluir</Text>
+          <TouchableOpacity style={[settingsStyles.modalButton, settingsStyles.modalButtonConfirm]} onPress={onConfirm} disabled={isLoading}>
+            <Text style={settingsStyles.modalButtonText}>{isLoading ? 'Excluindo...' : 'Excluir'}</Text>
           </TouchableOpacity>
         </View>
-      </View>
-    </View>
-  </Modal>
-);
-
-// --- 2. NOVO MODAL DE SUCESSO/ALERTA GERAL (BOTÃO ÚNICO) ---
-interface SuccessAlertModalProps {
-  isVisible: boolean;
-  title: string;
-  message: string;
-  onClose: () => void;
-}
-
-const SuccessAlertModal = ({ isVisible, title, message, onClose }: SuccessAlertModalProps) => (
-  <Modal transparent visible={isVisible} animationType="fade">
-    <View style={settingsStyles.modalOverlay}>
-      <View style={settingsStyles.modalContainer}>
-        <Text style={settingsStyles.successIcon}>✓</Text> 
-        <Text style={settingsStyles.modalTitle}>{title}</Text>
-        <Text style={settingsStyles.modalMessage}>{message}</Text>
-
-        <TouchableOpacity 
-          style={settingsStyles.modalSuccessButton} 
-          onPress={onClose}
-        >
-          <Text style={settingsStyles.modalButtonText}>OK</Text>
-        </TouchableOpacity>
       </View>
     </View>
   </Modal>
@@ -128,43 +83,73 @@ const HeaderLogo = ({ onPress }: { onPress: () => void }) => (
 // --- TELA PRINCIPAL DE CONFIGURAÇÕES ---
 export default function Configuracoes() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  
+  const route = useRoute<Props['route']>();
+  const { usuario } = route.params;
+
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false); 
-  
-  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
-  const [successModalContent, setSuccessModalContent] = useState({ title: '', message: '' });
+  const [loadingDelete, setLoadingDelete] = useState(false);
 
-  const toggleDarkMode = () => setIsDarkMode(previousState => !previousState);
+  // --- LÓGICA DE PERFIL ---
+  const handleProfileNavigation = () => {
+    if (!usuario) return;
 
-  const handleAlertClose = (action?: () => void) => {
-    setIsSuccessModalVisible(false);
-    if (action) action();
-  }
-
-  const handleDeleteAccount = () => {
-    console.log("Conta excluída!");
-    setIsDeleteModalVisible(false);
-
-    setSuccessModalContent({
-      title: "Conta Excluída",
-      message: "Sua conta foi excluída com sucesso. Sentiremos sua falta!",
-    });
-    setIsSuccessModalVisible(true);
+    if (usuario.tipo === 'anfitriao' || usuario.tipo === 'host') {
+      // Cria uma estrutura básica de host baseada no usuário logado para não quebrar a tela de Perfil Host
+      const mockHostData = {
+        name: usuario.nome,
+        location: `${usuario.cidade || ''}, ${usuario.uf || ''}`,
+        price: '0', 
+        imageUri: usuario.foto_perfil_url || '',
+        petsAccepted: [],
+        rating: 'Novo',
+        rawData: { usuarios: usuario, id_anfitriao: usuario.id_usuario } // Passando dados necessários
+      };
+      navigation.navigate('Perfil_Host', { host: mockHostData as any });
+    } else {
+      // Redirecionamento para Tutor
+      navigation.navigate('Perfil_Tutor', { id_usuario: usuario.id_usuario });
+    }
   };
 
-  const handleApply = () => {
-    console.log("Configurações aplicadas. Modo Escuro:", isDarkMode);
-    
-    setSuccessModalContent({
-      title: "Sucesso!",
-      message: "As suas configurações foram salvas com êxito.",
-    });
-    setIsSuccessModalVisible(true);
+  // --- LÓGICA DE EXCLUSÃO DE CONTA ---
+  const handleDeleteAccount = async () => {
+    try {
+      setLoadingDelete(true);
+      const response = await fetch(`${API_BASE_URL}/usuarios/${usuario.id_usuario}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok || response.status === 204) {
+        setIsDeleteModalVisible(false);
+        Alert.alert('Conta Excluída', 'Sua conta foi removida com sucesso.', [
+            { text: 'OK', onPress: () => handleLogout() }
+        ]);
+      } else {
+        Alert.alert('Erro', 'Não foi possível excluir a conta. Tente novamente.');
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Erro', 'Falha na conexão com o servidor.');
+    } finally {
+      setLoadingDelete(false);
+    }
   };
-  
-  const navigateTo = (screenName: keyof RootStackParamList) => {
-    navigation.navigate(screenName as any);
+
+  // --- LÓGICA DE LOGOUT ---
+  const handleLogout = async () => {
+    try {
+        await AsyncStorage.clear();
+        // Reseta a navegação para a tela de Login, impedindo voltar
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+        });
+    } catch (e) {
+        console.error("Erro ao sair", e);
+    }
   };
 
   const handleLogoPress = () => {
@@ -174,7 +159,6 @@ export default function Configuracoes() {
   return (
     <SafeAreaView style={settingsStyles.container}>
       
-      {/* Nova Header Logo */}
       <HeaderLogo onPress={handleLogoPress} />
 
       <ScrollView contentContainerStyle={settingsStyles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -186,38 +170,23 @@ export default function Configuracoes() {
           <View style={settingsStyles.card}>
             <SettingItem
               label="Informações do perfil"
-              subLabel="Nome, localização e informações"
-              onPress={() => navigateTo('Perfil_Tutor')}
-            />
-            <View style={settingsStyles.separator} />
-            <SettingItem
-              label="Informações do pet"
-              subLabel="Adicionar, editar ou remover pets"
-              onPress={() => navigateTo('Perfil_Tutor')}
+              subLabel="Visualizar seu perfil público"
+              onPress={handleProfileNavigation}
             />
           </View>
           
-          {/* SEÇÃO: Exibição */}
-          <View style={settingsStyles.card}>
-            <DisplaySettingItem
-              label="Modo de Exibição"
-              isEnabled={isDarkMode}
-              toggleSwitch={toggleDarkMode}
-            />
-          </View>
-
           {/* SEÇÃO: Acesso à segurança */}
           <View style={settingsStyles.card}>
             <SettingItem
               label="Alterar senha"
               subLabel="Aumente a segurança da sua conta"
-              onPress={() => navigateTo('Alterar_senha')}
+              onPress={() => navigation.navigate('Alterar_senha')}
             />
             <View style={settingsStyles.separator} />
             <SettingItem
               label="Endereço de e-mail"
               subLabel="Mude o e-mail cadastrado"
-              onPress={() => navigateTo('Alterar_email')}
+              onPress={() => navigation.navigate('Alterar_email')}
             />
           </View>
 
@@ -231,9 +200,9 @@ export default function Configuracoes() {
             />
           </View>
 
-          {/* BOTÃO APLICAR */}
-          <TouchableOpacity style={settingsStyles.applyButton} onPress={handleApply}>
-            <Text style={settingsStyles.applyButtonText}>Aplicar</Text>
+          {/* BOTÃO SAIR (LOGOUT) */}
+          <TouchableOpacity style={settingsStyles.logoutButton} onPress={handleLogout}>
+            <Text style={settingsStyles.logoutButtonText}>Sair da conta</Text>
           </TouchableOpacity>
           
         </View>
@@ -248,17 +217,11 @@ export default function Configuracoes() {
       {/* Modal de Confirmação de Exclusão */}
       <DeleteConfirmationModal
         isVisible={isDeleteModalVisible}
+        isLoading={loadingDelete}
         onClose={() => setIsDeleteModalVisible(false)}
         onConfirm={handleDeleteAccount}
       />
 
-      {/* Modal de Sucesso */}
-      <SuccessAlertModal
-        isVisible={isSuccessModalVisible}
-        title={successModalContent.title}
-        message={successModalContent.message}
-        onClose={() => handleAlertClose()}
-      />
     </SafeAreaView>
   );
 }
@@ -275,7 +238,7 @@ const settingsStyles = StyleSheet.create({
   innerContainer: { 
     flex: 1, 
     marginHorizontal: 12, 
-    marginTop: 100, // Ajustado para dar espaço ao Header
+    marginTop: 100, 
     marginBottom: 4, 
     backgroundColor: BG_INNER_WHITE, 
     borderRadius: 40, 
@@ -318,17 +281,7 @@ const settingsStyles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
-  // --------------------------
-
-  bottomPawContainer: {
-    position: 'absolute',
-    bottom: 20, 
-    left: 20, 
-    width: 90, 
-    height: 90,
-    zIndex: 10, 
-    opacity: 0.7,
-  },
+  
   card: {
     backgroundColor: BG_INNER, 
     borderRadius: 15,
@@ -365,33 +318,23 @@ const settingsStyles = StyleSheet.create({
     color: GREEN_MEDIUM,
     fontWeight: '300',
   },
-  displaySwitchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  displayIcon: {
-    fontSize: 20,
-    marginRight: 10,
-  },
-  applyButton: {
-    backgroundColor: GREEN_MEDIUM,
+  
+  // Estilo do Botão Sair
+  logoutButton: {
+    backgroundColor: BG_INNER_WHITE,
     paddingVertical: 15,
     borderRadius: 25,
     alignItems: 'center',
     marginTop: 10,
-    borderWidth: 3,
-    borderColor: GREEN_LIGHT, 
-    shadowColor: GREEN_DARK,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 8,
+    borderWidth: 2,
+    borderColor: RED_ALERT, 
   },
-  applyButtonText: {
+  logoutButtonText: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: RED_ALERT,
   },
+
   footer: {
     alignItems: 'center', 
     paddingVertical: 20,
@@ -451,30 +394,13 @@ const settingsStyles = StyleSheet.create({
     borderColor: GREEN_MEDIUM,
   },
   modalButtonConfirm: {
-    backgroundColor: '#FF6347', 
+    backgroundColor: RED_ALERT, 
     borderColor: '#CC4C36',
-  },
-  modalSuccessButton: {
-    backgroundColor: GREEN_MEDIUM, 
-    borderColor: GREEN_DARK, 
-    borderWidth: 2,
-    paddingHorizontal: 45,
-    paddingVertical: 12,
-    borderRadius: 15,
-    marginTop: 10,
-    width: '80%',
-    alignItems: 'center',
   },
   modalButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
     textAlign: 'center',
-  },
-  successIcon: { 
-    fontSize: 40,
-    color: GREEN_MEDIUM,
-    marginBottom: 10,
-    fontWeight: 'bold',
   },
 });

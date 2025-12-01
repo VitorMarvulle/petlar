@@ -24,6 +24,7 @@ class UsuarioCreate(BaseModel):
 class UsuarioUpdate(BaseModel):
     nome: Optional[str] = None
     email: Optional[EmailStr] = None
+    senha: Optional[str] = None
     telefone: Optional[str] = None
     tipo: Optional[str] = None
     data_cadastro: Optional[str] = None
