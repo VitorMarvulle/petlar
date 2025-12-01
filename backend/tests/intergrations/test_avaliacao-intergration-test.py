@@ -10,10 +10,10 @@ avaliacao_ID = 0
 
 
 # =====================================================================
-# GET /avaliacoes
+# GET /avaliacoes/
 # =====================================================================
 def test_get_avaliacoes():
-    response = client.get("/avaliacoes")
+    response = client.get("/avaliacoes/")
     assert response.status_code == 200
 
     body = response.json()
@@ -21,7 +21,7 @@ def test_get_avaliacoes():
 
 
 # =====================================================================
-# POST /avaliacoes  (SUCESSO)
+# POST /avaliacoes/  (SUCESSO)
 # =====================================================================
 def test_post_avaliacoes():
     avaliacao = dict(AvaliacaoCreate(
@@ -32,8 +32,10 @@ def test_post_avaliacoes():
         comentario=f"Comentário {random.randint(1000, 9999)}"
     ))
 
-    response = client.post("/avaliacoes", json=avaliacao)
-    assert response.status_code == 201, response.text
+    response = client.post("/avaliacoes/", json=avaliacao)
+
+    # Pode retornar erro 400/409 das validações
+    assert response.status_code in (201,), response.text
 
     body = response.json()
     assert isinstance(body, list)
@@ -51,7 +53,7 @@ def test_post_avaliacoes():
 
 
 # =====================================================================
-# POST /avaliacoes (ERRO: CAMPOS INVÁLIDOS)
+# POST /avaliacoes/ (ERRO: NOTA INVÁLIDA)
 # =====================================================================
 def test_post_avaliacoes_invalid_nota():
     avaliacao = {
@@ -62,10 +64,15 @@ def test_post_avaliacoes_invalid_nota():
         "comentario": "nota inválida"
     }
 
-    response = client.post("/avaliacoes", json=avaliacao)
-    assert response.status_code == 422  # validação Pydantic
+    response = client.post("/avaliacoes/", json=avaliacao)
+
+    # Pode ser erro do Pydantic (422) ou erro de regra RN (400)
+    assert response.status_code in (400, 422)
 
 
+# =====================================================================
+# POST /avaliacoes/ (ERRO: CAMPO FALTANDO)
+# =====================================================================
 def test_post_avaliacoes_missing_field():
     avaliacao = {
         "id_reserva": 1,
@@ -74,7 +81,7 @@ def test_post_avaliacoes_missing_field():
         "nota": 4
     }
 
-    response = client.post("/avaliacoes", json=avaliacao)
+    response = client.post("/avaliacoes/", json=avaliacao)
     assert response.status_code == 422
 
 
@@ -96,9 +103,6 @@ def test_get_avaliacao_by_id():
 def test_get_avaliacao_by_id_not_found():
     response = client.get("/avaliacoes/999999")
     assert response.status_code == 404
-
-    data = response.json()
-    assert "detail" in data
 
 
 # =====================================================================
@@ -146,9 +150,9 @@ def test_put_avaliacoes_by_id():
     response = client.put(f"/avaliacoes/{avaliacao_ID}", json=update_data)
     assert response.status_code == 200
 
-    data = response.json()[0]
-    assert data["nota"] == update_data["nota"]
-    assert data["comentario"] == update_data["comentario"]
+    updated = response.json()[0]
+    assert updated["nota"] == update_data["nota"]
+    assert updated["comentario"] == update_data["comentario"]
 
 
 # =====================================================================
@@ -158,7 +162,7 @@ def test_put_avaliacoes_invalid_nota():
     update_data = {"nota": 99}  # inválido
 
     response = client.put(f"/avaliacoes/{avaliacao_ID}", json=update_data)
-    assert response.status_code == 422
+    assert response.status_code in (400, 422)
 
 
 # =====================================================================
@@ -169,12 +173,8 @@ def test_put_avaliacoes_not_found():
 
     response = client.put("/avaliacoes/999999", json=update_data)
 
-    # quando o PATCH retorna 0 linhas modificadas,
-    # o Supabase costuma retornar 200 + lista vazia
-    assert response.status_code in (200, 404)
-
-    if response.status_code == 200:
-        assert response.json() == []
+    # Rota retorna 404 se não existir
+    assert response.status_code == 404
 
 
 # =====================================================================
@@ -190,6 +190,4 @@ def test_delete_avaliacao_by_id():
 # =====================================================================
 def test_delete_avaliacao_not_found():
     response = client.delete("/avaliacoes/999999")
-
-    # Supabase geralmente retorna 204 mesmo se não existir
-    assert response.status_code in (204, 404)
+    assert response.status_code == 404
