@@ -43,13 +43,11 @@ export type RootStackParamList = {
   };
   InfoAdc: { id_usuario: number };
   
-  // --- ATUALIZADO AQUI ---
   AdicionarPet: { 
     id_tutor: number;
-    onAddPet?: (newPet: Pet) => void; // Opcional, pois na edição atualizamos a lista de outra forma
-    petParaEditar?: Pet; // Novo parâmetro para passar os dados na edição
+    onAddPet?: (newPet: Pet) => void; 
+    petParaEditar?: Pet; 
   };
-  // -----------------------
 
   Reserva: {
     id_usuario: number;
@@ -72,7 +70,14 @@ export type RootStackParamList = {
       tipo?: string | null;
       telefone?: string | null;
     }};
-  Reserva_Host: undefined;
+  Reserva_Host: { 
+    usuario: {
+      id_usuario: number;
+      nome: string;
+      email: string;
+      tipo?: string | null;
+      telefone?: string | null;
+    }};
   HostAvaliacao: { reservaId: string };
   TutorAvaliacao: { reservaId: string };
   Alterar_senha: undefined;

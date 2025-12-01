@@ -68,7 +68,7 @@ const PetIconItem = ({ petName }: { petName: string }) => {
 const HomeIcon = ({ name }: { name: string }) => {
   const icons: Record<string, { src: any; size: number }> = {
     config: { src: require('../../assets/icons/config.png'), size: 28 }, // Reduzi um pouco para caber melhor
-    perguntas: { src: require('../../assets/icons/planilha.png'), size: 28 },
+    perguntas: { src: require('../../assets/icons/perguntas.png'), size: 32 },
     Reservas: { src: require('../../assets/icons/planilha.png'), size: 30 },
     favoritos: { src: require('../../assets/icons/Favoritos.png'), size: 35 },
     conta: { src: require('../../assets/icons/user.png'), size: 28 },
@@ -242,7 +242,7 @@ export default function Home_Host() {
               style={styles.navButton}
               onPress={() => {
                 if (item === 'conta') navigation.navigate('Perfil_Host', { host: myHost || {} as any });
-                if (item === 'Reservas') navigation.navigate('Reserva_Host');
+                if (item === 'Reservas') navigation.navigate('Reserva_Host', { usuario: usuario });
                 if (item === 'config') navigation.navigate('Configuracoes');
                 if (item === 'perguntas') {
                     if (myHost && myHost.id_anfitriao) {

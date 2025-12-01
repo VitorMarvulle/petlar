@@ -1,5 +1,4 @@
 // AppPet\src\screens\Reserva_Host.tsx
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { 
     View, Text, StyleSheet, SafeAreaView, ScrollView, 
@@ -25,7 +24,7 @@ const API_BASE_URL = 'http://localhost:8000';
 // Ícones
 const ICON_AVATAR = require('../../assets/icons/user.png');
 const ICON_STAR = require('../../assets/icons/star.png');
-const ICON_LOGO = require('../../assets/icons/LogoBranco.png');
+const ICON_LOGO_BRANCO = require('../../assets/icons/LogoBranco.png');
 
 // --- 1. COMPONENTES VISUAIS AUXILIARES ---
 
@@ -91,7 +90,7 @@ const HostActionButtons = ({ onConfirm, onDeny, loading }: { onConfirm: () => vo
     </View>
 );
 
-// --- 2. COMPONENTE REQUEST CARD (O QUE ESTAVA FALTANDO) ---
+// --- 2. COMPONENTE REQUEST CARD ---
 const RequestCard = ({ 
     reserva, 
     onAction, 
@@ -106,7 +105,6 @@ const RequestCard = ({
     const isPendente = reserva.status === 'pendente';
     const isConcluida = reserva.status === 'concluida';
     
-    // Fallback caso tutor venha undefined (segurança)
     const tutor = reserva.tutor || { nome: 'Usuário', localizacao: 'Local não informado', id_usuario: 0, foto_perfil_url: undefined };
 
     const handleAction = async (status: 'confirmada' | 'negada') => {
@@ -197,6 +195,16 @@ const StatusFilterOptions = ({ selectedStatus, onSelectStatus }: { selectedStatu
     );
 };
 
+// --- HEADER LOGO ---
+const HeaderLogo = ({ onPress }: { onPress: () => void }) => (
+    <TouchableOpacity style={hostStyles.headerLogoContainer} onPress={onPress} activeOpacity={0.7}>
+      <View style={hostStyles.logoImageWrapper}>
+        <Image source={ICON_LOGO_BRANCO} style={hostStyles.logoImage} resizeMode="contain" />
+      </View>
+      <Text style={hostStyles.logoText}>PetLar</Text>
+    </TouchableOpacity>
+);
+
 // --- 3. TELA PRINCIPAL (Reserva_Host) ---
 export default function Reserva_Host() {
     const navigation = useNavigation<any>();
@@ -285,7 +293,6 @@ export default function Reserva_Host() {
         }, [idAnfitriao, fetchReservas])
     );
 
-    // Lógica para Aceitar/Negar
     const handleUpdateStatus = async (id_reserva: number, novoStatus: 'confirmada' | 'negada') => {
         try {
             await ReservaService.updateStatusReserva(id_reserva, novoStatus);
@@ -301,21 +308,25 @@ export default function Reserva_Host() {
         }
     };
 
-    // Lógica de Filtro
     const filteredReservas = useMemo(() => {
         if (selectedStatus === 'todos') return reservas;
         return reservas.filter(r => r.status === selectedStatus);
     }, [reservas, selectedStatus]);
 
+    const handleLogoPress = () => {
+        if (usuarioLogado) {
+            navigation.navigate('Home_Host', { usuario: usuarioLogado });
+        } else {
+            navigation.goBack();
+        }
+    };
+
     return (
         <SafeAreaView style={hostStyles.container}>
             <ScrollView contentContainerStyle={hostStyles.scrollContentArea} showsVerticalScrollIndicator={false}>
                 
-                {/* Header Simples */}
-                <TouchableOpacity onPress={() => navigation.goBack()} style={hostStyles.cornerImageContainer}>
-                    <Image source={ICON_LOGO} style={hostStyles.cornerImage} resizeMode="contain" />
-                </TouchableOpacity>
-                <Text style={hostStyles.LogoText}>Lar Doce Pet</Text>
+                {/* Nova Header Logo */}
+                <HeaderLogo onPress={handleLogoPress} />
                 
                 <View style={hostStyles.innerContainer}>
                     <Text style={hostStyles.mainTitle}>Solicitações</Text>
@@ -352,14 +363,39 @@ export default function Reserva_Host() {
 const hostStyles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#B3D18C' },
     scrollContentArea: { flexGrow: 1, paddingBottom: 40 },
-    innerContainer: { marginHorizontal: 12, backgroundColor: '#FFFFFF', borderRadius: 49, paddingHorizontal: 20, paddingVertical: 30, marginTop: 70, minHeight: 600 },
+    innerContainer: { marginHorizontal: 12, backgroundColor: '#FFFFFF', borderRadius: 49, paddingHorizontal: 20, paddingVertical: 30, marginTop: 100, minHeight: 600 },
     mainTitle: { fontSize: 24, fontWeight: '700', color: '#556A44', textAlign: 'center', marginTop: 10 },
     sectionSubtitle: { fontSize: 14, color: '#556A44', textAlign: 'center', marginBottom: 20 },
     
-    // Header
-    cornerImageContainer: { position: 'absolute', top: 29, right: 220, width: 60, height: 60, zIndex: 10 },
-    cornerImage: { width: '100%', height: '100%' },
-    LogoText: { top: 60, left: 165, fontSize: 20, fontWeight: '700', color: '#ffffff', position: 'absolute', zIndex: 5 },
+    // --- HEADER LOGO STYLES ---
+    headerLogoContainer: {
+        position: 'absolute',
+        top: 30,
+        left: 20,
+        right: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 20,
+    },
+    logoImageWrapper: {
+        width: 60,
+        height: 60,
+    },
+    logoImage: {
+        width: '100%',
+        height: '100%',
+    },
+    logoText: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#ffffff',
+        marginLeft: 15,
+        textShadowColor: 'rgba(0, 0, 0, 0.1)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 2,
+    },
+    // --------------------------
 
     // Filtros
     filterScroll: { marginBottom: 20, height: 50 },

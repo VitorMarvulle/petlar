@@ -1,18 +1,21 @@
+// AppPet\src\screens\Configuracoes.tsx
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Switch, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/types'; // Certifique-se de que o caminho está correto
+import type { RootStackParamList } from '../navigation/types';
 
 // --- CONSTANTES DE ESTILO REAPROVEITADAS ---
-const GREEN_DARK = '#556A44'; // Cor do texto principal
-const GREEN_MEDIUM = '#7AB24E'; // Cor principal dos botões/ícones
-const GREEN_LIGHT = '#B3D18C'; // Cor de fundo da SafeAreaView/Borda dos cards
-const BG_INNER = '#FFF6E2'; // Cor de fundo dos cards (usado no Host Avaliacao)
-const BG_INNER_WHITE = '#FFFFFF'; // Fundo do Inner Container
+const GREEN_DARK = '#556A44'; 
+const GREEN_MEDIUM = '#7AB24E'; 
+const GREEN_LIGHT = '#B3D18C'; 
+const BG_INNER = '#FFF6E2'; 
+const BG_INNER_WHITE = '#FFFFFF'; 
 const FOOTER_TEXT_COLOR = GREEN_DARK;
 
-// Tipo de navegação, adaptado do seu código Home.tsx
+const ICON_LOGO_BRANCO = require('../../assets/icons/LogoBranco.png');
+
+// Tipo de navegação
 type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Configuracoes'>;
 
 // --- COMPONENTE CUSTOMIZADO: LINHA DE CONFIGURAÇÃO ---
@@ -97,7 +100,6 @@ const SuccessAlertModal = ({ isVisible, title, message, onClose }: SuccessAlertM
   <Modal transparent visible={isVisible} animationType="fade">
     <View style={settingsStyles.modalOverlay}>
       <View style={settingsStyles.modalContainer}>
-        {/* Ícone de verificação para feedback visual de sucesso */}
         <Text style={settingsStyles.successIcon}>✓</Text> 
         <Text style={settingsStyles.modalTitle}>{title}</Text>
         <Text style={settingsStyles.modalMessage}>{message}</Text>
@@ -113,15 +115,23 @@ const SuccessAlertModal = ({ isVisible, title, message, onClose }: SuccessAlertM
   </Modal>
 );
 
+// --- HEADER LOGO ---
+const HeaderLogo = ({ onPress }: { onPress: () => void }) => (
+    <TouchableOpacity style={settingsStyles.headerLogoContainer} onPress={onPress} activeOpacity={0.7}>
+      <View style={settingsStyles.logoImageWrapper}>
+        <Image source={ICON_LOGO_BRANCO} style={settingsStyles.logoImage} resizeMode="contain" />
+      </View>
+      <Text style={settingsStyles.logoText}>PetLar</Text>
+    </TouchableOpacity>
+);
+
 // --- TELA PRINCIPAL DE CONFIGURAÇÕES ---
 export default function Configuracoes() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
   const [isDarkMode, setIsDarkMode] = useState(false);
   
-  // Estado para o modal de exclusão
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false); 
   
-  // Novo estado para o modal de sucesso/alerta
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
   const [successModalContent, setSuccessModalContent] = useState({ title: '', message: '' });
 
@@ -133,11 +143,9 @@ export default function Configuracoes() {
   }
 
   const handleDeleteAccount = () => {
-    // Simular a exclusão da conta
     console.log("Conta excluída!");
     setIsDeleteModalVisible(false);
 
-    // Substituindo Alert.alert pelo modal personalizado
     setSuccessModalContent({
       title: "Conta Excluída",
       message: "Sua conta foi excluída com sucesso. Sentiremos sua falta!",
@@ -148,7 +156,6 @@ export default function Configuracoes() {
   const handleApply = () => {
     console.log("Configurações aplicadas. Modo Escuro:", isDarkMode);
     
-    // Substituindo Alert.alert pelo modal personalizado
     setSuccessModalContent({
       title: "Sucesso!",
       message: "As suas configurações foram salvas com êxito.",
@@ -156,14 +163,19 @@ export default function Configuracoes() {
     setIsSuccessModalVisible(true);
   };
   
-  // Função para navegar, usando a tipagem correta
   const navigateTo = (screenName: keyof RootStackParamList) => {
-    // Nota: O tipo 'any' é usado aqui para simplificar a navegação em um ambiente sem a RootStackParamList completa.
     navigation.navigate(screenName as any);
+  };
+
+  const handleLogoPress = () => {
+      navigation.goBack();
   };
 
   return (
     <SafeAreaView style={settingsStyles.container}>
+      
+      {/* Nova Header Logo */}
+      <HeaderLogo onPress={handleLogoPress} />
 
       <ScrollView contentContainerStyle={settingsStyles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={settingsStyles.innerContainer}>
@@ -175,13 +187,13 @@ export default function Configuracoes() {
             <SettingItem
               label="Informações do perfil"
               subLabel="Nome, localização e informações"
-              onPress={() => navigateTo('Perfil_Tutor')} // Adapte para sua rota de edição de perfil
+              onPress={() => navigateTo('Perfil_Tutor')}
             />
             <View style={settingsStyles.separator} />
             <SettingItem
               label="Informações do pet"
               subLabel="Adicionar, editar ou remover pets"
-              onPress={() => navigateTo('Perfil_Tutor')} // Adapte para sua rota de lista de pets
+              onPress={() => navigateTo('Perfil_Tutor')}
             />
           </View>
           
@@ -199,13 +211,13 @@ export default function Configuracoes() {
             <SettingItem
               label="Alterar senha"
               subLabel="Aumente a segurança da sua conta"
-              onPress={() => navigateTo('Alterar_senha')} // Adapte para sua rota de alteração de senha
+              onPress={() => navigateTo('Alterar_senha')}
             />
             <View style={settingsStyles.separator} />
             <SettingItem
               label="Endereço de e-mail"
               subLabel="Mude o e-mail cadastrado"
-              onPress={() => navigateTo('Alterar_email')} // Adapte para sua rota de alteração de email
+              onPress={() => navigateTo('Alterar_email')}
             />
           </View>
 
@@ -214,53 +226,47 @@ export default function Configuracoes() {
             <SettingItem
               label="Excluir conta"
               subLabel="Esta ação é irreversível"
-              onPress={() => setIsDeleteModalVisible(true)} // Abre o Modal de Exclusão
-              showArrow={true} // Mantém a seta para indicar a ação
+              onPress={() => setIsDeleteModalVisible(true)}
+              showArrow={true}
             />
           </View>
 
-          {/* BOTÃO APLICAR (Ação principal como no protótipo) */}
+          {/* BOTÃO APLICAR */}
           <TouchableOpacity style={settingsStyles.applyButton} onPress={handleApply}>
             <Text style={settingsStyles.applyButtonText}>Aplicar</Text>
           </TouchableOpacity>
           
         </View>
         
-        {/* Footer (Reaproveitado do seu código Home.tsx) */}
+        {/* Footer */}
         <View style={settingsStyles.footer}>
           <Text style={settingsStyles.footerText}>Como funciona? | Quero ser host!</Text>
         </View>
         
       </ScrollView>
 
-      
-      {/* Modal de Confirmação de Exclusão (Duplo Botão) */}
+      {/* Modal de Confirmação de Exclusão */}
       <DeleteConfirmationModal
         isVisible={isDeleteModalVisible}
         onClose={() => setIsDeleteModalVisible(false)}
         onConfirm={handleDeleteAccount}
       />
 
-      {/* NOVO Modal de Sucesso (Botão Único) */}
+      {/* Modal de Sucesso */}
       <SuccessAlertModal
         isVisible={isSuccessModalVisible}
         title={successModalContent.title}
         message={successModalContent.message}
-        onClose={() => handleAlertClose()} // Função para fechar o modal
+        onClose={() => handleAlertClose()}
       />
     </SafeAreaView>
   );
 }
 
-// -------------------------------------------------------------------
-// ----------------------------- STYLES ------------------------------
-// -------------------------------------------------------------------
-
 const settingsStyles = StyleSheet.create({
-  // --- Estrutura Geral ---
   container: { 
     flex: 1, 
-    backgroundColor: GREEN_LIGHT, // Cor de fundo da Home
+    backgroundColor: GREEN_LIGHT,
   }, 
   scrollContainer: { 
     flexGrow: 1,
@@ -269,9 +275,9 @@ const settingsStyles = StyleSheet.create({
   innerContainer: { 
     flex: 1, 
     marginHorizontal: 12, 
-    marginTop: 30, 
+    marginTop: 100, // Ajustado para dar espaço ao Header
     marginBottom: 4, 
-    backgroundColor: BG_INNER_WHITE, // Fundo branco com borda da cor principal
+    backgroundColor: BG_INNER_WHITE, 
     borderRadius: 40, 
     paddingHorizontal: 20, 
     paddingVertical: 28,
@@ -284,16 +290,36 @@ const settingsStyles = StyleSheet.create({
     textAlign: 'center',
   },
   
-  // --- Ícones de Decoração (Adaptados do protótipo) ---
-  cornerPawContainer: {
+  // --- HEADER LOGO STYLES ---
+  headerLogoContainer: {
     position: 'absolute',
-    top: 30, 
-    right: 20, 
-    width: 90, 
-    height: 90,
-    zIndex: 10, 
-    opacity: 0.7,
+    top: 30,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
   },
+  logoImageWrapper: {
+    width: 60,
+    height: 60,
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  logoText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginLeft: 15,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  // --------------------------
+
   bottomPawContainer: {
     position: 'absolute',
     bottom: 20, 
@@ -303,15 +329,13 @@ const settingsStyles = StyleSheet.create({
     zIndex: 10, 
     opacity: 0.7,
   },
-  
-  // --- Card de Configuração (Baseado no seu HostCard com BG_INNER) ---
   card: {
-    backgroundColor: BG_INNER, // Cor Creme dos seus cards
+    backgroundColor: BG_INNER, 
     borderRadius: 15,
     borderWidth: 2,
-    borderColor: GREEN_LIGHT, // Borda verde clara
+    borderColor: GREEN_LIGHT, 
     marginBottom: 20,
-    overflow: 'hidden', // Importante para o borderRadius funcionar com os separadores
+    overflow: 'hidden',
   },
   settingItem: {
     flexDirection: 'row',
@@ -341,8 +365,6 @@ const settingsStyles = StyleSheet.create({
     color: GREEN_MEDIUM,
     fontWeight: '300',
   },
-  
-  // --- Switch de Exibição ---
   displaySwitchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -351,8 +373,6 @@ const settingsStyles = StyleSheet.create({
     fontSize: 20,
     marginRight: 10,
   },
-  
-  // --- Botão Aplicar (Baseado no protótipo) ---
   applyButton: {
     backgroundColor: GREEN_MEDIUM,
     paddingVertical: 15,
@@ -360,7 +380,7 @@ const settingsStyles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
     borderWidth: 3,
-    borderColor: GREEN_LIGHT, // Borda para destaque
+    borderColor: GREEN_LIGHT, 
     shadowColor: GREEN_DARK,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -372,8 +392,6 @@ const settingsStyles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
   },
-
-  // --- Footer ---
   footer: {
     alignItems: 'center', 
     paddingVertical: 20,
@@ -383,8 +401,6 @@ const settingsStyles = StyleSheet.create({
     fontSize: 15, 
     fontWeight: '700', 
   },
-
-  // --- Modal (Base) ---
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -393,12 +409,12 @@ const settingsStyles = StyleSheet.create({
   },
   modalContainer: {
     width: '85%',
-    backgroundColor: BG_INNER, // Cor Creme dos cards
+    backgroundColor: BG_INNER, 
     borderRadius: 20,
     paddingVertical: 30,
     paddingHorizontal: 25,
     borderWidth: 3,
-    borderColor: GREEN_MEDIUM, // Borda verde médio
+    borderColor: GREEN_MEDIUM, 
     alignItems: 'center',
     elevation: 10,
   },
@@ -430,17 +446,14 @@ const settingsStyles = StyleSheet.create({
     borderWidth: 2,
     alignItems: 'center',
   },
-  // Estilo do botão Cancelar (Modal de Exclusão)
   modalButtonCancel: {
     backgroundColor: '#B3D18C',
     borderColor: GREEN_MEDIUM,
   },
-  // Estilo do botão Confirmar (Modal de Exclusão)
   modalButtonConfirm: {
-    backgroundColor: '#FF6347', // Vermelho para indicar perigo
+    backgroundColor: '#FF6347', 
     borderColor: '#CC4C36',
   },
-  // Estilo do NOVO botão de sucesso (Modal de Sucesso)
   modalSuccessButton: {
     backgroundColor: GREEN_MEDIUM, 
     borderColor: GREEN_DARK, 
@@ -458,7 +471,6 @@ const settingsStyles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
-  // Ícone de Sucesso
   successIcon: { 
     fontSize: 40,
     color: GREEN_MEDIUM,

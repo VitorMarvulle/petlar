@@ -33,6 +33,7 @@ const TartarugaIconPng = require('../../../assets/icons/animais/tartaruga.png');
 const NaoFavorito = require('../../../assets/icons/GreyFav.png');
 const Favorito = require('../../../assets/icons/GoldFav.png');
 const BackIconPng = require('../../../assets/icons/arrow-left.png');
+const ICON_LOGO_BRANCO = require('../../../assets/icons/LogoBranco.png');
 
 // Tipos
 interface UsuarioFromApi {
@@ -169,6 +170,16 @@ const PetIcon = ({ petName }: { petName: string }) => {
   return <Image source={source} style={styles.petTypeIcon} />;
 };
 
+// Componente Header Logo
+const HeaderLogo = ({ onPress }: { onPress: () => void }) => (
+    <TouchableOpacity style={styles.headerLogoContainer} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.logoImageWrapper}>
+        <Image source={ICON_LOGO_BRANCO} style={styles.logoImage} resizeMode="contain" />
+      </View>
+      <Text style={styles.logoText}>PetLar</Text>
+    </TouchableOpacity>
+);
+
 export default function CardHost() {
   const route = useRoute<CardHostRouteProp>();
   const navigation = useNavigation<CardHostNavigationProp>();
@@ -251,6 +262,14 @@ export default function CardHost() {
     });
   };
 
+  const handleLogoPress = () => {
+    if (usuario?.tipo === 'tutor') {
+        navigation.navigate('Home', { usuario });
+    } else {
+        navigation.goBack();
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -304,8 +323,7 @@ export default function CardHost() {
   const avaliacoesFiltradas = avaliacoes.filter((av) =>
     av.comentario?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  // Dentro do componente PerfilHost:
-
+  
   const handleFAQPress = () => {
       if (!usuario?.id_usuario) {
         Alert.alert('Atenção', 'Você precisa estar logado para ver ou fazer perguntas.');
@@ -324,14 +342,18 @@ export default function CardHost() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <Image source={BackIconPng} style={styles.backIcon} />
+        {/* Nova Header Logo Centralizada */}
+        <HeaderLogo onPress={handleLogoPress} />
+
+        {/* Botões de navegação e ação absolutos */}
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.absoluteBackButton}>
+            <Image source={BackIconPng} style={styles.backIcon} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.headerButton}>
-          <Text style={styles.logoutText}>Sair</Text>
+        
+        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.absoluteLogoutButton}>
+            <Text style={styles.logoutText}>Sair</Text>
         </TouchableOpacity>
-      </View>
+
       <View style={styles.innerContainer}>
         <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           {/* Perfil */}
@@ -479,11 +501,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#B3D18C',
-    paddingTop: 38,
+    paddingTop: 0, // Removido padding extra pois SafeAreaView lida com isso
   },
   innerContainer: {
     flex: 1,
-    margin: 12,
+    marginHorizontal: 12,
+    marginTop: 100, // Ajuste para o Header Logo
+    marginBottom: 4,
     backgroundColor: '#FFFFFF',
     borderRadius: 49,
     paddingHorizontal: 15,
@@ -495,6 +519,52 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 40,
   },
+  
+  // --- HEADER LOGO STYLES ---
+  headerLogoContainer: {
+    position: 'absolute',
+    top: 40, // Ajustado para ficar na área segura superior
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+  },
+  logoImageWrapper: {
+    width: 60,
+    height: 60,
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  logoText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginLeft: 15,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  // Botões absolutos para manter funcionalidade anterior
+  absoluteBackButton: {
+      position: 'absolute',
+      top: 55, // Alinhado verticalmente com o centro da logo
+      left: 25,
+      zIndex: 25,
+      padding: 5,
+  },
+  absoluteLogoutButton: {
+      position: 'absolute',
+      top: 58,
+      right: 25,
+      zIndex: 25,
+      padding: 5,
+  },
+  // --------------------------
+
   avatarInnerImage: {
     width: '60%',
     height: '60%',
@@ -819,16 +889,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 5,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  headerButton: {
-    padding: 5,
-  },
+  // Remover header styles antigos ou não utilizados se necessário
   backIcon: {
     width: 24,
     height: 24,

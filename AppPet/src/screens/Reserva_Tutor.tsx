@@ -20,6 +20,7 @@ import { ReservaService } from '../services/reservaService';
 // --- ÍCONES ---
 const ICON_AVATAR = require('../../assets/icons/user.png'); 
 const ICON_HOST_AVATAR = ICON_AVATAR; 
+const ICON_LOGO_BRANCO = require('../../assets/icons/LogoBranco.png');
 
 // --- COMPONENTES REUTILIZÁVEIS ---
 
@@ -92,7 +93,7 @@ const ReservaCard = ({ reserva, navigation }: {
 
     return (
         <View style={styles.cardContainer}>
-            {/* 1. Datas de Entrada e Saída - CORRIGIDO */}
+            {/* 1. Datas de Entrada e Saída */}
             <View style={styles.dateHeader}>
                 <View style={styles.dateBlock}>
                     <Text style={styles.dateLabel}>Check-in</Text>
@@ -115,7 +116,7 @@ const ReservaCard = ({ reserva, navigation }: {
             <TouchableOpacity 
                 style={styles.hostCard} 
                 onPress={() => {
-                     console.log('Ver perfil do host:', reserva.anfitriao.nome);
+                      console.log('Ver perfil do host:', reserva.anfitriao.nome);
                 }}
             >
                 <Image 
@@ -221,6 +222,16 @@ const StatusFilterOptions = ({
     );
 };
 
+// Componente de Logo ajustado para ser clicável e com novo layout
+const HeaderLogo = ({ onPress }: { onPress: () => void }) => (
+    <TouchableOpacity style={styles.headerLogoContainer} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.logoImageWrapper}>
+        <Image source={ICON_LOGO_BRANCO} style={styles.logoImage} resizeMode="contain" />
+      </View>
+      <Text style={styles.logoText}>PetLar</Text>
+    </TouchableOpacity>
+);
+
 // -------------------------------------------------------------------
 // ------------------------- TELA PRINCIPAL --------------------------
 // -------------------------------------------------------------------
@@ -274,18 +285,14 @@ export default function Reserva_Tutor({ navigation, route }: RootStackScreenProp
         return reservas.filter(reserva => reserva.status === selectedStatusFilter);
     }, [reservas, selectedStatusFilter]);
 
-    const CornerIconClickable = () => (
-        <TouchableOpacity 
-            onPress={() => navigation.goBack()} 
-            style={styles.cornerImageContainer}
-        >
-            <Image
-                source={require('../../assets/icons/LogoBranco.png')} 
-                style={styles.cornerImage}
-                resizeMode="contain"
-            />
-        </TouchableOpacity>
-    );
+    // Função para navegar de volta para Home ao clicar na logo
+    const handleLogoPress = () => {
+        if (usuario) {
+            navigation.navigate('Home', { usuario });
+        } else {
+            navigation.goBack();
+        }
+    };
 
     if (loading && reservas.length === 0) {
         return (
@@ -301,8 +308,10 @@ export default function Reserva_Tutor({ navigation, route }: RootStackScreenProp
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-                <CornerIconClickable/> 
-                <Text style={styles.LogoText}>Lar Doce Pet</Text>
+                
+                {/* Nova Logo Clicável e reposicionada */}
+                <HeaderLogo onPress={handleLogoPress} />
+
                 <View style={styles.innerContainer}>
 
                     <Text style={styles.mainTitle}>Minhas Reservas</Text>
@@ -365,7 +374,7 @@ const styles = StyleSheet.create({
     innerContainer: {
         flex: 1,
         marginHorizontal: 12,
-        marginTop: 70,         
+        marginTop: 100, // Ajustado para dar espaço ao novo HeaderLogo
         backgroundColor: '#FFFFFF',
         borderRadius: 40,
         paddingHorizontal: 15, 
@@ -378,30 +387,39 @@ const styles = StyleSheet.create({
         color: '#556A44', 
         marginBottom: 10,
         textAlign: 'center',
-        marginTop: 40, 
+        marginTop: 20, // Reduzi um pouco já que o container desceu
     },
-    cornerImageContainer: {
+    
+    // --- NOVOS ESTILOS PARA O HEADER LOGO ---
+    headerLogoContainer: {
         position: 'absolute',
-        top: 29, 
-        right: 220, 
-        width: 60, 
+        top: 30, 
+        left: 20, 
+        right: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center', // Centraliza ou ajuste para 'flex-start' se preferir à esquerda
+        zIndex: 20,
+    },
+    logoImageWrapper: {
+        width: 60,
         height: 60,
-        zIndex: 10, 
     },
-    cornerImage: {
-        width: '100%', 
-        height: '100%', 
-        resizeMode: 'contain',
+    logoImage: {
+        width: '100%',
+        height: '100%',
     },
-    LogoText: {
-        top: 60,
-        left: 165,
-        fontSize: 20,
+    logoText: {
+        fontSize: 24,
         fontWeight: '700',
         color: '#ffffff',
-        position: 'absolute',
-        zIndex: 5,
+        marginLeft: 15, // Espaço horizontal aumentado
+        textShadowColor: 'rgba(0, 0, 0, 0.1)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 2,
     },
+    // ----------------------------------------
+
     filterScroll: {
         marginTop: 10,
         marginBottom: 25,
@@ -446,7 +464,7 @@ const styles = StyleSheet.create({
         padding: 15,
         marginBottom: 20,
     },
-    // --- ESTILOS DE DATA CORRIGIDOS ---
+    // --- ESTILOS DE DATA ---
     dateHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
