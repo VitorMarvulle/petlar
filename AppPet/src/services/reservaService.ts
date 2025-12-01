@@ -198,7 +198,43 @@ export class ReservaService {
             pets: petsData,
         };
     }
+    //ADD
+    static async getReservaCompletaById(id_reserva: number): Promise<ReservaCompleta> {
+        try {
+            const response = await axios.get<ReservaBackend>(
+                `${API_BASE_URL}/reservas/${id_reserva}`
+            );
 
+            // Se a reserva não existir ou der erro
+            if (!response.data) {
+                throw new Error('Reserva não encontrada');
+            }
+
+            // Montamos a reserva na visão do TUTOR (quem está vendo o Host)
+            return await this.montarReservaTutor(response.data);
+        } catch (error) {
+            console.error(`Erro ao buscar reserva ${id_reserva}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Atualiza a reserva marcando que o HOST já foi avaliado.
+     */
+    static async marcarComoAvaliadoHost(id_reserva: number): Promise<void> {
+        try {
+            // Envia um PUT apenas com o campo booleano alterado
+            // O backend precisa suportar atualização parcial (PATCH) ou ignorar campos nulos no PUT
+            await axios.put(`${API_BASE_URL}/reservas/${id_reserva}`, {
+                ja_avaliado_host: true
+            });
+        } catch (error) {
+            console.error('Erro ao marcar host como avaliado:', error);
+            // Opcional: relançar o erro se quiser travar a tela, 
+            // mas geralmente deixamos passar se for só uma flag visual.
+        }
+    }
+    // END ADD
     // =========================================================================
     // 5. HELPERS (MÉTODOS AUXILIARES DE BUSCA)
     // =========================================================================

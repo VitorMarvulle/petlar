@@ -1,3 +1,4 @@
+// AppPet\src\screens\Filtros.tsx
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, TextInput, Platform } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
