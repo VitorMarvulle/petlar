@@ -162,7 +162,7 @@ elif tabela_escolhida == "usuarios" and not df.empty:
     # ======================================================
     # 1️⃣ Evolução dos cadastros por mês (gráfico de linha)
     # ======================================================
-    st.markdown("### 📊 Usuários - Quantidade de Usuários (Últimos 3 Meses)")
+    st.markdown("### 📊 Usuários - Quantidade de Usuários (Últimos 4 Meses)")
 
     # --- Consulta SQL: filtrar pelos últimos 3 meses mantendo o dia
     df_sql = sqldf("""
